@@ -24,6 +24,7 @@ void USLGA_LightAttack::HandleHitDetection(FGameplayEventData Payload)
     if (Target && !HitActors.Contains(Target))
     {
         HitActors.Add(Target);
+        GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, TEXT("LightAttack Hit Landed!"));
 
         // Apply Gameplay Effects (Damage, Knockback) here
         // GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectToTarget(...)

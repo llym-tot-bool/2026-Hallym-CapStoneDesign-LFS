@@ -29,7 +29,7 @@ public:
     FVector BoxHalfExtents = FVector(50.f, 50.f, 50.f);
 
     UPROPERTY(EditAnywhere, Category = "Collision")
-    FName SocketName = "WeaponSocket";
+    FName SocketName = "Socket_weapon_base";
 
     virtual void NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, 
         const FAnimNotifyEventReference& EventReference) override;
