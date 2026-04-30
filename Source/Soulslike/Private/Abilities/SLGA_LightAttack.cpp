@@ -1,15 +1,6 @@
 
 #include "Abilities/SLGA_LightAttack.h"
 
-
-USLGA_LightAttack::USLGA_LightAttack()
-{
-}
-
-USLGA_LightAttack::~USLGA_LightAttack()
-{
-}
-
 void USLGA_LightAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
 	const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
@@ -19,6 +10,8 @@ void USLGA_LightAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
 void USLGA_LightAttack::HandleHitDetection(FGameplayEventData Payload)
 {
+    UE_LOG(LogTemp, Display, TEXT("HandleHitDetection called"))
+
     AActor* Target = const_cast<AActor*>(Payload.Target.Get());
 
     if (Target && !HitActors.Contains(Target))
@@ -34,6 +27,6 @@ void USLGA_LightAttack::HandleHitDetection(FGameplayEventData Payload)
 void USLGA_LightAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
 	const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-    Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
     HitActors.Empty(); // Clean up memory
+    Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

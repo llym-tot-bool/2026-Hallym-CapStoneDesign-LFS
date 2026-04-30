@@ -13,10 +13,6 @@ class SOULSLIKE_API USLGA_LightAttack : public UGameplayAbility
 {
 	GENERATED_BODY()
 
-public:
-	USLGA_LightAttack();
-	~USLGA_LightAttack();
-
 protected:
     // This is where we store who we've already hit during THIS specific execution
     UPROPERTY(BlueprintReadOnly, Category = "Combat")

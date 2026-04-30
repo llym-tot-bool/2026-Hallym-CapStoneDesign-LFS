@@ -17,10 +17,6 @@ class SOULSLIKE_API USLANS_LightAttack : public UAnimNotifyState
 	GENERATED_BODY()
 
 public:
-    USLANS_LightAttack();
-	~USLANS_LightAttack();
-
-public:
     // The Tag to send to the GA (must match HitEventTag in GA)
     UPROPERTY(EditAnywhere, Category = "GAS")
     FGameplayTag EventTag;
@@ -31,6 +27,25 @@ public:
     UPROPERTY(EditAnywhere, Category = "Collision")
     FName SocketName = "Socket_weapon_base";
 
-    virtual void NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, 
-        const FAnimNotifyEventReference& EventReference) override;
+public:
+
+    virtual void NotifyBegin(
+        USkeletalMeshComponent* MeshComp,
+        UAnimSequenceBase* Animation,
+        float TotalDuration,
+        const FAnimNotifyEventReference& EventReference
+    ) override;
+
+    virtual void NotifyEnd(
+        USkeletalMeshComponent* MeshComp,
+        UAnimSequenceBase* Animation,
+        const FAnimNotifyEventReference& EventReference
+    ) override;
+
+    virtual void NotifyTick(
+        USkeletalMeshComponent* MeshComp, 
+        UAnimSequenceBase* Animation, 
+        float FrameDeltaTime, 
+        const FAnimNotifyEventReference& EventReference
+    ) override;
 };

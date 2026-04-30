@@ -6,16 +6,26 @@
 #include "Kismet/KismetSystemLibrary.h"
 
 
-USLANS_LightAttack::USLANS_LightAttack()
+void USLANS_LightAttack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, 
+    float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
+    // debug start
+    GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, TEXT("SLANS_LightAttack begin"));
+    // debug end
 }
 
-USLANS_LightAttack::~USLANS_LightAttack()
+void USLANS_LightAttack::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, 
+    const FAnimNotifyEventReference& EventReference)
 {
+    // debug start
+    GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, TEXT("SLAND_LightAttack end."));
+    // debug end
 }
 
-void USLANS_LightAttack::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, const FAnimNotifyEventReference& EventReference)
+void USLANS_LightAttack::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, 
+    float FrameDeltaTime, const FAnimNotifyEventReference& EventReference)
 {
+
     AActor* Owner = MeshComp->GetOwner();
     if (!Owner) return;
 
