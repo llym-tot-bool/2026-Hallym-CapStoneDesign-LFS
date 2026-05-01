@@ -130,6 +130,8 @@ void USLAT_LightAttack_hit_checker::TickTask(float DeltaTime)
     }
 }
 
+
+
 void USLAT_LightAttack_hit_checker::EffectOnHit(AActor* hitActor)
 {
     FString actorName = hitActor->GetName();

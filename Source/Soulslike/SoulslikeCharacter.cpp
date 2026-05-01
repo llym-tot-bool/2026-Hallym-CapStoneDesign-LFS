@@ -59,57 +59,6 @@ ASoulslikeCharacter::ASoulslikeCharacter()
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 }
 
-void ASoulslikeCharacter::PerformWeaponTrace()
-{
-	FVector start = GetMesh()->GetSocketLocation("Socket_weapon_base");
-	FVector end = GetMesh()->GetSocketLocation("Socket_weapon_tip");
-
-	TArray<AActor*> actorsToIgnore;
-	actorsToIgnore.Add(this);
-	FHitResult hitresult;
-
-	bool bHit = UKismetSystemLibrary::SphereTraceSingle(
-		this, start, end, 15.0f,
-		UEngineTypes::ConvertToTraceType(ECC_Pawn),
-		false, actorsToIgnore, EDrawDebugTrace::ForDuration,
-		hitresult, true
-	);
-
-	if (bHit && hitresult.GetActor()) {
-		AActor* hitActor = hitresult.GetActor();
-
-		if (!AlreadyHitActors.Contains(hitActor)) {
-			AlreadyHitActors.Add(hitActor);
-
-			IAbilitySystemInterface* hitInterface = Cast<IAbilitySystemInterface>(hitActor);
-			if (hitInterface) {
-				UAbilitySystemComponent* targetASC = hitInterface->GetAbilitySystemComponent();
-				UAbilitySystemComponent* myASC = GetAbilitySystemComponent();
-
-				if (targetASC && myASC) {
-					FGameplayEffectContextHandle effectHandle = myASC->MakeEffectContext();
-					effectHandle.AddHitResult(hitresult);
-
-					FGameplayEventData payload;
-					payload.Instigator = this;
-					payload.Target = hitActor;
-					payload.ContextHandle = effectHandle;
-
-					UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, FGameplayTag::RequestGameplayTag(FName("Event.Combat.HitLanded")), payload);
-					GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, TEXT("Hit Landed!"));
-				}
-			}
-
-
-		}
-	}
-}
-
-void ASoulslikeCharacter::ClearHitList()
-{
-	AlreadyHitActors.Empty();
-}
-
 void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	// Set up action bindings
@@ -127,7 +76,11 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASoulslikeCharacter::Look);
 
 		// light attack
-		EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::LightAttack);
+		//EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::LightAttack);
+
+		// attack base 0
+		EnhancedInputComponent->BindAction(AttackBase0_pair.InputAction, ETriggerEvent::Started, 
+			this, &ASoulslikeCharacter::AttackBase0);
 
 		// skills
 		if (SkillOneAction)
@@ -181,14 +134,25 @@ void ASoulslikeCharacter::Look(const FInputActionValue& Value)
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
 }
 
-void ASoulslikeCharacter::LightAttack()
+//void ASoulslikeCharacter::LightAttack()
+//{
+//	if (ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>()) {
+//		UAbilitySystemComponent* ASC = ps->GetAbilitySystemComponent();
+//
+//		if (ASC) {
+//			FGameplayTag attackTag = FGameplayTag::RequestGameplayTag(FName("PlayerAbility.Attack.Light"));
+//			ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(attackTag));
+//		}
+//	}
+//}
+
+void ASoulslikeCharacter::AttackBase0()
 {
 	if (ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>()) {
 		UAbilitySystemComponent* ASC = ps->GetAbilitySystemComponent();
 
 		if (ASC) {
-			FGameplayTag attackTag = FGameplayTag::RequestGameplayTag(FName("PlayerAbility.Attack.Light"));
-			ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(attackTag));
+			ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AttackBase0_pair.GameplayTag));
 		}
 	}
 }
@@ -241,9 +205,14 @@ void ASoulslikeCharacter::DoJumpEnd()
 	StopJumping();
 }
 
-void ASoulslikeCharacter::DoLightAttack()
+//void ASoulslikeCharacter::DoLightAttack()
+//{
+//	LightAttack();
+//}
+
+void ASoulslikeCharacter::DoAttackBase0()
 {
-	LightAttack();
+	AttackBase0();
 }
 
 void ASoulslikeCharacter::SkillOne()
