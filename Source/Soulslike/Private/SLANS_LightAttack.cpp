@@ -9,6 +9,7 @@
 void USLANS_LightAttack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, 
     float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
+    Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
     // debug start
     GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, TEXT("SLANS_LightAttack begin"));
     // debug end
@@ -19,7 +20,10 @@ void USLANS_LightAttack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequ
     UAbilitySystemComponent* owner_asc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(owner);
     if (!owner_asc) return;
 
-    owner_asc->HandleGameplayEvent(EventTagStart, nullptr);
+    FGameplayEventData payload;
+    payload.EventTag = EventTagStart;
+    payload.Instigator = owner;
+    owner_asc->HandleGameplayEvent(EventTagStart, &payload);
 
 }
 
@@ -36,5 +40,10 @@ void USLANS_LightAttack::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequen
     UAbilitySystemComponent* owner_asc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(owner);
     if (!owner_asc) return;
 
-    owner_asc->HandleGameplayEvent(EventTagEnd, nullptr);
+    FGameplayEventData payload;
+    payload.EventTag = EventTagEnd;
+    payload.Instigator = owner;
+    owner_asc->HandleGameplayEvent(EventTagEnd, &payload);
+
+    Super::NotifyEnd(MeshComp, Animation, EventReference);
 }

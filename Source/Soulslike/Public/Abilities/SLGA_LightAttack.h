@@ -39,9 +39,11 @@ class SOULSLIKE_API USLGA_LightAttack : public UGameplayAbility
 
 protected:
 
-    // The Tag we listen for from the AnimNotifyState
     UPROPERTY(EditDefaultsOnly, Category = "Combat")
-    FGameplayTag HitEventTag;
+    FGameplayTag trace_start_tag;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Combat")
+    FGameplayTag trace_end_tag;
 
     UPROPERTY(EditAnywhere, Category = "Collision")
     FVector BoxHalfExtents = FVector(15.f, 15.f, 15.f);
@@ -62,6 +64,12 @@ protected:
 
     virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
         const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+
+    UFUNCTION()
+    void TraceStart(FGameplayEventData Payload);
+
+    UFUNCTION()
+    void TraceEnd(FGameplayEventData Payload);
 };
 
 

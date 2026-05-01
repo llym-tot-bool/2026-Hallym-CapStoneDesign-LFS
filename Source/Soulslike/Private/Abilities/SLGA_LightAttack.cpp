@@ -2,6 +2,7 @@
 #include "Abilities/SLGA_LightAttack.h"
 #include "SoulslikeCharacter.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 
 
 void USLGA_LightAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
@@ -10,12 +11,32 @@ void USLGA_LightAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
     UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : called")); // debug
 
+    // 1. Wait for the 'Start' event from your ANS
+    UAbilityTask_WaitGameplayEvent* WaitStart = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, trace_start_tag);
+    if (WaitStart) {
+        WaitStart->EventReceived.AddDynamic(this, &USLGA_LightAttack::TraceStart);
+        WaitStart->ReadyForActivation();
+    }
+    else {
+        UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : trace start event listener failed"));
+    }
+
+
+    // 2. Wait for the 'End' event to stop everything
+    UAbilityTask_WaitGameplayEvent* WaitEnd = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, trace_end_tag);
+    if (WaitEnd) {
+        WaitEnd->EventReceived.AddDynamic(this, &USLGA_LightAttack::TraceEnd);
+        WaitEnd->ReadyForActivation();
+    }
+    else {
+        UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : tarce end event listener failed"));
+    }
+
+
     hitchecker = USLAT_LightAttack_hit_checker::Create(
         this, 
         socket_weapon_base, socket_weapon_tip, socket_weapon_length,
         BoxHalfExtents);
-
-    hitchecker->ReadyForActivation();
 }
 
 void USLGA_LightAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
@@ -24,6 +45,16 @@ void USLGA_LightAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, cons
     hitchecker->EndTask();
     UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack EndAbility() : called")); // debug
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+void USLGA_LightAttack::TraceStart(FGameplayEventData Payload)
+{
+    hitchecker->ReadyForActivation();
+}
+
+void USLGA_LightAttack::TraceEnd(FGameplayEventData Payload)
+{
+    hitchecker->EndTask();
 }
 
 USLAT_LightAttack_hit_checker* USLAT_LightAttack_hit_checker::Create(UGameplayAbility* OwningAbility, 
