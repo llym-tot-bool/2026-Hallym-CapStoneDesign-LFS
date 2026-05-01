@@ -22,6 +22,13 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Combat")
     FGameplayTag HitEventTag;
 
+    UPROPERTY(EditAnywhere, Category = "Collision")
+    FVector BoxHalfExtents = FVector(15.f, 15.f, 50.f);
+
+    UPROPERTY(EditAnywhere, Category = "Collision")
+    FName SocketName = "Socket_weapon_base";
+
+
     virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
         const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 

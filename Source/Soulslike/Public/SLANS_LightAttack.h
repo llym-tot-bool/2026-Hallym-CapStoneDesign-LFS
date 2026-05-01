@@ -19,7 +19,10 @@ class SOULSLIKE_API USLANS_LightAttack : public UAnimNotifyState
 public:
     // The Tag to send to the GA (must match HitEventTag in GA)
     UPROPERTY(EditAnywhere, Category = "GAS")
-    FGameplayTag EventTag;
+    FGameplayTag EventTagStart;
+
+    UPROPERTY(EditAnywhere, Category = "GAS")
+    FGameplayTag EventTagEnd;
 
     UPROPERTY(EditAnywhere, Category = "Collision")
     FVector BoxHalfExtents = FVector(50.f, 50.f, 50.f);
@@ -39,13 +42,6 @@ public:
     virtual void NotifyEnd(
         USkeletalMeshComponent* MeshComp,
         UAnimSequenceBase* Animation,
-        const FAnimNotifyEventReference& EventReference
-    ) override;
-
-    virtual void NotifyTick(
-        USkeletalMeshComponent* MeshComp, 
-        UAnimSequenceBase* Animation, 
-        float FrameDeltaTime, 
         const FAnimNotifyEventReference& EventReference
     ) override;
 };
