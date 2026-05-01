@@ -28,8 +28,13 @@ void USLGA_LightAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
         return;
     }
 
-    FVector TraceLocation = mesh_comp->GetSocketLocation(SocketName);
-    FRotator TraceRotation = mesh_comp->GetSocketRotation(SocketName);
+    FVector trace_start = mesh_comp->GetSocketLocation(socket_weapon_base);
+    FRotator trace_rotation = mesh_comp->GetSocketRotation(socket_weapon_base);
+
+    FVector trace_tip = mesh_comp->GetSocketLocation(socket_weapon_tip);
+    
+    FVector trace_dir = (trace_tip - trace_start).GetUnsafeNormal();
+    FVector trace_end = trace_start + (trace_dir * socket_weapon_length);
 
     TArray<AActor*> ActorsToIgnore;
     ActorsToIgnore.Add(avatar);
@@ -39,9 +44,9 @@ void USLGA_LightAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     // Use BoxTrace for Crescent shapes, or SphereTrace for thrusts
     bool bHit = UKismetSystemLibrary::BoxTraceMulti(
         avatar,
-        TraceLocation, TraceLocation, // Start and End are same for a static sweep per tick
+        trace_start, trace_end, // Start and End are same for a static sweep per tick
         BoxHalfExtents,
-        TraceRotation,
+        trace_rotation,
         UEngineTypes::ConvertToTraceType(ECC_Pawn), // Or your custom Weapon channel
         false,
         ActorsToIgnore,

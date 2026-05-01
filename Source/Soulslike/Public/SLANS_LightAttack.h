@@ -24,11 +24,6 @@ public:
     UPROPERTY(EditAnywhere, Category = "GAS")
     FGameplayTag EventTagEnd;
 
-    UPROPERTY(EditAnywhere, Category = "Collision")
-    FVector BoxHalfExtents = FVector(50.f, 50.f, 50.f);
-
-    UPROPERTY(EditAnywhere, Category = "Collision")
-    FName SocketName = "Socket_weapon_base";
 
 public:
 

@@ -23,10 +23,16 @@ protected:
     FGameplayTag HitEventTag;
 
     UPROPERTY(EditAnywhere, Category = "Collision")
-    FVector BoxHalfExtents = FVector(15.f, 15.f, 50.f);
+    FVector BoxHalfExtents = FVector(15.f, 15.f, 15.f);
 
     UPROPERTY(EditAnywhere, Category = "Collision")
-    FName SocketName = "Socket_weapon_base";
+    FName socket_weapon_base = "Socket_weapon_base";
+
+    UPROPERTY(EditAnywhere, Category = "Collision")
+    FName socket_weapon_tip = "Socket_weapon_tip";
+
+    UPROPERTY(EditAnywhere, Category = "Collision")
+    float socket_weapon_length = 50.0f;
 
 
     virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
