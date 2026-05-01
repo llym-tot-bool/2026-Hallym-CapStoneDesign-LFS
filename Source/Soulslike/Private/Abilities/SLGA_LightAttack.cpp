@@ -8,36 +8,68 @@ void USLGA_LightAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-	HitActors.Empty(); // Safety clear
+    UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : called")); // debug
 
-    AActor* avatar = GetAvatarActorFromActorInfo();
-    if (!avatar) {
-        UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : no avatar"));
-        return;
-    }
+    hitchecker = USLAT_LightAttack_hit_checker::Create(
+        this, 
+        socket_weapon_base, socket_weapon_tip, socket_weapon_length,
+        BoxHalfExtents);
+
+    hitchecker->ReadyForActivation();
+}
+
+void USLGA_LightAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
+	const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+{
+    hitchecker->EndTask();
+    UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack EndAbility() : called")); // debug
+    Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+USLAT_LightAttack_hit_checker* USLAT_LightAttack_hit_checker::Create(UGameplayAbility* OwningAbility, 
+    FName socket_start_name, FName socket_end_name, 
+    float trace_length, FVector boxHalfExtents)
+{
+    USLAT_LightAttack_hit_checker* hit_checker = NewAbilityTask<USLAT_LightAttack_hit_checker>(OwningAbility);
+    hit_checker->socket_base_name = socket_start_name;
+    hit_checker->socket_tip_name = socket_end_name;
+    hit_checker->trace_length = trace_length;
+    hit_checker->boxHalfExtents = boxHalfExtents;
+    
+    hit_checker->actorsToIgnore.Empty();
+    if (!hit_checker->IgnoreSelf()) return nullptr;
+    
+    hit_checker->bTickingTask = true;
+    return hit_checker;
+}
+
+bool USLAT_LightAttack_hit_checker::IgnoreSelf()
+{
+    AActor* avatar = GetAvatarActor();
+    if (!avatar) return false;
+    actorsToIgnore.Add(avatar);
+    return true;
+}
+
+void USLAT_LightAttack_hit_checker::TickTask(float DeltaTime)
+{
+    Super::TickTask(DeltaTime);
+
+    AActor* avatar = GetAvatarActor();
+    if (!avatar) return;
 
     ASoulslikeCharacter* character = Cast<ASoulslikeCharacter>(avatar);
-    if (!character) {
-        UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : cast avatar to character failed"));
-        return;
-    }
+    if (!character) return;
 
     USkeletalMeshComponent* mesh_comp = character->GetMesh();
-    if (!mesh_comp) {
-        UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : get mesh failed"));
-        return;
-    }
+    if (!mesh_comp) return;
 
-    FVector trace_start = mesh_comp->GetSocketLocation(socket_weapon_base);
-    FRotator trace_rotation = mesh_comp->GetSocketRotation(socket_weapon_base);
+    FVector trace_start = mesh_comp->GetSocketLocation(socket_base_name);
+    FRotator trace_rotation = mesh_comp->GetSocketRotation(socket_base_name);
+    FVector socket_tip_loc = mesh_comp->GetSocketLocation(socket_tip_name);
 
-    FVector trace_tip = mesh_comp->GetSocketLocation(socket_weapon_tip);
-    
-    FVector trace_dir = (trace_tip - trace_start).GetUnsafeNormal();
-    FVector trace_end = trace_start + (trace_dir * socket_weapon_length);
-
-    TArray<AActor*> ActorsToIgnore;
-    ActorsToIgnore.Add(avatar);
+    FVector trace_dir = (socket_tip_loc - trace_start).GetUnsafeNormal();
+    FVector trace_end = trace_start + (trace_dir * trace_length);
 
     TArray<FHitResult> OutHits;
 
@@ -45,11 +77,11 @@ void USLGA_LightAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     bool bHit = UKismetSystemLibrary::BoxTraceMulti(
         avatar,
         trace_start, trace_end, // Start and End are same for a static sweep per tick
-        BoxHalfExtents,
+        boxHalfExtents,
         trace_rotation,
         UEngineTypes::ConvertToTraceType(ECC_Pawn), // Or your custom Weapon channel
         false,
-        ActorsToIgnore,
+        actorsToIgnore,
         EDrawDebugTrace::ForOneFrame, // Great for debugging your crescent shape!
         OutHits,
         true
@@ -57,32 +89,18 @@ void USLGA_LightAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
     if (bHit) {
         for (const FHitResult& hitresult : OutHits) {
-            UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : hit"))
+            AActor* hitActor = hitresult.GetActor();
+            if (!hitActor) continue;
+            if (actorsToIgnore.Contains(hitActor)) continue;
+
+            actorsToIgnore.Add(hitActor);
+            EffectOnHit(hitActor);
         }
     }
-
-    UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : end"));
 }
 
-void USLGA_LightAttack::HandleHitDetection(FGameplayEventData Payload)
+void USLAT_LightAttack_hit_checker::EffectOnHit(AActor* hitActor)
 {
-    UE_LOG(LogTemp, Display, TEXT("HandleHitDetection called"))
-
-    AActor* Target = const_cast<AActor*>(Payload.Target.Get());
-
-    if (Target && !HitActors.Contains(Target))
-    {
-        HitActors.Add(Target);
-        GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, TEXT("LightAttack Hit Landed!"));
-
-        // Apply Gameplay Effects (Damage, Knockback) here
-        // GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectToTarget(...)
-    }
-}
-
-void USLGA_LightAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
-	const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
-{
-    HitActors.Empty(); // Clean up memory
-    Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+    FString actorName = hitActor->GetName();
+    UE_LOG(LogTemp, Display, TEXT("SLAT_LightAttack EffectOnHit() : hit = %s"), *actorName);
 }

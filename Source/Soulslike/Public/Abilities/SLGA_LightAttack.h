@@ -2,21 +2,42 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
+#include "Abilities/Tasks/AbilityTask.h"
 
 #include "SLGA_LightAttack.generated.h"
 
 /**
  * 
  */
+UCLASS()
+class SOULSLIKE_API USLAT_LightAttack_hit_checker: public UAbilityTask
+{
+    GENERATED_BODY()
+public:
+    // This allows the GA to create the task easily
+    static USLAT_LightAttack_hit_checker* Create(UGameplayAbility* OwningAbility, 
+        FName socket_base_name, FName socket_tip_name, 
+        float trace_length, FVector boxHalfExtents);
+
+    bool IgnoreSelf();
+
+    virtual void TickTask(float DeltaTime) override;
+    void EffectOnHit(AActor* hitActor);
+
+private:
+    FName socket_base_name;
+    FName socket_tip_name;
+    float trace_length;
+    FVector boxHalfExtents;
+    TArray<AActor*> actorsToIgnore;
+};
+
 UCLASS(abstract)
 class SOULSLIKE_API USLGA_LightAttack : public UGameplayAbility
 {
 	GENERATED_BODY()
 
 protected:
-    // This is where we store who we've already hit during THIS specific execution
-    UPROPERTY(BlueprintReadOnly, Category = "Combat")
-    TArray<AActor*> HitActors;
 
     // The Tag we listen for from the AnimNotifyState
     UPROPERTY(EditDefaultsOnly, Category = "Combat")
@@ -34,14 +55,13 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Collision")
     float socket_weapon_length = 50.0f;
 
+    USLAT_LightAttack_hit_checker* hitchecker;
 
     virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
         const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
-    // Function called when the AnimNotifyState detects a hit
-    UFUNCTION(BlueprintCallable, Category = "Combat")
-    void HandleHitDetection(FGameplayEventData Payload);
-
     virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
         const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 };
+
+
