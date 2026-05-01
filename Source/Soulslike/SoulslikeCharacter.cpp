@@ -134,18 +134,6 @@ void ASoulslikeCharacter::Look(const FInputActionValue& Value)
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
 }
 
-//void ASoulslikeCharacter::LightAttack()
-//{
-//	if (ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>()) {
-//		UAbilitySystemComponent* ASC = ps->GetAbilitySystemComponent();
-//
-//		if (ASC) {
-//			FGameplayTag attackTag = FGameplayTag::RequestGameplayTag(FName("PlayerAbility.Attack.Light"));
-//			ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(attackTag));
-//		}
-//	}
-//}
-
 void ASoulslikeCharacter::AttackBase0()
 {
 	if (ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>()) {
@@ -204,11 +192,6 @@ void ASoulslikeCharacter::DoJumpEnd()
 	// signal the character to stop jumping
 	StopJumping();
 }
-
-//void ASoulslikeCharacter::DoLightAttack()
-//{
-//	LightAttack();
-//}
 
 void ASoulslikeCharacter::DoAttackBase0()
 {

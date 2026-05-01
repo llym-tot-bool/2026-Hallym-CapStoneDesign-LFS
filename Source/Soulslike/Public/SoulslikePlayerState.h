@@ -13,6 +13,24 @@
 /**
  * 
  */
+
+UENUM(BlueprintType)
+enum class ESL_WeaponType : uint8 {
+	none UMETA(DisplayName = "none"),
+	katana UMETA(DisplayName = "Katana")
+};
+
+USTRUCT(BlueprintType)
+struct FSL_MeleeStyle {
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "GAS")
+	ESL_WeaponType weapon_type;
+
+	UPROPERTY(EditAnywhere, Category = "GAS")
+	TArray<TSubclassOf<UGameplayAbility>> abilities;
+};
+
 UCLASS()
 class SOULSLIKE_API ASoulslikePlayerState : public APlayerState, public IAbilitySystemInterface
 {
@@ -25,6 +43,8 @@ public:
 
 	void AddDefaultAbilities();
 
+	void ChangeMeleeStyle(ESL_WeaponType weapon_type);
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	class UAbilitySystemComponent* asc;
@@ -33,5 +53,10 @@ protected:
 	class USLCharacterAttributeSet* AttributeSet;
 
 	UPROPERTY(EditAnywhere, Category = "GAS")
-	TArray<TSubclassOf<class UGameplayAbility>> defaultAbilities;
+	ESL_WeaponType defaultWeaponType = ESL_WeaponType::none;
+
+	UPROPERTY(EditAnywhere, Category = "GAS")
+	TArray<FSL_MeleeStyle> MeleeStyles;
+
+	TArray<FGameplayAbilitySpecHandle> currentAbilityHandles;
 };

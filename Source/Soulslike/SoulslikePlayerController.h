@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "SoulslikePlayerState.h"
+
 #include "SoulslikePlayerController.generated.h"
 
 class UInputMappingContext;
@@ -13,6 +15,18 @@ class UUserWidget;
  *  Basic PlayerController class for a third person game
  *  Manages input mappings
  */
+
+USTRUCT(BlueprintType)
+struct FSL_MeleeControlStyle {
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	ESL_WeaponType weapon_type;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputMappingContext> IMC;
+};
+
 UCLASS(abstract)
 class ASoulslikePlayerController : public APlayerController
 {
@@ -22,23 +36,17 @@ protected:
 
 	/** Input Mapping Contexts */
 	UPROPERTY(EditAnywhere, Category ="Input|Input Mappings")
-	TArray<UInputMappingContext*> DefaultMappingContexts;
+	TArray<TObjectPtr<UInputMappingContext>> DefaultMappingContexts;
 
-	/** Input Mapping Contexts */
-	UPROPERTY(EditAnywhere, Category="Input|Input Mappings")
-	TArray<UInputMappingContext*> MobileExcludedMappingContexts;
+	UPROPERTY(EditAnywhere, Category = "Input|Input Mappings")
+	TArray<FSL_MeleeControlStyle> MeleeControlStyles;
 
-	/** Mobile controls widget to spawn */
-	UPROPERTY(EditAnywhere, Category="Input|Touch Controls")
-	TSubclassOf<UUserWidget> MobileControlsWidgetClass;
+	UPROPERTY(EditAnywhere, Category = "Input|Input Mappings")
+	ESL_WeaponType defaultWeaponType = ESL_WeaponType::none;
 
-	/** Pointer to the mobile controls widget */
-	UPROPERTY()
-	TObjectPtr<UUserWidget> MobileControlsWidget;
+	TObjectPtr<UInputMappingContext> currentIMC;
 
-	/** If true, the player will use UMG touch controls even if not playing on mobile platforms */
-	UPROPERTY(EditAnywhere, Config, Category = "Input|Touch Controls")
-	bool bForceTouchControls = false;
+protected:
 
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
@@ -46,7 +54,7 @@ protected:
 	/** Input mapping context setup */
 	virtual void SetupInputComponent() override;
 
-	/** Returns true if the player should use UMG touch controls */
-	bool ShouldUseTouchControls() const;
+	UFUNCTION(BlueprintCallable)
+	void ChangeMeleeControlStyle(ESL_WeaponType weapon_type);
 
 };

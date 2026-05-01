@@ -65,10 +65,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MouseLookAction;
 
-	// light attack action IA_light_attack
-	//UPROPERTY(EditAnywhere, Category = "Input")
-	//UInputAction* LightAttackAction;
-
 	UPROPERTY(EditAnywhere, Category = "Input")
 	FInputActionTagPair AttackBase0_pair;
 
@@ -131,10 +127,6 @@ public:
 	/** Handles jump pressed inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
-
-	// handle light attack
-	//UFUNCTION(BlueprintCallable, Category = "Input")
-	//virtual void DoLightAttack();
 
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoAttackBase0();

@@ -12,25 +12,6 @@
 void ASoulslikePlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// only spawn touch controls on local player controllers
-	if (ShouldUseTouchControls() && IsLocalPlayerController())
-	{
-		// spawn the mobile controls widget
-		MobileControlsWidget = CreateWidget<UUserWidget>(this, MobileControlsWidgetClass);
-
-		if (MobileControlsWidget)
-		{
-			// add the controls to the player screen
-			MobileControlsWidget->AddToPlayerScreen(0);
-
-		} else {
-
-			UE_LOG(LogSoulslike, Error, TEXT("Could not spawn mobile controls widget."));
-
-		}
-
-	}
 }
 
 void ASoulslikePlayerController::SetupInputComponent()
@@ -48,20 +29,30 @@ void ASoulslikePlayerController::SetupInputComponent()
 				Subsystem->AddMappingContext(CurrentContext, 0);
 			}
 
-			// only add these IMCs if we're not using mobile touch input
-			if (!ShouldUseTouchControls())
-			{
-				for (UInputMappingContext* CurrentContext : MobileExcludedMappingContexts)
-				{
-					Subsystem->AddMappingContext(CurrentContext, 0);
+			for (FSL_MeleeControlStyle& eachCotnrolStyle : MeleeControlStyles) {
+				if (defaultWeaponType == eachCotnrolStyle.weapon_type) {
+					currentIMC = eachCotnrolStyle.IMC;
+					Subsystem->AddMappingContext(eachCotnrolStyle.IMC, 1);
 				}
+				break;
 			}
 		}
 	}
 }
 
-bool ASoulslikePlayerController::ShouldUseTouchControls() const
+void ASoulslikePlayerController::ChangeMeleeControlStyle(ESL_WeaponType weapon_type)
 {
-	// are we on a mobile platform? Should we force touch?
-	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls;
+	if (IsLocalPlayerController()) {
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer())) {
+			Subsystem->RemoveMappingContext(currentIMC);
+			
+			for (FSL_MeleeControlStyle& eachCotnrolStyle : MeleeControlStyles) {
+				if (weapon_type == eachCotnrolStyle.weapon_type) {
+					currentIMC = eachCotnrolStyle.IMC;
+					Subsystem->AddMappingContext(eachCotnrolStyle.IMC, 1);
+				}
+				break;
+			}
+		}
+	}
 }
