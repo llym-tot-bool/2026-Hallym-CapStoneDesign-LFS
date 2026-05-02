@@ -8,6 +8,7 @@
 
 class UInputMappingContext;
 class APlatformingCharacter;
+class UUserWidget;
 
 /**
  *  Simple Player Controller for a third person platforming game
@@ -33,9 +34,17 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input|Touch Controls")
 	TSubclassOf<UUserWidget> MobileControlsWidgetClass;
 
+	/** Character HUD widget to spawn */
+	UPROPERTY(EditAnywhere, Category="UI")
+	TSubclassOf<UUserWidget> CharacterHUDWidgetClass;
+
 	/** Pointer to the mobile controls widget */
 	UPROPERTY()
 	TObjectPtr<UUserWidget> MobileControlsWidget;
+
+	/** Pointer to the character HUD widget */
+	UPROPERTY()
+	TObjectPtr<UUserWidget> CharacterHUDWidget;
 
 	/** If true, the player will use UMG touch controls even if not playing on mobile platforms */
 	UPROPERTY(EditAnywhere, Config, Category = "Input|Touch Controls")

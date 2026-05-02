@@ -15,18 +15,12 @@ public class Soulslike : ModuleRules
 			"InputCore",
 			"EnhancedInput",
 			"GameplayAbilities",
-			"GameplayTags",
-			"GameplayTasks",
 			"AIModule",
-			"NavigationSystem",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate",
-            "GameplayAbilities",
-            "GameplayTags",
-            "GameplayTasks"
-        });
+			"Slate"
+		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 

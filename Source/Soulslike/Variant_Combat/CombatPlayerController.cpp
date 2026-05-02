@@ -17,6 +17,17 @@ void ACombatPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// only spawn HUD on local player controllers
+	if (IsLocalPlayerController() && CharacterHUDWidgetClass)
+	{
+		CharacterHUDWidget = CreateWidget<UUserWidget>(this, CharacterHUDWidgetClass);
+
+		if (CharacterHUDWidget)
+		{
+			CharacterHUDWidget->AddToPlayerScreen(10);
+		}
+	}
+
 	// only spawn touch controls on local player controllers
 	if (ShouldUseTouchControls() && IsLocalPlayerController())
 	{
