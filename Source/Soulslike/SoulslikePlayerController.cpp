@@ -7,6 +7,7 @@
 #include "InputMappingContext.h"
 #include "Blueprint/UserWidget.h"
 #include "Soulslike.h"
+#include "UI/SoulslikeHUDWidget.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 void ASoulslikePlayerController::BeginPlay()
@@ -75,4 +76,16 @@ bool ASoulslikePlayerController::ShouldUseTouchControls() const
 {
 	// are we on a mobile platform? Should we force touch?
 	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls;
+}
+
+void ASoulslikePlayerController::SetHUDVitals(float Health, float MaxHealth, float Stamina, float MaxStamina, float Mana, float MaxMana)
+{
+	if (!HUDWidget)
+	{
+		return;
+	}
+
+	HUDWidget->UpdateHealth(Health, MaxHealth);
+	HUDWidget->UpdateStamina(Stamina, MaxStamina);
+	HUDWidget->UpdateMana(Mana, MaxMana);
 }

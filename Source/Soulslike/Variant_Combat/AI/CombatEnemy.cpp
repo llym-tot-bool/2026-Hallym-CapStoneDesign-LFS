@@ -54,7 +54,14 @@ void ACombatEnemy::DoAIComboAttack()
 	bIsAttacking = true;
 
 	// choose how many times we're going to attack
-	TargetComboCount = FMath::RandRange(1, ComboSectionNames.Num() - 1);
+	if (ComboSectionNames.Num() >= 2)
+	{
+		TargetComboCount = FMath::RandRange(1, ComboSectionNames.Num() - 1);
+	}
+	else
+	{
+		TargetComboCount = 1;
+	}
 
 	// reset the attack counter
 	CurrentComboAttack = 0;

@@ -38,7 +38,11 @@ protected:
 	bool bEnablePlayerChase = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI", meta = (ClampMin = 100.0))
-	float MaxChaseDistance = 2000.0f;
+	float MaxChaseDistance = 1200.0f;
+
+	// Half-angle of forward detection cone in degrees.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception", meta = (ClampMin = 1.0, ClampMax = 180.0))
+	float ChaseDetectionHalfAngleDeg = 45.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Wander")
 	bool bEnablePeriodicMove = false;
@@ -63,6 +67,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	float GetMaxChaseDistance() const { return MaxChaseDistance; }
+
+	UFUNCTION(BlueprintCallable, Category = "AI|Perception")
+	float GetChaseDetectionHalfAngleDeg() const { return ChaseDetectionHalfAngleDeg; }
 
 	UFUNCTION(BlueprintCallable, Category = "AI|Wander")
 	void StartPeriodicMove();

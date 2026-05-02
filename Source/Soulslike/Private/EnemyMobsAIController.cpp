@@ -1,7 +1,7 @@
-#include "EnemyMobsAIController.h"
+#include <EnemyMobsAIController.h>
 #include "enemy_mobs.h"
-#include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
+#include "Kismet/GameplayStatics.h"
 
 AEnemyMobsAIController::AEnemyMobsAIController()
 {
@@ -60,6 +60,19 @@ void AEnemyMobsAIController::UpdateChaseTarget()
 
 	const float DistanceToTarget = FVector::Dist(EnemyPawn->GetActorLocation(), TargetActor->GetActorLocation());
 	if (DistanceToTarget > EnemyPawn->GetMaxChaseDistance())
+	{
+		StopMovement();
+		CachedTargetActor = nullptr;
+		return;
+	}
+
+	const FVector ToTarget2D = (TargetActor->GetActorLocation() - EnemyPawn->GetActorLocation()).GetSafeNormal2D();
+	const FVector Forward2D = EnemyPawn->GetActorForwardVector().GetSafeNormal2D();
+	const float ConeHalfAngleDeg = EnemyPawn->GetChaseDetectionHalfAngleDeg();
+	const float CosThreshold = FMath::Cos(FMath::DegreesToRadians(ConeHalfAngleDeg));
+	const float DotToTarget = FVector::DotProduct(Forward2D, ToTarget2D);
+
+	if (DotToTarget < CosThreshold)
 	{
 		StopMovement();
 		CachedTargetActor = nullptr;
