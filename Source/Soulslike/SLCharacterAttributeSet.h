@@ -30,8 +30,11 @@ public:
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Power);
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, MaxLevel);
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Level);
+	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Damage);
 	
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+	
+	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
 	
 protected:
 	UPROPERTY(BlueprintReadOnly, Category="Attribute")
@@ -63,4 +66,11 @@ protected:
 	FGameplayAttributeData MaxLevel;
 	UPROPERTY(BlueprintReadOnly, Category="Attribute")
 	FGameplayAttributeData Level;
+	
+	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	FGameplayAttributeData Damage;
+
+private:
+	/** Timer used to clear State.Stamina.Spending after the player stops spending stamina. */
+	FTimerHandle StaminaSpendingClearTimer;
 };

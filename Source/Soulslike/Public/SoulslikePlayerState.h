@@ -23,10 +23,15 @@ public:
 
 	virtual class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
+	void AddDefaultAbilities();
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
-	class UAbilitySystemComponent* AbilitySystemComponent;
+	class UAbilitySystemComponent* asc;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	class USLCharacterAttributeSet* AttributeSet;
+
+	UPROPERTY(EditAnywhere, Category = "GAS")
+	TArray<TSubclassOf<class UGameplayAbility>> defaultAbilities;
 };

@@ -16,7 +16,6 @@ public class Soulslike : ModuleRules
 			"EnhancedInput",
 			"GameplayAbilities",
 			"GameplayTags",
-			"GameplayTasks",
 			"AIModule",
 			"NavigationSystem",
 			"StateTreeModule",
