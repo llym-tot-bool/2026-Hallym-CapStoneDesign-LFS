@@ -8,6 +8,7 @@
 #include "Abilities/SLSkillTypes.h"
 #include "AbilitySystemInterface.h"
 #include "Abilities/GameplayAbility.h"
+#include "SoulslikePlayerController.h"
 
 #include "SoulslikeCharacter.generated.h"
 
@@ -22,17 +23,6 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
  *  A simple player-controllable third person character
  *  Implements a controllable orbiting camera
  */
-
-USTRUCT(BlueprintType)
-struct FInputActionTagPair {
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	UInputAction* InputAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	FGameplayTag GameplayTag;
-};
 
 UCLASS(abstract)
 class ASoulslikeCharacter : public ACharacter, public IAbilitySystemInterface
@@ -50,37 +40,35 @@ class ASoulslikeCharacter : public ACharacter, public IAbilitySystemInterface
 protected:
 
 	/** Jump Input Action */
-	UPROPERTY(EditAnywhere, Category="Input")
+	UPROPERTY(EditAnywhere, Category="SL Input")
 	UInputAction* JumpAction;
 
 	/** Move Input Action */
-	UPROPERTY(EditAnywhere, Category="Input")
+	UPROPERTY(EditAnywhere, Category="SL Input")
 	UInputAction* MoveAction;
 
 	/** Look Input Action */
-	UPROPERTY(EditAnywhere, Category="Input")
+	UPROPERTY(EditAnywhere, Category="SL Input")
 	UInputAction* LookAction;
 
 	/** Mouse Look Input Action */
-	UPROPERTY(EditAnywhere, Category="Input")
+	UPROPERTY(EditAnywhere, Category="SL Input")
 	UInputAction* MouseLookAction;
 
-	UPROPERTY(EditAnywhere, Category = "Input")
-	FInputActionTagPair AttackBase0_pair;
+	UPROPERTY(EditAnywhere, Category = "SL Input")
+	USLDA_MeleeControlStyles* SLDA_MeleeControlStyles;
 
 	/** Skill slot 1 input action. */
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditAnywhere, Category = "SL Input")
 	UInputAction* SkillOneAction;
 
 	/** Skill slot 2 input action. */
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditAnywhere, Category = "SL Input")
 	UInputAction* SkillTwoAction;
 
 public:
-
 	/** Constructor */
 	ASoulslikeCharacter();	
-
 
 protected:
 
@@ -98,10 +86,7 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
-	// ligth attack
-	//void LightAttack();
-
-	void AttackBase0();
+	void MeleeAction(const FGameplayTag ability_tag);
 
 	/** Input handlers — route to DoActivateSkill with the corresponding slot. */
 	void SkillOne();
@@ -127,9 +112,6 @@ public:
 	/** Handles jump pressed inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
-
-	UFUNCTION(BlueprintCallable, Category = "Input")
-	virtual void DoAttackBase0();
 
 	/** Activate the skill bound to the given slot. Safe to call from BP / UI. */
 	UFUNCTION(BlueprintCallable, Category = "Input|Skill")

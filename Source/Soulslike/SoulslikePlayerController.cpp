@@ -18,6 +18,10 @@ void ASoulslikePlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 
+	UE_LOG(LogTemp, Display, 
+		TEXT("[SL debug] SetupInputComponent() : default weapon type = %s"),
+		*UEnum::GetValueAsString(SLDA_MeleeControlStyles->defaultWeaponType)); // debug
+
 	// only add IMCs for local player controllers
 	if (IsLocalPlayerController())
 	{
@@ -29,8 +33,14 @@ void ASoulslikePlayerController::SetupInputComponent()
 				Subsystem->AddMappingContext(CurrentContext, 0);
 			}
 
-			for (FSL_MeleeControlStyle& eachCotnrolStyle : MeleeControlStyles) {
-				if (defaultWeaponType == eachCotnrolStyle.weapon_type) {
+			if (!SLDA_MeleeControlStyles) {
+				UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! SetupInputComponent() : SLDA_MeleeControlStyles is null"));
+				return;
+			}
+
+			for (FSL_MeleeControlStyle& eachCotnrolStyle : SLDA_MeleeControlStyles->MeleeControlStyles) {
+				if (SLDA_MeleeControlStyles->defaultWeaponType == eachCotnrolStyle.weapon_type) {
+					currentWeaponType = eachCotnrolStyle.weapon_type;
 					currentIMC = eachCotnrolStyle.IMC;
 					Subsystem->AddMappingContext(eachCotnrolStyle.IMC, 1);
 				}
@@ -42,14 +52,28 @@ void ASoulslikePlayerController::SetupInputComponent()
 
 void ASoulslikePlayerController::ChangeMeleeControlStyle(ESL_WeaponType weapon_type)
 {
+	UE_LOG(LogTemp, Display, 
+		TEXT("[SL debug] ChangeMeleeControlStyle() : weapon type = %s"),
+		*UEnum::GetValueAsString(weapon_type)); // debug
+
 	if (IsLocalPlayerController()) {
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer())) {
 			Subsystem->RemoveMappingContext(currentIMC);
+
+			if (!SLDA_MeleeControlStyles) {
+				UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! SetupInputComponent() : SLDA_MeleeControlStyles is null"));
+				return;
+			}
 			
-			for (FSL_MeleeControlStyle& eachCotnrolStyle : MeleeControlStyles) {
+			for (FSL_MeleeControlStyle& eachCotnrolStyle : SLDA_MeleeControlStyles->MeleeControlStyles) {
 				if (weapon_type == eachCotnrolStyle.weapon_type) {
+					currentWeaponType = weapon_type;
 					currentIMC = eachCotnrolStyle.IMC;
 					Subsystem->AddMappingContext(eachCotnrolStyle.IMC, 1);
+
+					UE_LOG(LogTemp, Display, 
+						TEXT("[SL debug] ChangeMeleeControlStyle() : current weapon type = %s"),
+						*UEnum::GetValueAsString(currentWeaponType));
 				}
 				break;
 			}

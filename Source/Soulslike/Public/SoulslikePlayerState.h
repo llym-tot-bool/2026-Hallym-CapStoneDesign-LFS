@@ -24,10 +24,10 @@ USTRUCT(BlueprintType)
 struct FSL_MeleeStyle {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, Category = "GAS")
+	UPROPERTY(EditAnywhere, Category = "SL GAS")
 	ESL_WeaponType weapon_type;
 
-	UPROPERTY(EditAnywhere, Category = "GAS")
+	UPROPERTY(EditAnywhere, Category = "SL GAS")
 	TArray<TSubclassOf<UGameplayAbility>> abilities;
 };
 
@@ -46,16 +46,16 @@ public:
 	void ChangeMeleeStyle(ESL_WeaponType weapon_type);
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SL GAS")
 	class UAbilitySystemComponent* asc;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SL GAS")
 	class USLCharacterAttributeSet* AttributeSet;
 
-	UPROPERTY(EditAnywhere, Category = "GAS")
+	UPROPERTY(EditAnywhere, Category = "SL GAS")
 	ESL_WeaponType defaultWeaponType = ESL_WeaponType::none;
 
-	UPROPERTY(EditAnywhere, Category = "GAS")
+	UPROPERTY(EditAnywhere, Category = "SL GAS")
 	TArray<FSL_MeleeStyle> MeleeStyles;
 
 	TArray<FGameplayAbilitySpecHandle> currentAbilityHandles;

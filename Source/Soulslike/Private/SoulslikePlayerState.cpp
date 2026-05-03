@@ -18,6 +18,10 @@ UAbilitySystemComponent* ASoulslikePlayerState::GetAbilitySystemComponent() cons
 
 void ASoulslikePlayerState::AddDefaultAbilities()
 {
+	UE_LOG(LogTemp, Display, 
+		TEXT("[SL debug] AddDefaultAbilities() : default weapon type = %s"), 
+		*UEnum::GetValueAsString(defaultWeaponType)); // debug
+
 	if (GetLocalRole() != ROLE_Authority || !asc) { return; }
 
 	currentAbilityHandles.Empty();
@@ -34,6 +38,10 @@ void ASoulslikePlayerState::AddDefaultAbilities()
 
 void ASoulslikePlayerState::ChangeMeleeStyle(ESL_WeaponType weapon_type)
 {
+	UE_LOG(LogTemp, Display, 
+		TEXT("[SL debug] ChangeMeleeStyle() : %s"),
+		*UEnum::GetValueAsString(weapon_type)); // debug
+
 	for (FGameplayAbilitySpecHandle& abilityHandle : currentAbilityHandles) {
 		asc->ClearAbility(abilityHandle);
 	}

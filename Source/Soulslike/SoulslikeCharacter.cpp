@@ -18,6 +18,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "GameplayEffect.h"
+#include "SoulslikePlayerController.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -75,12 +76,28 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASoulslikeCharacter::Look);
 
-		// light attack
-		//EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::LightAttack);
+		// bind for all Melee set
+		TObjectPtr<UEnhancedInputComponent> EIC = Cast<UEnhancedInputComponent>(InputComponent);
+		if (!EIC) {
+			UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! PossessedBy() : EnhancedInputComponent not found"));
+			return;
+		}
 
-		// attack base 0
-		EnhancedInputComponent->BindAction(AttackBase0_pair.InputAction, ETriggerEvent::Started, 
-			this, &ASoulslikeCharacter::AttackBase0);
+		if (!SLDA_MeleeControlStyles) {
+			UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! SetupPlayerInputComponent() : SLDA_MeleeControlStyles is null"));
+			return;
+		}
+
+		for (const FSL_MeleeControlStyle& meleeControlStyle : SLDA_MeleeControlStyles->MeleeControlStyles) {
+			for (const FSLInputActionTagPair& IA_tag_pair : meleeControlStyle.IA_Tag_Pairs) {
+				EIC->BindAction(IA_tag_pair.InputAction, ETriggerEvent::Started,
+					this, &ASoulslikeCharacter::MeleeAction, IA_tag_pair.GameplayTag);
+			}
+
+			UE_LOG(LogTemp, Display,
+				TEXT("[SL debug] PossessedBy() : melee input binding = %s completed"),
+				*UEnum::GetValueAsString(meleeControlStyle.weapon_type));
+		}
 
 		// skills
 		if (SkillOneAction)
@@ -108,6 +125,9 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 
 		ps->AddDefaultAbilities();
 	}
+
+	
+
 }
 
 void ASoulslikeCharacter::Move(const FInputActionValue& Value)
@@ -134,13 +154,15 @@ void ASoulslikeCharacter::Look(const FInputActionValue& Value)
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
 }
 
-void ASoulslikeCharacter::AttackBase0()
+void ASoulslikeCharacter::MeleeAction(const FGameplayTag ability_tag)
 {
-	if (ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>()) {
-		UAbilitySystemComponent* ASC = ps->GetAbilitySystemComponent();
+	UE_LOG(LogTemp, Display, 
+		TEXT("[SL debug] MeleeAction() : ability tag = %s"),
+		*ability_tag.ToString());
 
-		if (ASC) {
-			ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AttackBase0_pair.GameplayTag));
+	if (TObjectPtr<ASoulslikePlayerState> ps = GetPlayerState<ASoulslikePlayerState>()) {
+		if (TObjectPtr<UAbilitySystemComponent> asc = ps->GetAbilitySystemComponent()) {
+			asc->TryActivateAbilitiesByTag(FGameplayTagContainer(ability_tag));
 		}
 	}
 }
@@ -191,11 +213,6 @@ void ASoulslikeCharacter::DoJumpEnd()
 {
 	// signal the character to stop jumping
 	StopJumping();
-}
-
-void ASoulslikeCharacter::DoAttackBase0()
-{
-	AttackBase0();
 }
 
 void ASoulslikeCharacter::SkillOne()
