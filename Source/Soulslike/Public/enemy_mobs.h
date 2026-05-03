@@ -9,6 +9,7 @@
 
 class UAbilitySystemComponent;
 class USLCharacterAttributeSet;
+class UAnimMontage;
 struct FTimerHandle;
 
 UCLASS()
@@ -37,12 +38,48 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
 	bool bEnablePlayerChase = true;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Movement", meta = (ClampMin = 0.0))
+	float DefaultMoveSpeed = 130.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Movement", meta = (ClampMin = 0.0))
+	float ChaseMoveSpeed = 260.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI", meta = (ClampMin = 100.0))
 	float MaxChaseDistance = 1200.0f;
 
 	// Half-angle of forward detection cone in degrees.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception", meta = (ClampMin = 1.0, ClampMax = 180.0))
 	float ChaseDetectionHalfAngleDeg = 45.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Perception|Debug")
+	bool bDebugDrawDetectionRange = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Debug")
+	bool bDebugDrawAttackRange = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat", meta = (ClampMin = 0.0))
+	float BasicAttackRange = 90.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat", meta = (ClampMin = 0.1))
+	float BasicAttackCooldown = 1.2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat", meta = (ClampMin = 0.0))
+	float BasicAttackBaseDamage = 12.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat", meta = (ClampMin = 0.0))
+	float BasicAttackPowerScale = 0.8f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Stats", meta = (ClampMin = 0.0))
+	float InitialPowerStat = 20.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation")
+	TObjectPtr<UAnimMontage> BasicAttackMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation")
+	TObjectPtr<UAnimMontage> BasicAttackMontageAlt;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation", meta = (ClampMin = 0.0))
+	float BasicAttackHitDelay = 0.25f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Wander")
 	bool bEnablePeriodicMove = false;
@@ -65,15 +102,52 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	bool IsPlayerChaseEnabled() const { return bEnablePlayerChase; }
 
+	UFUNCTION(BlueprintCallable, Category = "AI|Movement")
+	float GetDefaultMoveSpeed() const { return DefaultMoveSpeed; }
+
+	UFUNCTION(BlueprintCallable, Category = "AI|Movement")
+	float GetChaseMoveSpeed() const { return ChaseMoveSpeed; }
+
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	float GetMaxChaseDistance() const { return MaxChaseDistance; }
 
 	UFUNCTION(BlueprintCallable, Category = "AI|Perception")
 	float GetChaseDetectionHalfAngleDeg() const { return ChaseDetectionHalfAngleDeg; }
 
+	UFUNCTION(BlueprintCallable, Category = "AI|Perception|Debug")
+	bool IsDebugDrawDetectionRangeEnabled() const { return bDebugDrawDetectionRange; }
+
+	UFUNCTION(BlueprintCallable, Category = "AI|Combat|Debug")
+	bool IsDebugDrawAttackRangeEnabled() const { return bDebugDrawAttackRange; }
+
+	UFUNCTION(BlueprintCallable, Category = "AI|Combat")
+	float GetBasicAttackRange() const { return BasicAttackRange; }
+
+	UFUNCTION(BlueprintCallable, Category = "AI|Combat")
+	bool TryBasicAttack(AActor* TargetActor);
+
+	UFUNCTION(BlueprintCallable, Category = "AI|Combat")
+	bool IsTargetInBasicAttackContact(AActor* TargetActor) const;
+
+	UFUNCTION(BlueprintCallable, Category = "AI|Combat")
+	bool IsBasicAttackInProgress() const { return bBasicAttackInProgress; }
+
 	UFUNCTION(BlueprintCallable, Category = "AI|Wander")
 	void StartPeriodicMove();
 
 	UFUNCTION(BlueprintCallable, Category = "AI|Wander")
 	void StopPeriodicMove();
+
+private:
+	float LastBasicAttackTime = -1000.0f;
+	bool bBasicAttackInProgress = false;
+	FTimerHandle BasicAttackHitTimer;
+	TWeakObjectPtr<AActor> PendingAttackTarget;
+
+	float ComputeBasicAttackDamage() const;
+	bool IsTargetTouchingAttackRange(AActor* TargetActor) const;
+	void ResolveBasicAttackHit();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlayBasicAttackMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);
 };
