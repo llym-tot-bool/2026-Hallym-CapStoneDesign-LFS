@@ -4,7 +4,6 @@
 #include "Weapons/SLWeaponTypes.h"
 
 #include "AbilitySystemComponent.h"
-#include "Soulslike.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -41,7 +40,6 @@ bool USLGameplayAbility_Dodge::CanActivateAbility(const FGameplayAbilitySpecHand
 		return false;
 	}
 	
-	// Block dodge if there isn't enough stamina available.
 	if (ActorInfo)
 	{
 		if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
@@ -73,8 +71,6 @@ void USLGameplayAbility_Dodge::ActivateAbility(const FGameplayAbilitySpecHandle 
 
 	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
 
-	// Apply stamina cost via SetByCaller. We pass a negative number so the
-	// additive modifier inside USLGE_StaminaCost subtracts from Stamina.
 	if (StaminaCostGEClass)
 	{
 		FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();

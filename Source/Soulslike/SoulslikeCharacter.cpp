@@ -15,14 +15,11 @@
 #include "AbilitySystemComponent.h"
 #include "GameplayTagContainer.h"
 #include "Abilities/SLSkillTypes.h"
-#include "Abilities/SLGE_StaminaCost.h"
 #include "Abilities/SLGE_StaminaRegen.h"
-#include "SLCharacterAttributeSet.h"
 #include "Combat/SLLockOnComponent.h"
 #include "Weapons/SLWeaponTypes.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
-#include "GameplayEffect.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
