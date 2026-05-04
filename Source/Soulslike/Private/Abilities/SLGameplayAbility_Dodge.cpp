@@ -1,6 +1,5 @@
 #include "Abilities/SLGameplayAbility_Dodge.h"
 
-#include "Abilities/SLGE_StaminaCost.h"
 #include "SLCharacterAttributeSet.h"
 #include "Weapons/SLWeaponTypes.h"
 
@@ -15,8 +14,6 @@ USLGameplayAbility_Dodge::USLGameplayAbility_Dodge()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
-
-	StaminaCostGEClass = USLGE_StaminaCost::StaticClass();
 	
 	const FGameplayTag DodgingTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Dodging, /*ErrorIfNotFound*/ false);
 	const FGameplayTag InvulnTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Invulnerable, /*ErrorIfNotFound*/ false);
