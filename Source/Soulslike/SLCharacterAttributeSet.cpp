@@ -90,6 +90,7 @@ void USLCharacterAttributeSet::PostGameplayEffectExecute(const struct FGameplayE
 	// the "regen pauses during spend, resumes shortly after" behavior.
 	if (Data.EvaluatedData.Attribute == GetStaminaAttribute() && Data.EvaluatedData.Magnitude < 0.f)
 	{
+		
 		UAbilitySystemComponent* TargetASC = &Data.Target;
 		const FGameplayTag SpendingTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_StaminaSpending, /*ErrorIfNotFound*/ false);
 		if (TargetASC && SpendingTag.IsValid())

@@ -5,6 +5,7 @@
 #include "Weapons/SLWeaponTypes.h"
 
 #include "AbilitySystemComponent.h"
+#include "Soulslike.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -31,9 +32,7 @@ USLGameplayAbility_Dodge::USLGameplayAbility_Dodge()
 	const FGameplayTag ActivateTag = FGameplayTag::RequestGameplayTag(SLCombatTags::Activate_Dodge, /*ErrorIfNotFound*/ false);
 	if (ActivateTag.IsValid())
 	{
-		FGameplayTagContainer AssetTags;
-		AssetTags.AddTag(ActivateTag);
-		SetAssetTags(AssetTags);
+		AbilityTags.AddTag(ActivateTag);
 	}
 	
 }
@@ -50,7 +49,8 @@ bool USLGameplayAbility_Dodge::CanActivateAbility(const FGameplayAbilitySpecHand
 	{
 		if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
 		{
-			if (ASC->GetNumericAttribute(USLCharacterAttributeSet::GetStaminaAttribute()) < StaminaCost)
+			const float CurrentStamina = ASC->GetNumericAttribute(USLCharacterAttributeSet::GetStaminaAttribute());
+			if (CurrentStamina < StaminaCost)
 			{
 				return false;
 			}

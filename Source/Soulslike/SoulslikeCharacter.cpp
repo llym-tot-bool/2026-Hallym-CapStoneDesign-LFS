@@ -119,20 +119,15 @@ void ASoulslikeCharacter::ClearHitList()
 
 void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-
-		// Moving
+		
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASoulslikeCharacter::Move);
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &ASoulslikeCharacter::Look);
 
-		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASoulslikeCharacter::Look);
 
-		// light attack
 		EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::LightAttack);
 
-		// skills
 		if (SkillOneAction)
 		{
 			EnhancedInputComponent->BindAction(SkillOneAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::SkillOne);
@@ -142,21 +137,15 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 			EnhancedInputComponent->BindAction(SkillTwoAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::SkillTwo);
 		}
 
-		// dodge
 		if (DodgeAction)
 		{
 			EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::Dodge);
 		}
 
-		// lock-on
 		if (LockOnAction)
 		{
 			EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::LockOnToggle);
 		}
-	}
-	else
-	{
-		UE_LOG(LogSoulslike, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
 }
 
@@ -237,17 +226,12 @@ void ASoulslikeCharacter::DoMove(float Right, float Forward)
 {
 	if (GetController() != nullptr)
 	{
-		// find out which way is forward
 		const FRotator Rotation = GetController()->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
-		// get forward vector
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-
-		// get right vector 
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-		// add movement 
 		AddMovementInput(ForwardDirection, Forward);
 		AddMovementInput(RightDirection, Right);
 	}
@@ -257,15 +241,9 @@ void ASoulslikeCharacter::DoLook(float Yaw, float Pitch)
 {
 	if (GetController() != nullptr)
 	{
-		// add yaw and pitch input to controller
 		AddControllerYawInput(Yaw);
 		AddControllerPitchInput(Pitch);
 	}
-}
-
-void ASoulslikeCharacter::DoLightAttack()
-{
-	LightAttack();
 }
 
 void ASoulslikeCharacter::SkillOne()
@@ -301,37 +279,6 @@ void ASoulslikeCharacter::DoDodge()
 			ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(DodgeTag));
 		}
 	}
-}
-
-bool ASoulslikeCharacter::ApplyStaminaCost(float Cost)
-{
-	if (Cost <= 0.f) { return false; }
-
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (!ASC) { return false; }
-
-	FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
-	Ctx.AddSourceObject(this);
-	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(USLGE_StaminaCost::StaticClass(), 1.f, Ctx);
-	if (!SpecHandle.IsValid()) { return false; }
-
-	const FGameplayTag CostTag = FGameplayTag::RequestGameplayTag(SLCombatTags::SetByCaller_StaminaCost, /*ErrorIfNotFound*/ false);
-	if (CostTag.IsValid())
-	{
-		// Pass negative so the additive modifier subtracts from Stamina.
-		SpecHandle.Data->SetSetByCallerMagnitude(CostTag, -Cost);
-	}
-	ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-	return true;
-}
-
-bool ASoulslikeCharacter::HasEnoughStamina(float RequiredAmount) const
-{
-	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
-	{
-		return ASC->GetNumericAttribute(USLCharacterAttributeSet::GetStaminaAttribute()) >= RequiredAmount;
-	}
-	return false;
 }
 
 bool ASoulslikeCharacter::IsDead() const

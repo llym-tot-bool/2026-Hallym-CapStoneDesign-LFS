@@ -10,8 +10,6 @@ USLGE_StaminaCost::USLGE_StaminaCost()
 	DurationPolicy = EGameplayEffectDurationType::Instant;
 
 	// Stamina += SetByCaller("Data.Cost.Stamina"). Callers pass a NEGATIVE value
-	// (the helper APIs do the negation) so that the same GE class can also be
-	// used to refund stamina if ever needed by passing a positive number.
 	FGameplayModifierInfo Mod;
 	Mod.Attribute = USLCharacterAttributeSet::GetStaminaAttribute();
 	Mod.ModifierOp = EGameplayModOp::Additive;
