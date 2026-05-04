@@ -10,7 +10,7 @@
 
 namespace
 {
-	constexpr float StaminaRegenResumeDelay = 0.8f;
+	constexpr float StaminaRegenResumeDelay = 1.2f;
 }
 
 USLCharacterAttributeSet::USLCharacterAttributeSet() :

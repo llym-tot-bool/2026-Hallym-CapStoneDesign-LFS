@@ -9,13 +9,13 @@ USLGE_StaminaRegen::USLGE_StaminaRegen()
 	DurationPolicy = EGameplayEffectDurationType::Infinite;
 
 	// Tick 10 times per second; 5 stamina per tick = 50/sec — fast Sekiro-ish recovery.
-	Period = 0.1f;
+	Period = 0.05f;
 	bExecutePeriodicEffectOnApplication = false;
 
 	FGameplayModifierInfo Mod;
 	Mod.Attribute = USLCharacterAttributeSet::GetStaminaAttribute();
 	Mod.ModifierOp = EGameplayModOp::Additive;
-	Mod.ModifierMagnitude = FScalableFloat(5.f);
+	Mod.ModifierMagnitude = FScalableFloat(2.f);
 	Modifiers.Add(Mod);
 
 	// Pause regen ticks while the target is spending stamina. The tag is set in
