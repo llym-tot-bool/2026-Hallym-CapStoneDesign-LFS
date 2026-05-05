@@ -10,12 +10,10 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
-#include "Soulslike.h"
 #include "SoulslikePlayerState.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayTagContainer.h"
 #include "Abilities/SLSkillTypes.h"
-#include "Abilities/SLGE_StaminaRegen.h"
 #include "Combat/SLLockOnComponent.h"
 #include "Weapons/SLWeaponTypes.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -157,16 +155,17 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 
 		ps->AddDefaultAbilities();
 
-		// Apply the always-on stamina regen GE. It pauses itself via
-		// OngoingTagRequirements while State.Stamina.Spending is on the ASC.
 		if (ASC && HasAuthority())
 		{
-			FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
-			Ctx.AddSourceObject(this);
-			FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(USLGE_StaminaRegen::StaticClass(), 1.f, Ctx);
-			if (Spec.IsValid())
+			for (auto Effect : StartingEffectClasses)
 			{
-				ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+				FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
+				Ctx.AddSourceObject(this);
+				FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(Effect, 1.f, Ctx);
+				if (Spec.IsValid())
+				{
+					ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+				}
 			}
 		}
 	}

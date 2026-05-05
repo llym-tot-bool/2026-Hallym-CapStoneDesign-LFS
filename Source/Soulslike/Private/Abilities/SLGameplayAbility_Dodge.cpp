@@ -28,7 +28,9 @@ USLGameplayAbility_Dodge::USLGameplayAbility_Dodge()
 	const FGameplayTag ActivateTag = FGameplayTag::RequestGameplayTag(SLCombatTags::Activate_Dodge, /*ErrorIfNotFound*/ false);
 	if (ActivateTag.IsValid())
 	{
-		AbilityTags.AddTag(ActivateTag);
+		FGameplayTagContainer Tags = GetAssetTags();
+		Tags.AddTag(ActivateTag);
+		SetAssetTags(Tags);
 	}
 	
 }

@@ -10,6 +10,7 @@
 
 #include "SoulslikeCharacter.generated.h"
 
+class UGameplayEffect;
 class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
@@ -112,6 +113,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void ClearHitList();
+	
+	UPROPERTY(EditDefaultsOnly, Category = "GAS")
+	TArray<TSubclassOf<UGameplayEffect>> StartingEffectClasses;
 
 public:
 
