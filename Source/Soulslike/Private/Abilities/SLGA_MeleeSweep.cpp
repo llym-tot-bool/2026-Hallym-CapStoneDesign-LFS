@@ -113,14 +113,21 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
         UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : tarce end event listener failed"));
     }
 
-
+    // wait for free to move event
+    UAbilityTask_WaitGameplayEvent* WaitFreeToMove = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, freeToMove_tag);
+    if (WaitFreeToMove) {
+        WaitFreeToMove->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::FreeToMove);
+        WaitFreeToMove->ReadyForActivation();
+    }
+    else {
+        UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : free to move even listener failed"));
+    }
 }
 
 void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
     const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-    TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
-    asc->RemoveLooseGameplayTag(state_tag);
+
 
     hitchecker->EndTask();
     UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack EndAbility() : called")); // debug
@@ -136,6 +143,12 @@ void USLGA_MeleeSweep::TraceStart(FGameplayEventData Payload)
 void USLGA_MeleeSweep::TraceEnd(FGameplayEventData Payload)
 {
     hitchecker->EndTask();
+}
+
+void USLGA_MeleeSweep::FreeToMove(FGameplayEventData Payload)
+{
+    TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
+    asc->RemoveLooseGameplayTag(state_tag);
 }
 
 void USLAT_MeeleSweep_hit_checker::EffectOnHit(AActor* hitActor)

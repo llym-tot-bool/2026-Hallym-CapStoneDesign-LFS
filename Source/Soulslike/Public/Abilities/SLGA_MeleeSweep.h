@@ -50,6 +50,9 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Combat")
     FGameplayTag state_tag;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Combat")
+    FGameplayTag freeToMove_tag;
+
     UPROPERTY(EditAnywhere, Category = "Collision")
     FVector BoxHalfExtents = FVector(15.f, 15.f, 15.f);
 
@@ -75,4 +78,7 @@ protected:
 
     UFUNCTION()
     void TraceEnd(FGameplayEventData Payload);
+
+    UFUNCTION()
+    void FreeToMove(FGameplayEventData Payload);
 };

@@ -39,6 +39,12 @@ class ASoulslikeCharacter : public ACharacter, public IAbilitySystemInterface
 	
 protected:
 
+	UPROPERTY(EditAnywhere, Category = "SL Input")
+	FGameplayTag tag_tryingToMove;
+
+	UPROPERTY(EditAnywhere, Category = "SL Input")
+	FGameplayTag tag_isAttacking;
+
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, Category="SL Input")
 	UInputAction* JumpAction;
@@ -66,6 +72,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "SL Input")
 	UInputAction* SkillTwoAction;
 
+
+
 public:
 	/** Constructor */
 	ASoulslikeCharacter();	
@@ -82,6 +90,7 @@ protected:
 
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
+	void OnMoveStopped(const FInputActionValue& Value);
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);

@@ -71,6 +71,8 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASoulslikeCharacter::Move);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &ASoulslikeCharacter::OnMoveStopped);
+
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &ASoulslikeCharacter::Look);
 
 		// Looking
@@ -133,17 +135,42 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 
 void ASoulslikeCharacter::Move(const FInputActionValue& Value)
 {
-	if (ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>()) {
-		if (ps->GetAbilitySystemComponent()->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Attacking")))) {
-			return; // don't move while attacking 
-		}
-	}
-
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
+	TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponent();
+	if (!asc) {
+		UE_LOG(LogTemp, Display, TEXT("[SL debug] Move() : ASC is null"));
+		return;
+	}
+
+
+	if (!MovementVector.IsNearlyZero()) {
+		if (!asc->HasMatchingGameplayTag(tag_tryingToMove)) {
+			asc->AddLooseGameplayTag(tag_tryingToMove); // tag for informing whether player is trying to move
+		}
+	}
+
+	if (asc->HasMatchingGameplayTag(tag_isAttacking)) {
+		return; // don't move while attacking 
+	}
+
 	// route the input
 	DoMove(MovementVector.X, MovementVector.Y);
+}
+
+void ASoulslikeCharacter::OnMoveStopped(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Display, TEXT("[SL debug] OnMoveStopped() : player input for movement is stopped"));
+	TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponent();
+	if (!asc) {
+		UE_LOG(LogTemp, Display, TEXT("[SL debug] Move() : ASC is null"));
+		return;
+	}
+
+	if (asc->HasMatchingGameplayTag(tag_isAttacking)) {
+		asc->RemoveLooseGameplayTag(tag_tryingToMove);
+	}
 }
 
 void ASoulslikeCharacter::Look(const FInputActionValue& Value)
