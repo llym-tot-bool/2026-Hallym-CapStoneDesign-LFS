@@ -79,7 +79,7 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		// bind for all Melee set
 		TObjectPtr<UEnhancedInputComponent> EIC = Cast<UEnhancedInputComponent>(InputComponent);
 		if (!EIC) {
-			UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! PossessedBy() : EnhancedInputComponent not found"));
+			UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! SetupPlayerInputComponent() : EnhancedInputComponent not found"));
 			return;
 		}
 
@@ -92,10 +92,14 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 			for (const FSLInputActionTagPair& IA_tag_pair : meleeControlStyle.IA_Tag_Pairs) {
 				EIC->BindAction(IA_tag_pair.InputAction, ETriggerEvent::Started,
 					this, &ASoulslikeCharacter::MeleeAction, IA_tag_pair.GameplayTag);
+				
+				UE_LOG(LogTemp, Display, 
+					TEXT("[SL debug] SetupPlayerInputComponent() : melee IA binding for tag = %s completed"),
+					*IA_tag_pair.GameplayTag.ToString());
 			}
 
 			UE_LOG(LogTemp, Display,
-				TEXT("[SL debug] PossessedBy() : melee input binding = %s completed"),
+				TEXT("[SL debug] SetupPlayerInputComponent() : melee weapon input binding = %s completed"),
 				*UEnum::GetValueAsString(meleeControlStyle.weapon_type));
 		}
 
@@ -125,9 +129,6 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 
 		ps->AddDefaultAbilities();
 	}
-
-	
-
 }
 
 void ASoulslikeCharacter::Move(const FInputActionValue& Value)

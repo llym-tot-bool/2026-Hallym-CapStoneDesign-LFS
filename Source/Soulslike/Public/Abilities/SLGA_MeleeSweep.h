@@ -47,6 +47,9 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Combat")
     FGameplayTag trace_end_tag;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Combat")
+    FGameplayTag state_tag;
+
     UPROPERTY(EditAnywhere, Category = "Collision")
     FVector BoxHalfExtents = FVector(15.f, 15.f, 15.f);
 

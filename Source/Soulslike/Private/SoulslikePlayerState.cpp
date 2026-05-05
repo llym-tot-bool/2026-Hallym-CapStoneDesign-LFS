@@ -30,9 +30,22 @@ void ASoulslikePlayerState::AddDefaultAbilities()
 		if (eachMeleeStyle.weapon_type == defaultWeaponType) {
 			for (const TSubclassOf<UGameplayAbility>& eachAbility : eachMeleeStyle.abilities) {
 				currentAbilityHandles.Add(asc->GiveAbility(FGameplayAbilitySpec(eachAbility, 1)));
+
+				UE_LOG(LogTemp, Display, 
+					TEXT("[SL debug] AddDefaultAbilities() : add default ability = %s"),
+					*eachAbility->GetName());
 			}
 			break;
 		}
+	}
+
+	if (currentAbilityHandles.Num() == 0) {
+		UE_LOG(LogTemp, Display, 
+			TEXT("[SL debug] !!! AddDefaultAbilities() : current ability count is 0. may be some problem?"));
+	}
+	else {
+		UE_LOG(LogTemp, Display, 
+			TEXT("[SL debug] AddDefaultAbilities() : current ability count is %d"), currentAbilityHandles.Num());
 	}
 }
 

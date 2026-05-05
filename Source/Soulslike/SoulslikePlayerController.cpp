@@ -31,6 +31,9 @@ void ASoulslikePlayerController::SetupInputComponent()
 			for (UInputMappingContext* CurrentContext : DefaultMappingContexts)
 			{
 				Subsystem->AddMappingContext(CurrentContext, 0);
+				UE_LOG(LogTemp, Display, 
+					TEXT("{SL debug] SetupInputComponent() : setup defualt IMC = %s"),
+					*CurrentContext->GetFName().ToString());
 			}
 
 			if (!SLDA_MeleeControlStyles) {
@@ -42,9 +45,18 @@ void ASoulslikePlayerController::SetupInputComponent()
 				if (SLDA_MeleeControlStyles->defaultWeaponType == eachCotnrolStyle.weapon_type) {
 					currentWeaponType = eachCotnrolStyle.weapon_type;
 					currentIMC = eachCotnrolStyle.IMC;
-					Subsystem->AddMappingContext(eachCotnrolStyle.IMC, 1);
+					Subsystem->AddMappingContext(currentIMC, 1);
+
+					UE_LOG(LogTemp, Display, 
+						TEXT("[SL debug] SetupInputComponent() : current weapon IMC = %s"),
+						*currentIMC->GetFName().ToString());
+					break;
 				}
-				break;
+			}
+
+			if (!currentIMC) {
+				UE_LOG(LogTemp, Display,
+					TEXT("[SL debug] !!! SetupInputComponent() : setup defualt weapon IMC failed."));
 			}
 		}
 	}
@@ -61,7 +73,7 @@ void ASoulslikePlayerController::ChangeMeleeControlStyle(ESL_WeaponType weapon_t
 			Subsystem->RemoveMappingContext(currentIMC);
 
 			if (!SLDA_MeleeControlStyles) {
-				UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! SetupInputComponent() : SLDA_MeleeControlStyles is null"));
+				UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! ChangeMeleeControlStyle() : SLDA_MeleeControlStyles is null"));
 				return;
 			}
 			

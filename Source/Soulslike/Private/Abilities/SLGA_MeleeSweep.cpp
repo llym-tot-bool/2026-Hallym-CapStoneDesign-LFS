@@ -85,6 +85,14 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
     UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : called")); // debug
 
+    TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
+    asc->AddLooseGameplayTag(state_tag);
+
+    hitchecker = USLAT_MeeleSweep_hit_checker::Create(
+        this,
+        socket_weapon_base, socket_weapon_tip, socket_weapon_length,
+        BoxHalfExtents);
+
     // 1. Wait for the 'Start' event from your ANS
     UAbilityTask_WaitGameplayEvent* WaitStart = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, trace_start_tag);
     if (WaitStart) {
@@ -105,15 +113,15 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
         UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : tarce end event listener failed"));
     }
 
-    hitchecker = USLAT_MeeleSweep_hit_checker::Create(
-        this,
-        socket_weapon_base, socket_weapon_tip, socket_weapon_length,
-        BoxHalfExtents);
+
 }
 
 void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
     const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+    TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
+    asc->RemoveLooseGameplayTag(state_tag);
+
     hitchecker->EndTask();
     UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack EndAbility() : called")); // debug
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
