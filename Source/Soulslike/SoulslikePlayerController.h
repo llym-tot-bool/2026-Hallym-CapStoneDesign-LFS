@@ -27,6 +27,12 @@ struct FSLInputActionTagPair {
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SL Input")
 	FGameplayTag GameplayTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SL Input")
+	FGameplayTag ComboTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SL Input")
+	FGameplayTag ComboGrant_tag;
 };
 
 USTRUCT(BlueprintType)

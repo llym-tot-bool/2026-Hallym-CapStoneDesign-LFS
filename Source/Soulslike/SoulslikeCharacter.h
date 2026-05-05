@@ -95,7 +95,7 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
-	void MeleeAction(const FGameplayTag ability_tag);
+	void MeleeAction(const FGameplayTag ability_tag, const FGameplayTag combo_tag, const FGameplayTag comboGrant_tag);
 
 	/** Input handlers — route to DoActivateSkill with the corresponding slot. */
 	void SkillOne();

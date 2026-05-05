@@ -93,7 +93,8 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		for (const FSL_MeleeControlStyle& meleeControlStyle : SLDA_MeleeControlStyles->MeleeControlStyles) {
 			for (const FSLInputActionTagPair& IA_tag_pair : meleeControlStyle.IA_Tag_Pairs) {
 				EIC->BindAction(IA_tag_pair.InputAction, ETriggerEvent::Started,
-					this, &ASoulslikeCharacter::MeleeAction, IA_tag_pair.GameplayTag);
+					this, &ASoulslikeCharacter::MeleeAction, 
+					IA_tag_pair.GameplayTag, IA_tag_pair.ComboTag, IA_tag_pair.ComboGrant_tag);
 				
 				UE_LOG(LogTemp, Display, 
 					TEXT("[SL debug] SetupPlayerInputComponent() : melee IA binding for tag = %s completed"),
@@ -182,17 +183,28 @@ void ASoulslikeCharacter::Look(const FInputActionValue& Value)
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
 }
 
-void ASoulslikeCharacter::MeleeAction(const FGameplayTag ability_tag)
+void ASoulslikeCharacter::MeleeAction(const FGameplayTag ability_tag, const FGameplayTag combo_tag, const FGameplayTag comboGrant_tag)
 {
 	UE_LOG(LogTemp, Display, 
 		TEXT("[SL debug] MeleeAction() : ability tag = %s"),
 		*ability_tag.ToString());
 
-	if (TObjectPtr<ASoulslikePlayerState> ps = GetPlayerState<ASoulslikePlayerState>()) {
-		if (TObjectPtr<UAbilitySystemComponent> asc = ps->GetAbilitySystemComponent()) {
+	TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponent();
+	if (asc) {
+
+		if (asc->HasMatchingGameplayTag(combo_tag)) {
+			// continue next combo attack
+			
+			if (!asc->HasMatchingGameplayTag(comboGrant_tag)) {
+				asc->AddLooseGameplayTag(comboGrant_tag);
+			}
+		}
+		else {
+			// start from initial combo
 			asc->TryActivateAbilitiesByTag(FGameplayTagContainer(ability_tag));
 		}
 	}
+
 }
 
 UAbilitySystemComponent* ASoulslikeCharacter::GetAbilitySystemComponent() const

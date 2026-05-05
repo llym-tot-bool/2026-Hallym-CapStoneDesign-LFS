@@ -56,6 +56,21 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Combat")
     FGameplayTag tryingToMove_tag;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Combat")
+    FGameplayTag comboInputStart_tag;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Combat")
+    FGameplayTag comboStart_tag;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Combat")
+    FGameplayTag comboGrant_tag;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Combat")
+    TObjectPtr<UGameplayAbility> comboAbility;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Combat")
+    FGameplayTag comboAbility_tag;
+
     UPROPERTY(EditAnywhere, Category = "Collision")
     FVector BoxHalfExtents = FVector(15.f, 15.f, 15.f);
 
@@ -84,4 +99,10 @@ protected:
 
     UFUNCTION()
     void FreeToMove(FGameplayEventData Payload);
+
+    UFUNCTION()
+    void InputAsCombo(FGameplayEventData Payload);
+
+    UFUNCTION()
+    void Combo(FGameplayEventData Payload);
 };

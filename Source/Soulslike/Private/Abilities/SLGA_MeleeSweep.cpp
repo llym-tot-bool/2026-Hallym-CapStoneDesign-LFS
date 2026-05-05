@@ -95,20 +95,20 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
         BoxHalfExtents);
 
     // 1. Wait for the 'Start' event from your ANS
-    UAbilityTask_WaitGameplayEvent* WaitStart = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, trace_start_tag);
-    if (WaitStart) {
-        WaitStart->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::TraceStart);
-        WaitStart->ReadyForActivation();
+    UAbilityTask_WaitGameplayEvent* WaitTraceStart = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, trace_start_tag);
+    if (WaitTraceStart) {
+        WaitTraceStart->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::TraceStart);
+        WaitTraceStart->ReadyForActivation();
     }
     else {
         UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : trace start event listener failed"), *myName);
     }
 
     // 2. Wait for the 'End' event to stop everything
-    UAbilityTask_WaitGameplayEvent* WaitEnd = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, trace_end_tag);
-    if (WaitEnd) {
-        WaitEnd->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::TraceEnd);
-        WaitEnd->ReadyForActivation();
+    UAbilityTask_WaitGameplayEvent* WaitTraceEnd = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, trace_end_tag);
+    if (WaitTraceEnd) {
+        WaitTraceEnd->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::TraceEnd);
+        WaitTraceEnd->ReadyForActivation();
     }
     else {
         UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : tarce end event listener failed"), *myName);
@@ -123,6 +123,26 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     else {
         UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : free to move event listener failed"), *myName);
     }
+
+    // combo input wait
+    UAbilityTask_WaitGameplayEvent* WaitComboInputStart = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, comboInputStart_tag);
+    if (WaitComboInputStart) {
+        WaitComboInputStart->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::Combo);
+        WaitComboInputStart->ReadyForActivation();
+    }
+    else {
+        UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : combo input start event listener failed"), *myName);
+    }
+
+    // combo timingwait
+    UAbilityTask_WaitGameplayEvent* WaitComboStart = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, comboStart_tag);
+    if (WaitComboInputStart) {
+        WaitComboInputStart->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::Combo);
+        WaitComboInputStart->ReadyForActivation();
+    }
+    else {
+        UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : combo input start event listener failed"), *myName);
+    }
 }
 
 void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
@@ -130,6 +150,8 @@ void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const
 {
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
     asc->RemoveLooseGameplayTag(state_tag);
+    asc->RemoveLooseGameplayTag(comboInputStart_tag);
+    asc->RemoveLooseGameplayTag(comboGrant_tag);
 
     hitchecker->EndTask();
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -156,6 +178,25 @@ void USLGA_MeleeSweep::FreeToMove(FGameplayEventData Payload)
         if (targetMontage == asc->GetCurrentMontage()) {
             asc->CurrentMontageStop(0.2f);
         }
+    }
+}
+
+void USLGA_MeleeSweep::InputAsCombo(FGameplayEventData Payload)
+{
+    TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
+    
+    asc->AddLooseGameplayTag(comboInputStart_tag);
+}
+
+void USLGA_MeleeSweep::Combo(FGameplayEventData Payload)
+{
+    TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
+
+    asc->RemoveLooseGameplayTag(comboInputStart_tag);
+
+    if (asc->HasMatchingGameplayTag(comboGrant_tag)) {
+        asc->RemoveLooseGameplayTag(comboGrant_tag);
+        asc->TryActivateAbilitiesByTag(FGameplayTagContainer(comboAbility_tag));
     }
 }
 
