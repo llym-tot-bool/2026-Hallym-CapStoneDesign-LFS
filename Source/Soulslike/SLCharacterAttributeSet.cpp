@@ -59,32 +59,45 @@ void USLCharacterAttributeSet::PreAttributeChange(const FGameplayAttribute& Attr
 	// Clamp Values to be always [0~MaxValue]
 	else if (Attribute == GetHealthAttribute())
 	{
-		NewValue = FMath::Clamp(NewValue, 0, GetMaxHealth());
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxHealth());
 	}
 	else if (Attribute == GetStaminaAttribute())
 	{
-		NewValue = FMath::Clamp(NewValue, 0, GetMaxStamina());
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxStamina());
 	}
 	else if (Attribute == GetManaAttribute())
 	{
-		NewValue = FMath::Clamp(NewValue, 0, GetMaxMana());
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxMana());
 	}
 	else if (Attribute == GetPoiseAttribute())
 	{
-		NewValue = FMath::Clamp(NewValue, 0, GetMaxPoise());
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxPoise());
 	}
 	else if (Attribute == GetPowerAttribute())
 	{
-		NewValue = FMath::Clamp(NewValue, 0, GetMaxPower());
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxPower());
 	}
 	else if (Attribute == GetLevelAttribute())
 	{
-		NewValue = FMath::Clamp(NewValue, 0, GetMaxLevel());
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxLevel());
 	}
 }
 
 void USLCharacterAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data)
 {
+	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
+	{
+		SetHealth(FMath::Clamp(GetHealth(), 0.f, GetMaxHealth()));
+	}
+	else if (Data.EvaluatedData.Attribute == GetStaminaAttribute())
+	{
+		SetStamina(FMath::Clamp(GetStamina(), 0.f, GetMaxStamina()));
+	}
+	else if (Data.EvaluatedData.Attribute == GetManaAttribute())
+	{
+		SetMana(FMath::Clamp(GetMana(), 0.f, GetMaxMana()));
+	}
+
 	// Stamina spend → set State.Stamina.Spending and (re)arm a timer to clear it.
 	// USLGE_StaminaRegen ignores ticks while the tag is present, which produces
 	// the "regen pauses during spend, resumes shortly after" behavior.
