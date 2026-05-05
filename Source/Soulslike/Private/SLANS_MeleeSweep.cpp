@@ -11,9 +11,6 @@ void USLANS_MeleeSweep::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSeque
 	float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
     Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
-    // debug start
-    GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, TEXT("SLANS_LightAttack begin"));
-    // debug end
 
     AActor* owner = MeshComp->GetOwner();
     if (!owner) return;
@@ -30,10 +27,6 @@ void USLANS_MeleeSweep::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSeque
 void USLANS_MeleeSweep::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
 	const FAnimNotifyEventReference& EventReference)
 {
-    // debug start
-    GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, TEXT("SLAND_LightAttack end."));
-    // debug end
-
     AActor* owner = MeshComp->GetOwner();
     if (!owner) return;
 
