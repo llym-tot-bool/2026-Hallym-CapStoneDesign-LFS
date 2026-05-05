@@ -83,7 +83,8 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
     Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-    UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : called")); // debug
+    FString myName = this->GetName();
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : called"), *myName); // debug
 
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
     asc->AddLooseGameplayTag(state_tag);
@@ -100,7 +101,7 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
         WaitStart->ReadyForActivation();
     }
     else {
-        UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : trace start event listener failed"));
+        UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : trace start event listener failed"), *myName);
     }
 
     // 2. Wait for the 'End' event to stop everything
@@ -110,7 +111,7 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
         WaitEnd->ReadyForActivation();
     }
     else {
-        UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : tarce end event listener failed"));
+        UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : tarce end event listener failed"), *myName);
     }
 
     // wait for free to move event
@@ -120,17 +121,17 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
         WaitFreeToMove->ReadyForActivation();
     }
     else {
-        UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack ActivateAbility() : free to move even listener failed"));
+        UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : free to move event listener failed"), *myName);
     }
 }
 
 void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
     const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-
+    TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
+    asc->RemoveLooseGameplayTag(state_tag);
 
     hitchecker->EndTask();
-    UE_LOG(LogTemp, Display, TEXT("SLGA_LightAttack EndAbility() : called")); // debug
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
@@ -148,11 +149,20 @@ void USLGA_MeleeSweep::TraceEnd(FGameplayEventData Payload)
 void USLGA_MeleeSweep::FreeToMove(FGameplayEventData Payload)
 {
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
-    asc->RemoveLooseGameplayTag(state_tag);
+
+    if (asc->HasMatchingGameplayTag(tryingToMove_tag)) {
+        TObjectPtr<const UAnimMontage> targetMontage = Cast<UAnimMontage>(Payload.OptionalObject);
+
+        if (targetMontage == asc->GetCurrentMontage()) {
+            asc->CurrentMontageStop(0.2f);
+        }
+    }
 }
 
 void USLAT_MeeleSweep_hit_checker::EffectOnHit(AActor* hitActor)
 {
+    FString myName = this->GetName();
+
     FString actorName = hitActor->GetName();
-    UE_LOG(LogTemp, Display, TEXT("SLAT_Melee EffectOnHit() : hit = %s"), *actorName);
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] %s EffectOnHit() : hit = %s"), *myName, *actorName);
 }

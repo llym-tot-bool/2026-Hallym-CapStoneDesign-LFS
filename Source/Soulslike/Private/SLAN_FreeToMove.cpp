@@ -18,20 +18,8 @@ void USLAN_FreeToMove::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBas
 	if (!owner_asc) return;
 
 	FGameplayEventData payload;
-	payload.EventTag = EventTagStart;
+	payload.EventTag = freeToMove_tag;
 	payload.Instigator = owner;
-	owner_asc->HandleGameplayEvent(EventTagStart, &payload);
-
-	//if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
-	//{
-	//	// Get the currently playing montage
-	//	UAnimMontage* CurrentMontage = AnimInstance->GetCurrentActiveMontage();
-
-	//	if (CurrentMontage)
-	//	{
-	//		// Stop the montage. 
-	//		// The float is the "Blend Out" time (e.g., 0.2s for a smooth transition)
-	//		AnimInstance->Montage_Stop(0.2f, CurrentMontage);
-	//	}
-	//}
+	payload.OptionalObject = Animation;
+	owner_asc->HandleGameplayEvent(freeToMove_tag, &payload);
 }

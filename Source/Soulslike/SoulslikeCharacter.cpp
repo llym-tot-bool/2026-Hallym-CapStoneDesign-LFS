@@ -168,7 +168,7 @@ void ASoulslikeCharacter::OnMoveStopped(const FInputActionValue& Value)
 		return;
 	}
 
-	if (asc->HasMatchingGameplayTag(tag_isAttacking)) {
+	if (asc->HasMatchingGameplayTag(tag_tryingToMove)) {
 		asc->RemoveLooseGameplayTag(tag_tryingToMove);
 	}
 }
