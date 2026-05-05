@@ -18,10 +18,10 @@ class SOULSLIKE_API USLANS_MeleeCombo : public UAnimNotifyState
 
 public:
     UPROPERTY(EditAnywhere, Category = "GAS")
-    FGameplayTag comboInputStart_tag;
+    FGameplayTag tag_inputAsCombo;
 
     UPROPERTY(EditAnywhere, Category = "GAS")
-    FGameplayTag comboStart_tag;
+    FGameplayTag tag_tryActivateCombo;
 
 public:
 

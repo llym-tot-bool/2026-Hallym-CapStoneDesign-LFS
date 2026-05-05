@@ -41,35 +41,35 @@ class SOULSLIKE_API USLGA_MeleeSweep : public UGameplayAbility
 
 protected:
 
-    UPROPERTY(EditDefaultsOnly, Category = "Combat")
-    FGameplayTag trace_start_tag;
+    UPROPERTY(EditDefaultsOnly, Category = "Combat|Trace")
+    FGameplayTag tag_traceStart;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Combat")
-    FGameplayTag trace_end_tag;
+    UPROPERTY(EditDefaultsOnly, Category = "Combat|Trace")
+    FGameplayTag tag_traceEnd;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Combat")
-    FGameplayTag state_tag;
+    UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
+    FGameplayTag tag_stateAttacking;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Combat")
-    FGameplayTag freeToMove_tag;
+    UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
+    FGameplayTag tag_freeToMove;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Combat")
-    FGameplayTag tryingToMove_tag;
+    UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
+    FGameplayTag tag_tryingToMove;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Combat")
-    FGameplayTag comboInputStart_tag;
+    UPROPERTY(EditDefaultsOnly, Category = "Combat|Combo")
+    FGameplayTag tag_inputAsCombo;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Combat")
-    FGameplayTag comboStart_tag;
+    UPROPERTY(EditDefaultsOnly, Category = "Combat|Combo")
+    FGameplayTag tag_comboGrant;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Combat")
-    FGameplayTag comboGrant_tag;
+    UPROPERTY(EditDefaultsOnly, Category = "Combat|Combo")
+    FGameplayTag tag_tryActivateCombo;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Combat")
-    TObjectPtr<UGameplayAbility> comboAbility;
+    UPROPERTY(EditDefaultsOnly, Category = "Combat|Combo")
+    TSubclassOf<UGameplayAbility> comboAbility;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Combat")
-    FGameplayTag comboAbility_tag;
+    UPROPERTY(EditDefaultsOnly, Category = "Combat|Combo")
+    FGameplayTag tag_comboAbility;
 
     UPROPERTY(EditAnywhere, Category = "Collision")
     FVector BoxHalfExtents = FVector(15.f, 15.f, 15.f);
@@ -104,5 +104,5 @@ protected:
     void InputAsCombo(FGameplayEventData Payload);
 
     UFUNCTION()
-    void Combo(FGameplayEventData Payload);
+    void TryActivateCombo(FGameplayEventData Payload);
 };

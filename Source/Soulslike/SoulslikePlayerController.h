@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "SoulslikePlayerState.h"
 #include "EnhancedInputComponent.h"
+#include "SLDA_MeleeCombat.h"
 
 #include "SoulslikePlayerController.generated.h"
 
@@ -16,51 +17,6 @@ class UUserWidget;
  *  Basic PlayerController class for a third person game
  *  Manages input mappings
  */
-
-
-USTRUCT(BlueprintType)
-struct FSLInputActionTagPair {
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SL Input")
-	UInputAction* InputAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SL Input")
-	FGameplayTag GameplayTag;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SL Input")
-	FGameplayTag ComboTag;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SL Input")
-	FGameplayTag ComboGrant_tag;
-};
-
-USTRUCT(BlueprintType)
-struct FSL_MeleeControlStyle {
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, Category = "SL Input")
-	ESL_WeaponType weapon_type;
-
-	UPROPERTY(EditAnywhere, Category = "SL Input")
-	TObjectPtr<UInputMappingContext> IMC;
-
-	UPROPERTY(EditAnywhere, Category = "SL Input")
-	TArray<FSLInputActionTagPair> IA_Tag_Pairs;
-};
-
-UCLASS(BlueprintType)
-class SOULSLIKE_API USLDA_MeleeControlStyles : public UDataAsset
-{
-	GENERATED_BODY()
-
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	ESL_WeaponType defaultWeaponType = ESL_WeaponType::none;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TArray<FSL_MeleeControlStyle> MeleeControlStyles;
-};
 
 UCLASS(abstract)
 class ASoulslikePlayerController : public APlayerController
@@ -74,10 +30,10 @@ protected:
 	TArray<TObjectPtr<UInputMappingContext>> DefaultMappingContexts;
 
 	UPROPERTY(EditAnywhere, Category = "SL Input Mappings")
-	USLDA_MeleeControlStyles* SLDA_MeleeControlStyles;
+	TObjectPtr<USLDA_MeleeCombat> SLDA_MeleeCombat;
 
 	TObjectPtr<UInputMappingContext> currentIMC;
-	ESL_WeaponType currentWeaponType;
+	FGameplayTag tag_currentWeapon;
 
 protected:
 
@@ -88,6 +44,6 @@ protected:
 	virtual void SetupInputComponent() override;
 
 	UFUNCTION(BlueprintCallable)
-	void ChangeMeleeControlStyle(ESL_WeaponType weapon_type);
+	void ChangeMeleeControlStyle(FGameplayTag weapon_tag);
 
 };

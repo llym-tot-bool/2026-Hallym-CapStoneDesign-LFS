@@ -9,6 +9,7 @@
 #include "AbilitySystemInterface.h"
 #include "Abilities/GameplayAbility.h"
 #include "SoulslikePlayerController.h"
+#include "SLDA_MeleeCombat.h"
 
 #include "SoulslikeCharacter.generated.h"
 
@@ -62,7 +63,7 @@ protected:
 	UInputAction* MouseLookAction;
 
 	UPROPERTY(EditAnywhere, Category = "SL Input")
-	USLDA_MeleeControlStyles* SLDA_MeleeControlStyles;
+	TObjectPtr<USLDA_MeleeCombat> SLDA_MeleeCombat;
 
 	/** Skill slot 1 input action. */
 	UPROPERTY(EditAnywhere, Category = "SL Input")
@@ -95,7 +96,7 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
-	void MeleeAction(const FGameplayTag ability_tag, const FGameplayTag combo_tag, const FGameplayTag comboGrant_tag);
+	void MeleeAction(const TObjectPtr<USLDA_WeaponCombo> combo);
 
 	/** Input handlers — route to DoActivateSkill with the corresponding slot. */
 	void SkillOne();

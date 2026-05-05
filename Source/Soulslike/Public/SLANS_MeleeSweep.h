@@ -19,10 +19,10 @@ class SOULSLIKE_API USLANS_MeleeSweep : public UAnimNotifyState
 public:
     // The Tag to send to the GA (must match HitEventTag in GA)
     UPROPERTY(EditAnywhere, Category = "GAS")
-    FGameplayTag EventTagStart;
+    FGameplayTag tag_traceStart;
 
     UPROPERTY(EditAnywhere, Category = "GAS")
-    FGameplayTag EventTagEnd;
+    FGameplayTag tag_traceEnd;
 
 
 public:

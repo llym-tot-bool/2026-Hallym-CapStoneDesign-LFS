@@ -19,9 +19,10 @@ void USLANS_MeleeSweep::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSeque
     if (!owner_asc) return;
 
     FGameplayEventData payload;
-    payload.EventTag = EventTagStart;
+    payload.EventTag = tag_traceStart;
     payload.Instigator = owner;
-    owner_asc->HandleGameplayEvent(EventTagStart, &payload);
+    payload.OptionalObject = this;
+    owner_asc->HandleGameplayEvent(tag_traceStart, &payload);
 }
 
 void USLANS_MeleeSweep::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
@@ -34,9 +35,10 @@ void USLANS_MeleeSweep::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenc
     if (!owner_asc) return;
 
     FGameplayEventData payload;
-    payload.EventTag = EventTagEnd;
+    payload.EventTag = tag_traceEnd;
     payload.Instigator = owner;
-    owner_asc->HandleGameplayEvent(EventTagEnd, &payload);
+    payload.OptionalObject = this;
+    owner_asc->HandleGameplayEvent(tag_traceEnd, &payload);
 
     Super::NotifyEnd(MeshComp, Animation, EventReference);
 }

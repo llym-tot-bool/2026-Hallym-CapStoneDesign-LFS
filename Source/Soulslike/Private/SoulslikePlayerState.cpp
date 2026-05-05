@@ -20,20 +20,23 @@ void ASoulslikePlayerState::AddDefaultAbilities()
 {
 	UE_LOG(LogTemp, Display, 
 		TEXT("[SL debug] AddDefaultAbilities() : default weapon type = %s"), 
-		*UEnum::GetValueAsString(defaultWeaponType)); // debug
+		*SLDA_MeleeCombat->tag_default_weapon.ToString()); // debug
 
 	if (GetLocalRole() != ROLE_Authority || !asc) { return; }
 
 	currentAbilityHandles.Empty();
 
-	for (const FSL_MeleeStyle& eachMeleeStyle : MeleeStyles) {
-		if (eachMeleeStyle.weapon_type == defaultWeaponType) {
-			for (const TSubclassOf<UGameplayAbility>& eachAbility : eachMeleeStyle.abilities) {
-				currentAbilityHandles.Add(asc->GiveAbility(FGameplayAbilitySpec(eachAbility, 1)));
+	// give default abilities
+	for (TObjectPtr<USLDA_WeaponStyle> eachWeaponStyle : SLDA_MeleeCombat->weaponStyle_list) {
+		if (eachWeaponStyle->tag_weapon == SLDA_MeleeCombat->tag_default_weapon) {
+			for (TObjectPtr<USLDA_WeaponCombo> eachWeaponCombo: eachWeaponStyle->combo_list) {
+				for (TSubclassOf<UGameplayAbility> eachGA : eachWeaponCombo->GA_list) {
+					currentAbilityHandles.Add(asc->GiveAbility(FGameplayAbilitySpec(eachGA, 1)));
+				}
 
 				UE_LOG(LogTemp, Display, 
-					TEXT("[SL debug] AddDefaultAbilities() : add default ability = %s"),
-					*eachAbility->GetName());
+					TEXT("[SL debug] AddDefaultAbilities() : add combo = %s"),
+					*eachWeaponCombo->tag_combo.ToString());
 			}
 			break;
 		}
@@ -49,11 +52,11 @@ void ASoulslikePlayerState::AddDefaultAbilities()
 	}
 }
 
-void ASoulslikePlayerState::ChangeMeleeStyle(ESL_WeaponType weapon_type)
+void ASoulslikePlayerState::ChangeMeleeStyle(FGameplayTag weapon_tag)
 {
 	UE_LOG(LogTemp, Display, 
 		TEXT("[SL debug] ChangeMeleeStyle() : %s"),
-		*UEnum::GetValueAsString(weapon_type)); // debug
+		*weapon_tag.ToString());
 
 	for (FGameplayAbilitySpecHandle& abilityHandle : currentAbilityHandles) {
 		asc->ClearAbility(abilityHandle);
@@ -61,10 +64,12 @@ void ASoulslikePlayerState::ChangeMeleeStyle(ESL_WeaponType weapon_type)
 
 	currentAbilityHandles.Empty();
 
-	for (const FSL_MeleeStyle& eachMeleeStyle : MeleeStyles) {
-		if (eachMeleeStyle.weapon_type == weapon_type) {
-			for (const TSubclassOf<UGameplayAbility>& eachAbility : eachMeleeStyle.abilities) {
-				currentAbilityHandles.Add(asc->GiveAbility(FGameplayAbilitySpec(eachAbility, 1)));
+	for (TObjectPtr<USLDA_WeaponStyle> eachWeaponStyle : SLDA_MeleeCombat->weaponStyle_list) {
+		if (eachWeaponStyle->tag_weapon == weapon_tag) {
+			for (TObjectPtr<USLDA_WeaponCombo> eachWeaponCombo : eachWeaponStyle->combo_list) {
+				for (TSubclassOf<UGameplayAbility> eachGA : eachWeaponCombo->GA_list) {
+					currentAbilityHandles.Add(asc->GiveAbility(FGameplayAbilitySpec(eachGA, 1)));
+				}
 			}
 			break;
 		}

@@ -20,7 +20,7 @@ void ASoulslikePlayerController::SetupInputComponent()
 
 	UE_LOG(LogTemp, Display, 
 		TEXT("[SL debug] SetupInputComponent() : default weapon type = %s"),
-		*UEnum::GetValueAsString(SLDA_MeleeControlStyles->defaultWeaponType)); // debug
+		*SLDA_MeleeCombat->tag_default_weapon.ToString()); // debug
 
 	// only add IMCs for local player controllers
 	if (IsLocalPlayerController())
@@ -36,18 +36,22 @@ void ASoulslikePlayerController::SetupInputComponent()
 					*CurrentContext->GetFName().ToString());
 			}
 
-			if (!SLDA_MeleeControlStyles) {
-				UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! SetupInputComponent() : SLDA_MeleeControlStyles is null"));
+			if (!SLDA_MeleeCombat) {
+				UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! SetupInputComponent() : SLDA_WeaponStyles is null"));
 				return;
 			}
 
-			for (FSL_MeleeControlStyle& eachCotnrolStyle : SLDA_MeleeControlStyles->MeleeControlStyles) {
-				if (SLDA_MeleeControlStyles->defaultWeaponType == eachCotnrolStyle.weapon_type) {
-					currentWeaponType = eachCotnrolStyle.weapon_type;
-					currentIMC = eachCotnrolStyle.IMC;
+			for (TObjectPtr<USLDA_WeaponStyle> eachWeaponStyle : SLDA_MeleeCombat->weaponStyle_list) {
+				// set default weapon style
+
+				// if weapon tag is same with default weapon tag
+				if (eachWeaponStyle->tag_weapon == SLDA_MeleeCombat->tag_default_weapon) {
+					tag_currentWeapon = SLDA_MeleeCombat->tag_default_weapon;
+					currentIMC = eachWeaponStyle->IMC;
+
 					Subsystem->AddMappingContext(currentIMC, 1);
 
-					UE_LOG(LogTemp, Display, 
+					UE_LOG(LogTemp, Display,
 						TEXT("[SL debug] SetupInputComponent() : current weapon IMC = %s"),
 						*currentIMC->GetFName().ToString());
 					break;
@@ -62,33 +66,37 @@ void ASoulslikePlayerController::SetupInputComponent()
 	}
 }
 
-void ASoulslikePlayerController::ChangeMeleeControlStyle(ESL_WeaponType weapon_type)
+void ASoulslikePlayerController::ChangeMeleeControlStyle(FGameplayTag weapon_tag)
 {
-	UE_LOG(LogTemp, Display, 
+	// remove older IMC
+	UE_LOG(LogTemp, Display,
 		TEXT("[SL debug] ChangeMeleeControlStyle() : weapon type = %s"),
-		*UEnum::GetValueAsString(weapon_type)); // debug
+		*weapon_tag.ToString());
 
-	if (IsLocalPlayerController()) {
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer())) {
+	if (!IsLocalController()) return;
+
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer())) {
+		if (currentIMC) { // remove older IMC
 			Subsystem->RemoveMappingContext(currentIMC);
+		}
 
-			if (!SLDA_MeleeControlStyles) {
-				UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! ChangeMeleeControlStyle() : SLDA_MeleeControlStyles is null"));
-				return;
-			}
-			
-			for (FSL_MeleeControlStyle& eachCotnrolStyle : SLDA_MeleeControlStyles->MeleeControlStyles) {
-				if (weapon_type == eachCotnrolStyle.weapon_type) {
-					currentWeaponType = weapon_type;
-					currentIMC = eachCotnrolStyle.IMC;
-					Subsystem->AddMappingContext(eachCotnrolStyle.IMC, 1);
+		if (!SLDA_MeleeCombat) {
+			UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! ChangeMeleeControlStyle() : SLDA_MeleeCombat is null"));
+			return;
+		}
 
-					UE_LOG(LogTemp, Display, 
-						TEXT("[SL debug] ChangeMeleeControlStyle() : current weapon type = %s"),
-						*UEnum::GetValueAsString(currentWeaponType));
-				}
-				break;
+		for (TObjectPtr<USLDA_WeaponStyle> eachWeaponStyle: SLDA_MeleeCombat->weaponStyle_list) {
+			if (weapon_tag == eachWeaponStyle->tag_weapon) {
+				tag_currentWeapon = weapon_tag;
+				currentIMC = eachWeaponStyle->IMC;
+				Subsystem->AddMappingContext(currentIMC, 1);
+
+				UE_LOG(LogTemp, Display,
+					TEXT("[SL debug] ChangeMeleeControlStyle() : current weapon type = %s"),
+					*tag_currentWeapon.ToString());
 			}
+
+			break;
 		}
 	}
-}		
+}

@@ -18,7 +18,7 @@ class SOULSLIKE_API USLAN_FreeToMove : public UAnimNotify
 
 public:
 	UPROPERTY(EditAnywhere, Category = "GAS")
-	FGameplayTag freeToMove_tag;
+	FGameplayTag tag_freeToMove;
 
 public:
 	virtual void Notify(

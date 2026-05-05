@@ -18,8 +18,8 @@ void USLAN_FreeToMove::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBas
 	if (!owner_asc) return;
 
 	FGameplayEventData payload;
-	payload.EventTag = freeToMove_tag;
+	payload.EventTag = tag_freeToMove;
 	payload.Instigator = owner;
 	payload.OptionalObject = Animation;
-	owner_asc->HandleGameplayEvent(freeToMove_tag, &payload);
+	owner_asc->HandleGameplayEvent(tag_freeToMove, &payload);
 }
