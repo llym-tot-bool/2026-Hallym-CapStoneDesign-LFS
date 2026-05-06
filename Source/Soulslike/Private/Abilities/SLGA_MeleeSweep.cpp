@@ -89,6 +89,9 @@ void USLAT_MeeleSweep_hit_checker::EffectOnHit(AActor* hitActor)
 
 void USLGA_MeleeSweep::addTag_stateAttacking(TObjectPtr<UAbilitySystemComponent> asc)
 {
+    if (asc->HasMatchingGameplayTag(tag_isMoving)) {
+        asc->RemoveLooseGameplayTag(tag_isMoving);
+    }
     asc->AddLooseGameplayTag(tag_stateAttacking);
     cnt_tag_stateAttackig++;
 }

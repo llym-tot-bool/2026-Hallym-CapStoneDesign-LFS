@@ -52,6 +52,8 @@ protected:
     FGameplayTag tag_stateAttacking; int cnt_tag_stateAttackig;
     UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
     FGameplayTag tag_tryingToMove;
+    UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
+    FGameplayTag tag_isMoving;
 
     UPROPERTY(EditAnywhere, Category = "Collision")
     FVector BoxHalfExtents = FVector(15.f, 15.f, 15.f);

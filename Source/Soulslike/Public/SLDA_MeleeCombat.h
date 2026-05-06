@@ -35,6 +35,8 @@ public:
 	FGameplayTag tag_comboPerform;
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Event")
 	FGameplayTag tag_freeToMove;
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Event")
+	FGameplayTag tag_interrupt;
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|State")
 	FGameplayTag tag_comboAvailable;
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|State")

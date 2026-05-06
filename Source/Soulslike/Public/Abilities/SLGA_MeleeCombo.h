@@ -21,7 +21,8 @@ class SOULSLIKE_API USLAT_MeeleComboChecker : public UAbilityTask
 public:
     // This allows the GA to create the task easily
     static USLAT_MeeleComboChecker* Create(UGameplayAbility* OwningAbility, 
-        const FGameplayTag tag_comboAvailable, const FGameplayTag tag_comboGrant, const FGameplayTag tag_comboPerform);
+        const FGameplayTag tag_comboAvailable, const FGameplayTag tag_comboGrant, const FGameplayTag tag_comboPerform,
+        const FGameplayTag tag_isMoving, const FGameplayTag tag_interrupt);
 
     virtual void TickTask(float DeltaTime) override;
 
@@ -29,6 +30,9 @@ protected:
     FGameplayTag tag_comboAvailable;
     FGameplayTag tag_comboGrant;
     FGameplayTag tag_comboPerform;
+
+    FGameplayTag tag_isMoving;
+    FGameplayTag tag_interrupt;
 };
 
 UCLASS(abstract)
@@ -44,12 +48,17 @@ protected:
     FGameplayTag tag_inputAsComboEnd;
     UPROPERTY(EditDefaultsOnly, Category = "Combo|Event")
     FGameplayTag tag_comboPerform;
+    UPROPERTY(EditDefaultsOnly, Category = "Combo|Event")
+    FGameplayTag tag_interrupt;
     UPROPERTY(EditDefaultsOnly, Category = "Combo|State")
     FGameplayTag tag_comboAvailable;
     UPROPERTY(EditDefaultsOnly, Category = "Combo|State")
     FGameplayTag tag_comboGrant;
     UPROPERTY(EditDefaultsOnly, Category = "Combo|State")
     FGameplayTag tag_comboLastAction;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Combo|State")
+    FGameplayTag tag_isMoving;
 
     UPROPERTY(EditDefaultsOnly, Category = "Combo|DataAsset")
     TObjectPtr<USLDA_WeaponCombo> SLDA_WeaponCombo;
@@ -85,5 +94,7 @@ protected:
     void ComboAvailable(FGameplayEventData Payload);
     UFUNCTION()
     void ComboPerform(FGameplayEventData Payload);
+    UFUNCTION()
+    void OnInterrupt(FGameplayEventData Payload);
 
 };

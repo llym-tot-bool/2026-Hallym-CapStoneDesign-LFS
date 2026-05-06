@@ -46,6 +46,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "SL Input")
 	FGameplayTag tag_isAttacking;
 
+	UPROPERTY(EditAnywhere, Category = "SL Input")
+	FGameplayTag tag_isMoving;
+
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, Category="SL Input")
 	UInputAction* JumpAction;
