@@ -152,6 +152,7 @@ void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const
     if (asc->HasMatchingGameplayTag(tag_stateAttacking)) asc->RemoveLooseGameplayTag(tag_stateAttacking);
     if (asc->HasMatchingGameplayTag(tag_inputAsCombo)) asc->RemoveLooseGameplayTag(tag_inputAsCombo); 
     if (asc->HasMatchingGameplayTag(tag_comboGrant)) asc->RemoveLooseGameplayTag(tag_comboGrant);
+    if (asc->HasMatchingGameplayTag(tag_freeToMove)) asc->RemoveLooseGameplayTag(tag_freeToMove);
 
     hitchecker->EndTask();
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -172,7 +173,11 @@ void USLGA_MeleeSweep::FreeToMove(FGameplayEventData Payload)
 {
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
 
-    if (asc->HasMatchingGameplayTag(tag_tryingToMove)) {
+    asc->AddLooseGameplayTag(tag_freeToMove);
+
+    if (asc->HasMatchingGameplayTag(tag_tryingToMove) &&
+        !asc->HasMatchingGameplayTag(tag_comboGrant)) 
+    {
         TObjectPtr<const UAnimMontage> targetMontage = Cast<UAnimMontage>(Payload.OptionalObject);
 
         if (targetMontage == asc->GetCurrentMontage()) {
@@ -190,12 +195,7 @@ void USLGA_MeleeSweep::InputAsCombo(FGameplayEventData Payload)
 }
 
 void USLGA_MeleeSweep::TryActivateCombo(FGameplayEventData Payload)
-{
-    UE_LOG(LogTemp, Display, TEXT("[SL debug] TryActivateCombo() : payload tag is %s"),
-        *Payload.EventTag.ToString());
-    UE_LOG(LogTemp, Display, TEXT("[SL debug] TryActivateCombo() : payload optional object = %s"), 
-        *Payload.OptionalObject->GetName());
-    
+{   
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
 
     asc->RemoveLooseGameplayTag(tag_inputAsCombo);

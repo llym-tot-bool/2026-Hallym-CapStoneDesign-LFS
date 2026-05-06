@@ -49,6 +49,7 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
     FGameplayTag tag_stateAttacking;
+    int cnt_tag_stateAttacking;
 
     UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
     FGameplayTag tag_freeToMove;
