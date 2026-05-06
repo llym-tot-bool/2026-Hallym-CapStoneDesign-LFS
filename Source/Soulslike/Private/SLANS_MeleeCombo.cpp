@@ -20,6 +20,7 @@ void USLANS_MeleeCombo::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSeque
     FGameplayEventData payload;
     payload.EventTag = tag_inputAsCombo;
     payload.Instigator = owner;
+    payload.OptionalObject = this;
     UE_LOG(LogTemp, Display, TEXT("[SL debug] nofity begin with tag = %s"), *tag_inputAsCombo.ToString());
     owner_asc->HandleGameplayEvent(tag_inputAsCombo, &payload);
 
@@ -37,9 +38,9 @@ void USLANS_MeleeCombo::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenc
     FGameplayEventData payload;
     payload.EventTag = tag_tryActivateCombo;
     payload.Instigator = owner;
+    payload.OptionalObject = this;
     UE_LOG(LogTemp, Display, TEXT("[SL debug] nofity end with tag = %s"), *tag_tryActivateCombo.ToString());
     owner_asc->HandleGameplayEvent(tag_tryActivateCombo, &payload);
-
 
 	Super::NotifyEnd(MeshComp, Animation, EventReference);
 }

@@ -125,20 +125,20 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     }
 
     // combo input wait
-    UAbilityTask_WaitGameplayEvent* WaitComboInputStart = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_inputAsCombo);
-    if (WaitComboInputStart) {
-        WaitComboInputStart->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::InputAsCombo);
-        WaitComboInputStart->ReadyForActivation();
+    UAbilityTask_WaitGameplayEvent* WaitInputAsCombo = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_inputAsCombo);
+    if (WaitInputAsCombo) {
+        WaitInputAsCombo->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::InputAsCombo);
+        WaitInputAsCombo->ReadyForActivation();
     }
     else {
         UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : combo input start event listener failed"), *myName);
     }
 
-    // combo timingwait
-    UAbilityTask_WaitGameplayEvent* WaitComboStart = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_tryActivateCombo);
-    if (WaitComboInputStart) {
-        WaitComboInputStart->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::TryActivateCombo);
-        WaitComboInputStart->ReadyForActivation();
+    // combo timing wait
+    UAbilityTask_WaitGameplayEvent* WaitTryActivateCombo = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_tryActivateCombo);
+    if (WaitTryActivateCombo) {
+        WaitTryActivateCombo->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::TryActivateCombo);
+        WaitTryActivateCombo->ReadyForActivation();
     }
     else {
         UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : combo input start event listener failed"), *myName);
@@ -191,17 +191,20 @@ void USLGA_MeleeSweep::InputAsCombo(FGameplayEventData Payload)
 
 void USLGA_MeleeSweep::TryActivateCombo(FGameplayEventData Payload)
 {
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] TryActivateCombo() : payload tag is %s"),
+        *Payload.EventTag.ToString());
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] TryActivateCombo() : payload optional object = %s"), 
+        *Payload.OptionalObject->GetName());
+    
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
 
     asc->RemoveLooseGameplayTag(tag_inputAsCombo);
-    UE_LOG(LogTemp, Display, TEXT("[SL debug] nofity response with remove loose tag = %s"), *tag_inputAsCombo.ToString());
-    UE_LOG(LogTemp, Display, TEXT("[SL debug] nofity from = %s"), *Payload.OptionalObject->GetName());
-
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] TryActivateCombo() : remove loose tag = %s"), *tag_inputAsCombo.ToString());
 
     if (asc->HasMatchingGameplayTag(tag_comboGrant)) {
 
         asc->RemoveLooseGameplayTag(tag_comboGrant);
-        UE_LOG(LogTemp, Display, TEXT("[SL debug] nofity response with activating combo = %s"), *tag_comboAbility.ToString());
+        UE_LOG(LogTemp, Display, TEXT("[SL debug] TryActivateCombo() : activating combo = %s"), *tag_comboAbility.ToString());
         asc->TryActivateAbilitiesByTag(FGameplayTagContainer(tag_comboAbility));
     }
 }

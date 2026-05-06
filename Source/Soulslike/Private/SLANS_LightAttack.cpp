@@ -23,6 +23,7 @@ void USLANS_LightAttack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequ
     FGameplayEventData payload;
     payload.EventTag = EventTagStart;
     payload.Instigator = owner;
+    payload.OptionalObject = this;
     owner_asc->HandleGameplayEvent(EventTagStart, &payload);
 
 }
@@ -43,6 +44,7 @@ void USLANS_LightAttack::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequen
     FGameplayEventData payload;
     payload.EventTag = EventTagEnd;
     payload.Instigator = owner;
+    payload.OptionalObject = this;
     owner_asc->HandleGameplayEvent(EventTagEnd, &payload);
 
     Super::NotifyEnd(MeshComp, Animation, EventReference);
