@@ -1,5 +1,5 @@
 
-#include "SLANS_LightAttack.h"
+#include "ANS/SLANS_LightAttack.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"

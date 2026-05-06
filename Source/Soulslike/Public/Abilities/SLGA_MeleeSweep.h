@@ -57,21 +57,6 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
     FGameplayTag tag_tryingToMove;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Combat|Combo")
-    FGameplayTag tag_inputAsCombo;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Combat|Combo")
-    FGameplayTag tag_comboGrant;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Combat|Combo")
-    FGameplayTag tag_tryActivateCombo;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Combat|Combo")
-    TSubclassOf<UGameplayAbility> comboAbility;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Combat|Combo")
-    FGameplayTag tag_comboAbility;
-
     UPROPERTY(EditAnywhere, Category = "Collision")
     FVector BoxHalfExtents = FVector(15.f, 15.f, 15.f);
 
@@ -85,6 +70,8 @@ protected:
     float socket_weapon_length = 50.0f;
 
     USLAT_MeeleSweep_hit_checker* hitchecker;
+
+protected:
 
     virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
         const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
@@ -100,10 +87,4 @@ protected:
 
     UFUNCTION()
     void FreeToMove(FGameplayEventData Payload);
-
-    UFUNCTION()
-    void InputAsCombo(FGameplayEventData Payload);
-
-    UFUNCTION()
-    void TryActivateCombo(FGameplayEventData Payload);
 };

@@ -1,13 +1,13 @@
 
 
 
-#include "SLANS_MeleeSweep.h"
+#include "ANS/SLANS_MeleeSweepHitbox.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 
-void USLANS_MeleeSweep::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
+void USLANS_MeleeSweepHitbox::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
 	float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
     Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
@@ -25,7 +25,7 @@ void USLANS_MeleeSweep::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSeque
     owner_asc->HandleGameplayEvent(tag_traceStart, &payload);
 }
 
-void USLANS_MeleeSweep::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
+void USLANS_MeleeSweepHitbox::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
 	const FAnimNotifyEventReference& EventReference)
 {
     AActor* owner = MeshComp->GetOwner();

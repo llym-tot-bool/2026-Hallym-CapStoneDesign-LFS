@@ -24,19 +24,16 @@ public:
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
 	FGameplayTag tag_combo;
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
-	FGameplayTag tag_inputAsCombo;
+	FGameplayTag tag_inputAsComboStart;
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
+	FGameplayTag tag_inputAsComboEnd;
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
+	FGameplayTag tag_comboAvailable;
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
 	FGameplayTag tag_comboGrant;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
-	FGameplayTag tag_freeToMove;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
-	FGameplayTag tag_tryActivateCombo;
 
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|IA")
 	TObjectPtr<UInputAction> IA_combo;
-
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Initial_activation")
-	FGameplayTag tag_initialActivation;
 
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|GA_list")
 	TArray<TSubclassOf<UGameplayAbility>> GA_list;

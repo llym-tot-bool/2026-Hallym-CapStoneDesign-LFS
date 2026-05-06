@@ -6,22 +6,24 @@
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "GameplayTagContainer.h"
 
-#include "SLANS_MeleeCombo.generated.h"
+#include "SLANS_MeleeSweepHitbox.generated.h"
 
 /**
  * 
  */
-UCLASS(Abstract)
-class SOULSLIKE_API USLANS_MeleeCombo : public UAnimNotifyState
+UCLASS(abstract)
+class SOULSLIKE_API USLANS_MeleeSweepHitbox : public UAnimNotifyState
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
+    // The Tag to send to the GA (must match HitEventTag in GA)
     UPROPERTY(EditAnywhere, Category = "GAS")
-    FGameplayTag tag_inputAsCombo;
+    FGameplayTag tag_traceStart;
 
     UPROPERTY(EditAnywhere, Category = "GAS")
-    FGameplayTag tag_tryActivateCombo;
+    FGameplayTag tag_traceEnd;
+
 
 public:
 

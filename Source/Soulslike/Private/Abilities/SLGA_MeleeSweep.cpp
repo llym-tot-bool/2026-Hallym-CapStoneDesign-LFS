@@ -123,26 +123,6 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     else {
         UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : free to move event listener failed"), *myName);
     }
-
-    // combo input wait
-    UAbilityTask_WaitGameplayEvent* WaitInputAsCombo = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_inputAsCombo);
-    if (WaitInputAsCombo) {
-        WaitInputAsCombo->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::InputAsCombo);
-        WaitInputAsCombo->ReadyForActivation();
-    }
-    else {
-        UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : combo input start event listener failed"), *myName);
-    }
-
-    // combo timing wait
-    UAbilityTask_WaitGameplayEvent* WaitTryActivateCombo = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_tryActivateCombo);
-    if (WaitTryActivateCombo) {
-        WaitTryActivateCombo->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::TryActivateCombo);
-        WaitTryActivateCombo->ReadyForActivation();
-    }
-    else {
-        UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : combo input start event listener failed"), *myName);
-    }
 }
 
 void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
@@ -150,8 +130,6 @@ void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const
 {
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
     if (asc->HasMatchingGameplayTag(tag_stateAttacking)) asc->RemoveLooseGameplayTag(tag_stateAttacking);
-    if (asc->HasMatchingGameplayTag(tag_inputAsCombo)) asc->RemoveLooseGameplayTag(tag_inputAsCombo); 
-    if (asc->HasMatchingGameplayTag(tag_comboGrant)) asc->RemoveLooseGameplayTag(tag_comboGrant);
     if (asc->HasMatchingGameplayTag(tag_freeToMove)) asc->RemoveLooseGameplayTag(tag_freeToMove);
 
     hitchecker->EndTask();
@@ -175,37 +153,13 @@ void USLGA_MeleeSweep::FreeToMove(FGameplayEventData Payload)
 
     asc->AddLooseGameplayTag(tag_freeToMove);
 
-    if (asc->HasMatchingGameplayTag(tag_tryingToMove) &&
-        !asc->HasMatchingGameplayTag(tag_comboGrant)) 
+    if (asc->HasMatchingGameplayTag(tag_tryingToMove))
     {
         TObjectPtr<const UAnimMontage> targetMontage = Cast<UAnimMontage>(Payload.OptionalObject);
 
         if (targetMontage == asc->GetCurrentMontage()) {
             asc->CurrentMontageStop(0.2f);
         }
-    }
-}
-
-void USLGA_MeleeSweep::InputAsCombo(FGameplayEventData Payload)
-{
-    TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
-    
-    asc->AddLooseGameplayTag(tag_inputAsCombo);
-    UE_LOG(LogTemp, Display, TEXT("[SL debug] nofity response with add loose tag = %s"), *tag_inputAsCombo.ToString());
-}
-
-void USLGA_MeleeSweep::TryActivateCombo(FGameplayEventData Payload)
-{   
-    TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
-
-    asc->RemoveLooseGameplayTag(tag_inputAsCombo);
-    UE_LOG(LogTemp, Display, TEXT("[SL debug] TryActivateCombo() : remove loose tag = %s"), *tag_inputAsCombo.ToString());
-
-    if (asc->HasMatchingGameplayTag(tag_comboGrant)) {
-
-        asc->RemoveLooseGameplayTag(tag_comboGrant);
-        UE_LOG(LogTemp, Display, TEXT("[SL debug] TryActivateCombo() : activating combo = %s"), *tag_comboAbility.ToString());
-        asc->TryActivateAbilitiesByTag(FGameplayTagContainer(tag_comboAbility));
     }
 }
 
