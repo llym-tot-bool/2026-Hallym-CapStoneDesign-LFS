@@ -23,15 +23,17 @@ public:
 	FGameplayTag tag_weapon;
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
 	FGameplayTag tag_combo;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Event&State")
 	FGameplayTag tag_inputAsComboStart;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Event&State")
 	FGameplayTag tag_inputAsComboEnd;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Event")
+	FGameplayTag tag_comboPerform;
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|State")
 	FGameplayTag tag_comboAvailable;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|State")
 	FGameplayTag tag_comboGrant;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|State")
 	FGameplayTag tag_comboLastAction;
 
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Input")

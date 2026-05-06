@@ -48,6 +48,8 @@ protected:
     FGameplayTag tag_comboAvailable;
     UPROPERTY(EditDefaultsOnly, Category = "Combo|State")
     FGameplayTag tag_comboGrant;
+    UPROPERTY(EditDefaultsOnly, Category = "Combo|State")
+    FGameplayTag tag_comboLastAction;
 
     UPROPERTY(EditDefaultsOnly, Category = "Combo|DataAsset")
     TObjectPtr<USLDA_WeaponCombo> SLDA_WeaponCombo;
@@ -62,7 +64,7 @@ private:
     void removeTag(TObjectPtr<UAbilitySystemComponent> asc, FGameplayTag tag);
 
     void StartComboChcker();
-    void EndChomboChecker();
+    void EndComboChecker();
 
 protected:
     virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
@@ -70,6 +72,8 @@ protected:
 
     virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
         const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+
+    void StartAction();
 
     void InputAsComboStart(FGameplayEventData Payload);
     void InputAsComboEnd(FGameplayEventData Payload);
