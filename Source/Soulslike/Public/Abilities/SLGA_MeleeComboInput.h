@@ -19,9 +19,11 @@ class SOULSLIKE_API USLGA_MeleeComboInput : public UGameplayAbility
 
 protected:
 
+	UPROPERTY(EditAnywhere, Category = "Combo")
 	TObjectPtr<USLDA_WeaponCombo> SLDA_WeaponCombo;
 
 	FGameplayTag tag_combo;
+	FGameplayTag tag_InitialAction;
 	FGameplayTag tag_inputAsComboStart;
 	FGameplayTag tag_inputAsComboEnd;
 	FGameplayTag tag_comboGrant;

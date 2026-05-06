@@ -43,17 +43,13 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, Category = "Combat|Trace")
     FGameplayTag tag_traceStart;
-
     UPROPERTY(EditDefaultsOnly, Category = "Combat|Trace")
     FGameplayTag tag_traceEnd;
 
     UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
-    FGameplayTag tag_stateAttacking;
-    int cnt_tag_stateAttacking;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
     FGameplayTag tag_freeToMove;
-
+    UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
+    FGameplayTag tag_stateAttacking; int cnt_tag_stateAttackig;
     UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
     FGameplayTag tag_tryingToMove;
 
@@ -72,6 +68,9 @@ protected:
     USLAT_MeeleSweep_hit_checker* hitchecker;
 
 protected:
+
+    void addTag_stateAttacking(TObjectPtr<UAbilitySystemComponent> asc);
+    void removeTag_stateAttacking(TObjectPtr<UAbilitySystemComponent> asc);
 
     virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
         const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;

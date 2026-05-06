@@ -23,12 +23,18 @@ public:
 	FGameplayTag tag_weapon;
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
 	FGameplayTag tag_combo;
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Trace")
+	FGameplayTag tag_traceStart;
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Trace")
+	FGameplayTag tag_traceEnd;
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Event&State")
 	FGameplayTag tag_inputAsComboStart;
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Event&State")
 	FGameplayTag tag_inputAsComboEnd;
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Event")
 	FGameplayTag tag_comboPerform;
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Event")
+	FGameplayTag tag_freeToMove;
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|State")
 	FGameplayTag tag_comboAvailable;
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|State")
@@ -41,6 +47,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Input")
 	TSubclassOf<UGameplayAbility> GA_Input;
+
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|GA_Combo")
+	TSubclassOf<UGameplayAbility> GA_Combo;
 
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|GA_list")
 	TArray<TSubclassOf<UGameplayAbility>> GA_list;

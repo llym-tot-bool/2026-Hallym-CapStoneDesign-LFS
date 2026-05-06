@@ -73,13 +73,17 @@ protected:
     virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
         const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
+    void SimpleEndAbility();
+
     void StartAction();
 
+    UFUNCTION()
     void InputAsComboStart(FGameplayEventData Payload);
+    UFUNCTION()
     void InputAsComboEnd(FGameplayEventData Payload);
-
+    UFUNCTION()
     void ComboAvailable(FGameplayEventData Payload);
-
+    UFUNCTION()
     void ComboPerform(FGameplayEventData Payload);
 
 };

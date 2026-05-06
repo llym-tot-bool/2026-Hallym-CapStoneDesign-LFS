@@ -79,7 +79,29 @@ void USLAT_MeeleSweep_hit_checker::TickTask(float DeltaTime)
     }
 }
 
-void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
+void USLAT_MeeleSweep_hit_checker::EffectOnHit(AActor* hitActor)
+{
+    FString myName = this->GetName();
+
+    FString actorName = hitActor->GetName();
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] %s EffectOnHit() : hit = %s"), *myName, *actorName);
+}
+
+void USLGA_MeleeSweep::addTag_stateAttacking(TObjectPtr<UAbilitySystemComponent> asc)
+{
+    asc->AddLooseGameplayTag(tag_stateAttacking);
+    cnt_tag_stateAttackig++;
+}
+
+void USLGA_MeleeSweep::removeTag_stateAttacking(TObjectPtr<UAbilitySystemComponent> asc)
+{
+    if (cnt_tag_stateAttackig > 0) {
+        asc->RemoveLooseGameplayTag(tag_stateAttacking);
+        cnt_tag_stateAttackig--;
+    }
+}
+
+void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
     const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
     Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
@@ -87,7 +109,7 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : called"), *myName); // debug
 
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
-    asc->AddLooseGameplayTag(tag_stateAttacking);
+    addTag_stateAttacking(asc);
 
     hitchecker = USLAT_MeeleSweep_hit_checker::Create(
         this,
@@ -95,8 +117,7 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
         BoxHalfExtents);
 
     // 1. Wait for the 'Start' event from your ANS
-    UAbilityTask_WaitGameplayEvent* WaitTraceStart = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_traceStart);
-    if (WaitTraceStart) {
+    if (UAbilityTask_WaitGameplayEvent* WaitTraceStart = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_traceStart)) {
         WaitTraceStart->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::TraceStart);
         WaitTraceStart->ReadyForActivation();
     }
@@ -104,9 +125,8 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
         UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : trace start event listener failed"), *myName);
     }
 
-    // 2. Wait for the 'End' event to stop everything
-    UAbilityTask_WaitGameplayEvent* WaitTraceEnd = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_traceEnd);
-    if (WaitTraceEnd) {
+    // 2. Wait for the 'End'  to stop everything
+    if (UAbilityTask_WaitGameplayEvent* WaitTraceEnd = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_traceEnd)) {
         WaitTraceEnd->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::TraceEnd);
         WaitTraceEnd->ReadyForActivation();
     }
@@ -115,8 +135,7 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     }
 
     // wait for free to move event
-    UAbilityTask_WaitGameplayEvent* WaitFreeToMove = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_freeToMove);
-    if (WaitFreeToMove) {
+    if (UAbilityTask_WaitGameplayEvent* WaitFreeToMove = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_freeToMove)) {
         WaitFreeToMove->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::FreeToMove);
         WaitFreeToMove->ReadyForActivation();
     }
@@ -129,8 +148,7 @@ void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const
     const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
-    if (asc->HasMatchingGameplayTag(tag_stateAttacking)) asc->RemoveLooseGameplayTag(tag_stateAttacking);
-    if (asc->HasMatchingGameplayTag(tag_freeToMove)) asc->RemoveLooseGameplayTag(tag_freeToMove);
+    removeTag_stateAttacking(asc);
 
     hitchecker->EndTask();
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -151,8 +169,6 @@ void USLGA_MeleeSweep::FreeToMove(FGameplayEventData Payload)
 {
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
 
-    asc->AddLooseGameplayTag(tag_freeToMove);
-
     if (asc->HasMatchingGameplayTag(tag_tryingToMove))
     {
         TObjectPtr<const UAnimMontage> targetMontage = Cast<UAnimMontage>(Payload.OptionalObject);
@@ -161,12 +177,4 @@ void USLGA_MeleeSweep::FreeToMove(FGameplayEventData Payload)
             asc->CurrentMontageStop(0.2f);
         }
     }
-}
-
-void USLAT_MeeleSweep_hit_checker::EffectOnHit(AActor* hitActor)
-{
-    FString myName = this->GetName();
-
-    FString actorName = hitActor->GetName();
-    UE_LOG(LogTemp, Display, TEXT("[SL debug] %s EffectOnHit() : hit = %s"), *myName, *actorName);
 }
