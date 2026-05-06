@@ -6,6 +6,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "Abilities/Tasks/AbilityTask.h"
 #include "Abilities/SLGA_MeleeSweep.h"
+#include "SLDA_MeleeCombat.h"
 
 #include "SLGA_MeleeCombo.generated.h"
 
@@ -37,9 +38,9 @@ class SOULSLIKE_API USLGA_MeleeCombo : public UGameplayAbility
 
 protected:
 
-    UPROPERTY(EditDefaultsOnly, Category = "Combo|Event")
+    UPROPERTY(EditDefaultsOnly, Category = "Combo|Event&State")
     FGameplayTag tag_inputAsComboStart;
-    UPROPERTY(EditDefaultsOnly, Category = "Combo|Event")
+    UPROPERTY(EditDefaultsOnly, Category = "Combo|Event&State")
     FGameplayTag tag_inputAsComboEnd;
     UPROPERTY(EditDefaultsOnly, Category = "Combo|Event")
     FGameplayTag tag_comboPerform;
@@ -48,12 +49,20 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Combo|State")
     FGameplayTag tag_comboGrant;
 
-    USLAT_MeeleComboChecker* comboChecker = nullptr;
-
-    TArray<TObjectPtr<USLGA_MeleeSweep>> comboActoin_list;
+    UPROPERTY(EditDefaultsOnly, Category = "Combo|DataAsset")
+    TObjectPtr<USLDA_WeaponCombo> SLDA_WeaponCombo;
     int currentActionIdx;
+    int lastActionIdx;
+    
+    USLAT_MeeleComboChecker* comboChecker = nullptr;
+    
 
+private:
+    void addTag(TObjectPtr<UAbilitySystemComponent> asc, FGameplayTag tag);
+    void removeTag(TObjectPtr<UAbilitySystemComponent> asc, FGameplayTag tag);
 
+    void StartComboChcker();
+    void EndChomboChecker();
 
 protected:
     virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
@@ -64,6 +73,8 @@ protected:
 
     void InputAsComboStart(FGameplayEventData Payload);
     void InputAsComboEnd(FGameplayEventData Payload);
+
+    void ComboAvailable(FGameplayEventData Payload);
 
     void ComboPerform(FGameplayEventData Payload);
 

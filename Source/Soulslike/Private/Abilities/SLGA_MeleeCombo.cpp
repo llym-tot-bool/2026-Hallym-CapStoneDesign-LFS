@@ -7,10 +7,41 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 
-void USLGA_MeleeCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
+void USLGA_MeleeCombo::addTag(TObjectPtr<UAbilitySystemComponent> asc, FGameplayTag tag)
+{
+    if (!asc->HasMatchingGameplayTag(tag)) asc->AddLooseGameplayTag(tag);
+}
+
+void USLGA_MeleeCombo::removeTag(TObjectPtr<UAbilitySystemComponent> asc, FGameplayTag tag)
+{
+    if (asc->HasMatchingGameplayTag(tag)) asc->RemoveLooseGameplayTag(tag);
+}
+
+void USLGA_MeleeCombo::StartComboChcker()
+{
+    if (comboChecker) {
+        comboChecker->EndTask();
+        comboChecker = USLAT_MeeleComboChecker::Create(this, tag_comboAvailable, tag_comboGrant, tag_comboPerform);
+    }
+}
+
+void USLGA_MeleeCombo::EndChomboChecker()
+{
+    if (comboChecker) {
+        comboChecker->EndTask();
+        comboChecker = nullptr;
+    }
+}
+
+void USLGA_MeleeCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
     const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
     Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
+    if (!SLDA_WeaponCombo) return;
+    currentActionIdx = 0;
+    lastActionIdx = SLDA_WeaponCombo->GA_list.Num() - 1;
+    if (lastActionIdx < 0) return;
 
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
     if (!asc) return;
@@ -30,6 +61,8 @@ void USLGA_MeleeCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     else {
         UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : tag_inputAsComboEnd listener failed"), *this->GetName());
     }
+
+
     
     if (UAbilityTask_WaitGameplayEvent* waitEvent = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_comboPerform)) {
         waitEvent->EventReceived.AddDynamic(this, &USLGA_MeleeCombo::ComboPerform);
@@ -44,29 +77,57 @@ void USLGA_MeleeCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
 void USLGA_MeleeCombo::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
     const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+    EndChomboChecker();
+
+    if (TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo()) {
+        removeTag(asc, tag_inputAsComboStart);
+        removeTag(asc, tag_inputAsComboEnd);
+        removeTag(asc, tag_comboAvailable);
+        removeTag(asc, tag_comboGrant);
+    }
+
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void USLGA_MeleeCombo::InputAsComboStart(FGameplayEventData Payload)
 {
-    if (comboChecker) {
-        comboChecker->EndTask();
+    if (TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo()) {
+        addTag(asc, tag_inputAsComboStart);
+        
+        comboChecker = USLAT_MeeleComboChecker::Create(this, tag_comboAvailable, tag_comboGrant, tag_comboPerform);
+        comboChecker->ReadyForActivation();
     }
-    comboChecker = USLAT_MeeleComboChecker::Create(this, tag_comboAvailable, tag_comboGrant, tag_comboPerform);
-    comboChecker->ReadyForActivation();
 }
 
 void USLGA_MeleeCombo::InputAsComboEnd(FGameplayEventData Payload)
 {
-    comboChecker->EndTask();
+    EndChomboChecker();
+
+    if (TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo()) {
+        removeTag(asc, tag_inputAsComboStart);
+        removeTag(asc, tag_comboAvailable);
+        addTag(asc, tag_inputAsComboEnd);
+    }
+}
+
+void USLGA_MeleeCombo::ComboAvailable(FGameplayEventData Payload)
+{
+    if (TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo()) {
+        addTag(asc, tag_comboAvailable);
+
+        StartComboChcker();
+    }
 }
 
 void USLGA_MeleeCombo::ComboPerform(FGameplayEventData Payload)
 {
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
     if (!asc) return;
-
-    //asc->TryActivateAbilityByClass(comboActoin_list[currentActionIdx]);
+    if (!SLDA_WeaponCombo) return;
+    if (currentActionIdx >= lastActionIdx) return;
+    
+    currentActionIdx++;
+    asc->TryActivateAbilityByClass(SLDA_WeaponCombo->GA_list[currentActionIdx]);
 }
 
 USLAT_MeeleComboChecker* USLAT_MeeleComboChecker::Create(UGameplayAbility* OwningAbility, 

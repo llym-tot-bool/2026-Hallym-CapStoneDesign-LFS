@@ -193,17 +193,13 @@ void ASoulslikeCharacter::MeleeAction(const TObjectPtr<USLDA_WeaponCombo> combo)
 
 	if (!asc) { UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! MeleeAction() : no ASC")); return; }
 
-	if (asc->HasMatchingGameplayTag(combo->tag_combo)) {
-		if (asc->HasMatchingGameplayTag(combo->tag_inputAsComboStart) &&
-			!asc->HasMatchingGameplayTag(combo->tag_comboGrant)) {
-			UE_LOG(LogTemp, Display, TEXT("[SL debug] MeleeAction() : added combo grant = %s"),
-				*combo->tag_comboGrant.ToString());
-			asc->AddLooseGameplayTag(combo->tag_comboGrant);
-		}
+	if (!combo->GA_Input) {
+		UE_LOG(LogTemp, Display, 
+			TEXT("[SL debug] !!! MeleeAction() : no GA_Input for %s"), 
+			*combo->tag_weapon.ToString()); 
+		return;
 	}
-	else {
-		asc->TryActivateAbilitiesByTag(FGameplayTagContainer(combo->tag_combo));
-	}
+	asc->TryActivateAbilityByClass(combo->GA_Input);
 }
 
 UAbilitySystemComponent* ASoulslikeCharacter::GetAbilitySystemComponent() const

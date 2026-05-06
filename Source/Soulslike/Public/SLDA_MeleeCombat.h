@@ -31,9 +31,14 @@ public:
 	FGameplayTag tag_comboAvailable;
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
 	FGameplayTag tag_comboGrant;
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
+	FGameplayTag tag_comboLastAction;
 
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|IA")
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Input")
 	TObjectPtr<UInputAction> IA_combo;
+
+	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Input")
+	TSubclassOf<UGameplayAbility> GA_Input;
 
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|GA_list")
 	TArray<TSubclassOf<UGameplayAbility>> GA_list;
