@@ -21,7 +21,7 @@ void USLGA_MeleeCombo::StartComboChcker()
 {
     EndComboChecker();
     comboChecker = USLAT_MeeleComboChecker::Create(this, tag_comboAvailable, tag_comboGrant, tag_comboPerform,
-        tag_isMoving, tag_interrupt);
+        tag_isMoving, tag_interrupt, comboActionTagContainer);
     comboChecker->ReadyForActivation();
     UE_LOG(LogTemp, Display, TEXT("[SL debug] combo checker activated"));
 }
@@ -54,6 +54,26 @@ void USLGA_MeleeCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
         return;
     }
 
+    comboActionTagContainer.Reset();
+    for (TSubclassOf<UGameplayAbility> GA : SLDA_WeaponCombo->GA_list) {
+        UGameplayAbility* defaultGA = GA->GetDefaultObject<UGameplayAbility>();
+        if (!defaultGA) {
+            UE_LOG(LogTemp, Display, 
+                TEXT("[SL debug] !!! melee combo ActivateAbility() : for some reason, there is no default class for %s"),
+                *GA->GetName());
+            continue;
+        }
+
+        FGameplayTagContainer tagCont_GA = defaultGA->AbilityTags;
+        if (tagCont_GA.Num() <= 0) {
+            UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! melee combo ActivateAbility() : for some reason, there is no default tag for %s"),
+                *GA->GetName());
+            continue;
+        }
+
+        comboActionTagContainer.AddTag(tagCont_GA.First());
+    }
+
     StartComboChcker();
 
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
@@ -64,7 +84,7 @@ void USLGA_MeleeCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     }
 
     if (UAbilityTask_WaitGameplayEvent* waitEvent = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_inputAsComboStart)) {
-        waitEvent->EventReceived.AddDynamic(this, &USLGA_MeleeCombo::InputAsComboStart);
+        waitEvent->EventReceived.AddDynamic(this, &USLGA_MeleeCombo::OnInputAsComboStart);
         waitEvent->ReadyForActivation();
     }
     else {
@@ -72,7 +92,7 @@ void USLGA_MeleeCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     }
 
     if (UAbilityTask_WaitGameplayEvent* waitEvent = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_inputAsComboEnd)) {
-        waitEvent->EventReceived.AddDynamic(this, &USLGA_MeleeCombo::InputAsComboEnd);
+        waitEvent->EventReceived.AddDynamic(this, &USLGA_MeleeCombo::OnInputAsComboEnd);
         waitEvent->ReadyForActivation();
     }
     else {
@@ -80,16 +100,24 @@ void USLGA_MeleeCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     }
 
     if (UAbilityTask_WaitGameplayEvent* waitEvent = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_comboAvailable)) {
-        waitEvent->EventReceived.AddDynamic(this, &USLGA_MeleeCombo::ComboAvailable);
+        waitEvent->EventReceived.AddDynamic(this, &USLGA_MeleeCombo::OnComboAvailable);
         waitEvent->ReadyForActivation();
     }
     else {
         UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : tag_comboAvailable listener failed"), *this->GetName());
     }
 
+    if (UAbilityTask_WaitGameplayEvent* waitEvent = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_interrupt)) {
+        waitEvent->EventReceived.AddDynamic(this, &USLGA_MeleeCombo::OnInterrupt);
+        waitEvent->ReadyForActivation();
+    }
+    else {
+        UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : tag_interrupt listener failed"), *this->GetName());
+    }
+
     
     if (UAbilityTask_WaitGameplayEvent* waitEvent = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_comboPerform)) {
-        waitEvent->EventReceived.AddDynamic(this, &USLGA_MeleeCombo::ComboPerform);
+        waitEvent->EventReceived.AddDynamic(this, &USLGA_MeleeCombo::OnComboPerform);
         waitEvent->ReadyForActivation();
     }
     else {
@@ -142,17 +170,17 @@ void USLGA_MeleeCombo::StartAction()
     asc->TryActivateAbilityByClass(SLDA_WeaponCombo->GA_list[0]);
 }
 
-void USLGA_MeleeCombo::InputAsComboStart(FGameplayEventData Payload)
+void USLGA_MeleeCombo::OnInputAsComboStart(FGameplayEventData Payload)
 {
-    UE_LOG(LogTemp, Display, TEXT("[SL debug] %s InputAsComboStart() : called"), *this->GetName());
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] %s OnInputAsComboStart() : called"), *this->GetName());
     if (TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo()) {
         addTag(asc, tag_inputAsComboStart);
     }
 }
 
-void USLGA_MeleeCombo::InputAsComboEnd(FGameplayEventData Payload)
+void USLGA_MeleeCombo::OnInputAsComboEnd(FGameplayEventData Payload)
 {
-    UE_LOG(LogTemp, Display, TEXT("[SL debug] %s InputAsComboEnd() : called"), *this->GetName());
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] %s OnInputAsComboEnd() : called"), *this->GetName());
 
     if (TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo()) {
         removeTag(asc, tag_inputAsComboStart);
@@ -163,26 +191,30 @@ void USLGA_MeleeCombo::InputAsComboEnd(FGameplayEventData Payload)
     SimpleEndAbility();
 }
 
-void USLGA_MeleeCombo::ComboAvailable(FGameplayEventData Payload)
+void USLGA_MeleeCombo::OnComboAvailable(FGameplayEventData Payload)
 {
-    UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ComboAvailable() : called"), *this->GetName());
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] %s OnComboAvailable() : called"), *this->GetName());
     
     if (TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo()) {
         addTag(asc, tag_comboAvailable);
     }
 }
 
-void USLGA_MeleeCombo::ComboPerform(FGameplayEventData Payload)
+void USLGA_MeleeCombo::OnComboPerform(FGameplayEventData Payload)
 {
-    UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ComboPerform() : called"), *this->GetName());
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] %s OnComboPerform() : called"), *this->GetName());
 
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
     if (!asc) return;
     if (!SLDA_WeaponCombo) return;
     if (currentActionIdx >= lastActionIdx) return;
+
+    addTag(asc, tag_comboPerform);
+    removeTag(asc, tag_comboGrant);
     
     currentActionIdx++;
     asc->TryActivateAbilityByClass(SLDA_WeaponCombo->GA_list[currentActionIdx]);
+    removeTag(asc, tag_comboPerform);
     
     if (currentActionIdx == lastActionIdx) {
         addTag(asc, tag_comboLastAction);
@@ -196,7 +228,7 @@ void USLGA_MeleeCombo::OnInterrupt(FGameplayEventData Payload)
 
 USLAT_MeeleComboChecker* USLAT_MeeleComboChecker::Create(UGameplayAbility* OwningAbility, 
     const FGameplayTag tag_comboAvailable, const FGameplayTag tag_comboGrant, const FGameplayTag tag_comboPerform,
-    const FGameplayTag tag_isMoving, const FGameplayTag tag_interrupt)
+    const FGameplayTag tag_isMoving, const FGameplayTag tag_interrupt, FGameplayTagContainer comboActionTagContainer)
 {
     USLAT_MeeleComboChecker* task = NewAbilityTask<USLAT_MeeleComboChecker>(OwningAbility);
     task->tag_comboAvailable = tag_comboAvailable;
@@ -204,6 +236,7 @@ USLAT_MeeleComboChecker* USLAT_MeeleComboChecker::Create(UGameplayAbility* Ownin
     task->tag_comboPerform = tag_comboPerform;
     task->tag_isMoving = tag_isMoving;
     task->tag_interrupt = tag_interrupt;
+    task->comboActionTagContainer = comboActionTagContainer;
 
     task->bTickingTask = true;
     return task;
@@ -222,7 +255,10 @@ void USLAT_MeeleComboChecker::TickTask(float DeltaTime)
         asc->HandleGameplayEvent(tag_comboPerform, &payload);
     }
 
-    if (asc->HasMatchingGameplayTag(tag_isMoving)) {
+    for (const FGameplayTag& tag_eachGA : comboActionTagContainer.) {
+        // not implemented
+    }
+    if () {
         FGameplayEventData payload;
         payload.EventTag = tag_interrupt;
         UE_LOG(LogTemp, Display, TEXT("[SL debug] melee combo interrupt sent"));

@@ -176,6 +176,10 @@ void ASoulslikeCharacter::OnMoveStopped(const FInputActionValue& Value)
 	if (asc->HasMatchingGameplayTag(tag_tryingToMove)) {
 		asc->RemoveLooseGameplayTag(tag_tryingToMove);
 	}
+
+	if (asc->HasMatchingGameplayTag(tag_isMoving)) {
+		asc->RemoveLooseGameplayTag(tag_isMoving);
+	}
 }
 
 void ASoulslikeCharacter::Look(const FInputActionValue& Value)

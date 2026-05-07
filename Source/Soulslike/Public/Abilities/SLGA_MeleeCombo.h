@@ -22,7 +22,7 @@ public:
     // This allows the GA to create the task easily
     static USLAT_MeeleComboChecker* Create(UGameplayAbility* OwningAbility, 
         const FGameplayTag tag_comboAvailable, const FGameplayTag tag_comboGrant, const FGameplayTag tag_comboPerform,
-        const FGameplayTag tag_isMoving, const FGameplayTag tag_interrupt);
+        const FGameplayTag tag_isMoving, const FGameplayTag tag_interrupt, FGameplayTagContainer comboActionTagContainer);
 
     virtual void TickTask(float DeltaTime) override;
 
@@ -33,6 +33,8 @@ protected:
 
     FGameplayTag tag_isMoving;
     FGameplayTag tag_interrupt;
+
+    FGameplayTagContainer& comboActionTagContainer;
 };
 
 UCLASS(abstract)
@@ -46,7 +48,7 @@ protected:
     FGameplayTag tag_inputAsComboStart;
     UPROPERTY(EditDefaultsOnly, Category = "Combo|Event&State")
     FGameplayTag tag_inputAsComboEnd;
-    UPROPERTY(EditDefaultsOnly, Category = "Combo|Event")
+    UPROPERTY(EditDefaultsOnly, Category = "Combo|Event&State")
     FGameplayTag tag_comboPerform;
     UPROPERTY(EditDefaultsOnly, Category = "Combo|Event")
     FGameplayTag tag_interrupt;
@@ -66,6 +68,7 @@ protected:
     int lastActionIdx;
     
     USLAT_MeeleComboChecker* comboChecker = nullptr;
+    FGameplayTagContainer comboActionTagContainer;
     
 
 private:
@@ -87,13 +90,13 @@ protected:
     void StartAction();
 
     UFUNCTION()
-    void InputAsComboStart(FGameplayEventData Payload);
+    void OnInputAsComboStart(FGameplayEventData Payload);
     UFUNCTION()
-    void InputAsComboEnd(FGameplayEventData Payload);
+    void OnInputAsComboEnd(FGameplayEventData Payload);
     UFUNCTION()
-    void ComboAvailable(FGameplayEventData Payload);
+    void OnComboAvailable(FGameplayEventData Payload);
     UFUNCTION()
-    void ComboPerform(FGameplayEventData Payload);
+    void OnComboPerform(FGameplayEventData Payload);
     UFUNCTION()
     void OnInterrupt(FGameplayEventData Payload);
 
