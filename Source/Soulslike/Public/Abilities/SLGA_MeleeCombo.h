@@ -13,41 +13,8 @@
 /**
  * 
  */
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FComboInterruptDelegate);
 
-UCLASS()
-class SOULSLIKE_API USLAT_MeeleComboChecker : public UAbilityTask
-{
-    GENERATED_BODY()
-public:
-    // This allows the GA to create the task easily
-    static USLAT_MeeleComboChecker* Create(UGameplayAbility* OwningAbility, 
-        const FGameplayTag tag_comboAvailable, const FGameplayTag tag_comboGrant, const FGameplayTag tag_comboPerform,
-        const FGameplayTag tag_isMoving, const FGameplayTag tag_interrupt, FGameplayTagContainer comboActionTagContainer);
-
-    virtual void TickTask(float DeltaTime) override;
-
-    void CheckPlayerMoveInterrupt(TObjectPtr<UAbilitySystemComponent> asc);
-
-protected:
-    FGameplayTag tag_comboAvailable;
-    FGameplayTag tag_comboGrant;
-    FGameplayTag tag_comboPerform;
-
-    FGameplayTag tag_isMoving;
-    FGameplayTag tag_interrupt;
-
-    FGameplayTagContainer comboActionTagContainer;
-
-public:
-    FComboInterruptDelegate OnInterruptDetected;
-};
-
-UENUM()
-enum class ESL_MeleeComboState : uint8 {
-
-};
 
 UCLASS(abstract)
 class SOULSLIKE_API USLGA_MeleeCombo : public UGameplayAbility
@@ -55,21 +22,6 @@ class SOULSLIKE_API USLGA_MeleeCombo : public UGameplayAbility
 	GENERATED_BODY()
 
 protected:
-
-    UPROPERTY(EditDefaultsOnly, Category = "Combo|Event&State")
-    FGameplayTag tag_inputAsComboStart;
-    UPROPERTY(EditDefaultsOnly, Category = "Combo|Event&State")
-    FGameplayTag tag_inputAsComboEnd;
-    UPROPERTY(EditDefaultsOnly, Category = "Combo|Event&State")
-    FGameplayTag tag_comboPerform;
-    UPROPERTY(EditDefaultsOnly, Category = "Combo|Event")
-    FGameplayTag tag_interrupt;
-    UPROPERTY(EditDefaultsOnly, Category = "Combo|State")
-    FGameplayTag tag_comboAvailable;
-    UPROPERTY(EditDefaultsOnly, Category = "Combo|State")
-    FGameplayTag tag_comboGrant;
-    UPROPERTY(EditDefaultsOnly, Category = "Combo|State")
-    FGameplayTag tag_comboLastAction;
 
     UPROPERTY(EditDefaultsOnly, Category = "Combo|State")
     FGameplayTag tag_isMoving;
@@ -79,16 +31,13 @@ protected:
     int currentActionIdx;
     int lastActionIdx;
     
-    USLAT_MeeleComboChecker* comboChecker = nullptr;
+    FGameplayTag tag_combo;
     FGameplayTagContainer comboActionTagContainer;
-    
 
-private:
-    void addTag(TObjectPtr<UAbilitySystemComponent> asc, FGameplayTag tag);
-    void removeTag(TObjectPtr<UAbilitySystemComponent> asc, FGameplayTag tag);
+    ESL_MeleeSweep_State state;
+    TObjectPtr<USLGA_MeleeSweep> currentComboAction;
 
-    void StartComboChcker();
-    void EndComboChecker();
+    bool bIsInputBuffered = false;
 
 protected:
     virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
@@ -101,15 +50,18 @@ protected:
 
     void StartAction();
 
+    void PlayNextComboAction();
+
     UFUNCTION()
-    void OnInputAsComboStart(FGameplayEventData Payload);
+    void OnComboInput();
     UFUNCTION()
-    void OnInputAsComboEnd(FGameplayEventData Payload);
+    void OnTranslation();
     UFUNCTION()
-    void OnComboAvailable(FGameplayEventData Payload);
+    void OnRecovery();
     UFUNCTION()
-    void OnComboPerform(FGameplayEventData Payload);
+    void OnCharacterMove();
+
     UFUNCTION()
-    void OnInterrupt(FGameplayEventData Payload);
+    void OnPlayerInput(FGameplayTag tag);
 
 };

@@ -139,6 +139,7 @@ public:
 
 public:
 	FSL_MeleeSweep_ComboInput delegate_CharacterMove;
+	FSL_CharacterMeleeComboInput delegate_CharacterMeleeComboInput;
 
 };
 

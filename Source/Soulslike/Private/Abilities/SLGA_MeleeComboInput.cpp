@@ -26,13 +26,6 @@ void USLGA_MeleeComboInput::ActivateAbility(const FGameplayAbilitySpecHandle Han
 
 	tag_combo = SLDA_WeaponCombo->tag_combo;
 
-	if (asc->HasMatchingGameplayTag(tag_inputAsComboStart)) {
-		UE_LOG(LogTemp, Display,
-			TEXT("[SL debug] melee combo GA_Input ActivateAbility() : set tag_comboGrant"));
-		addTag(asc, tag_comboGrant);
-		return;
-	}
-
 	if (!asc->HasMatchingGameplayTag(tag_combo)) {
 		if (SLDA_WeaponCombo->GA_list.Num() > 0) {
 			UE_LOG(LogTemp, Display,

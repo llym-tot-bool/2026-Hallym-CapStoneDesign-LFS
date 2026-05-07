@@ -208,7 +208,13 @@ void ASoulslikeCharacter::MeleeAction(const TObjectPtr<USLDA_WeaponCombo> combo)
 			*combo->tag_weapon.ToString()); 
 		return;
 	}
-	asc->TryActivateAbilityByClass(combo->GA_Input);
+
+	if (!asc->HasMatchingGameplayTag(combo->tag_combo)) {
+		asc->TryActivateAbilityByClass(combo->GA_Input);
+	}
+	else {
+		delegate_CharacterMeleeComboInput.Broadcast(combo->tag_combo);
+	}
 }
 
 UAbilitySystemComponent* ASoulslikeCharacter::GetAbilitySystemComponent() const

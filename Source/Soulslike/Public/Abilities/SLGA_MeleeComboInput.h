@@ -23,11 +23,6 @@ protected:
 	TObjectPtr<USLDA_WeaponCombo> SLDA_WeaponCombo;
 
 	FGameplayTag tag_combo;
-	FGameplayTag tag_InitialAction;
-	FGameplayTag tag_inputAsComboStart;
-	FGameplayTag tag_inputAsComboEnd;
-	FGameplayTag tag_comboGrant;
-	FGameplayTag tag_comboLastAction;
 
 protected:
 

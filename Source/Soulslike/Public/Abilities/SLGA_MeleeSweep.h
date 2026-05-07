@@ -63,10 +63,14 @@ protected:
     ESL_MeleeSweep_TraceState traceState;
     USLAT_MeeleSweep_hit_checker* hitchecker;
 
+public:
     // broadcast to comboGA
     FSL_MeleeSweep_ComboInput delegate_ComboInput;
     FSL_MeleeSweep_Translation delegate_Translation;
     FSL_MeleeSweep_Recovery delegate_Recovery;
+
+public:
+    void SimpleEndAbility();
 
 protected:
 

@@ -5,6 +5,7 @@
 #include "SoulslikeCharacter.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
+//#include "SLGA_MeleeCombo.h"
 
 USLAT_MeeleSweep_hit_checker* USLAT_MeeleSweep_hit_checker::Create(UGameplayAbility* OwningAbility,
     FName socket_start_name, FName socket_end_name,
@@ -85,6 +86,10 @@ void USLAT_MeeleSweep_hit_checker::EffectOnHit(AActor* hitActor)
 
     FString actorName = hitActor->GetName();
     UE_LOG(LogTemp, Display, TEXT("[SL debug] %s EffectOnHit() : hit = %s"), *myName, *actorName);
+}
+
+void USLGA_MeleeSweep::SimpleEndAbility() {
+    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, true);
 }
 
 void USLGA_MeleeSweep::setRootMotion()
