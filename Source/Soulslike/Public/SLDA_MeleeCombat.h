@@ -70,6 +70,9 @@ DECLARE_MULTICAST_DELEGATE(FSL_MeleeSweep_ComboInput)
 DECLARE_MULTICAST_DELEGATE(FSL_MeleeSweep_Translation)
 DECLARE_MULTICAST_DELEGATE(FSL_MeleeSweep_Recovery)
 
+DECLARE_MULTICAST_DELEGATE(FSL_CharacterMove)
+
+
 UENUM()
 enum class ESL_MeleeSweep_State : uint8 {
 	Anticipation,

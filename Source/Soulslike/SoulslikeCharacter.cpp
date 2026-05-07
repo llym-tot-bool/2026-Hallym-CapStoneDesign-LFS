@@ -152,13 +152,14 @@ void ASoulslikeCharacter::Move(const FInputActionValue& Value)
 		}
 	}
 
-	if (asc->HasMatchingGameplayTag(tag_isAttacking)) {
+	if (asc->HasMatchingGameplayTag(tag_RootMotion)) {
 		return; // don't move while attacking 
 	}
 
 	if (!asc->HasMatchingGameplayTag(tag_isMoving)) {
 		asc->AddLooseGameplayTag(tag_isMoving);
 	}
+	delegate_CharacterMove.Broadcast();
 
 	// route the input
 	DoMove(MovementVector.X, MovementVector.Y);

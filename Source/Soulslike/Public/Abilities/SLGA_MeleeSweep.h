@@ -44,6 +44,8 @@ class SOULSLIKE_API USLGA_MeleeSweep : public UGameplayAbility
 protected:
     UPROPERTY(EditAnywhere, Category = "PlayerMovementRestriction")
     FGameplayTag tag_RootMotion;
+    UPROPERTY(EditAnywhere, Category = "PlayerMovementRestriction")
+    FGameplayTag tag_IsMoving;
 
     UPROPERTY(EditAnywhere, Category = "Collision")
     FVector BoxHalfExtents = FVector(15.f, 15.f, 15.f);
@@ -78,15 +80,11 @@ protected:
         const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
     UFUNCTION()
-    void TraceStart();
-
-    UFUNCTION()
-    void TraceEnd();
-
-    UFUNCTION()
     void ChangeState(ESL_MeleeSweep_State newstate);
     UFUNCTION()
     void ChangeTraceState(ESL_MeleeSweep_TraceState newState);
+    UFUNCTION()
+    void OnCharacteMove();
 
 private:
     void ComboInput();

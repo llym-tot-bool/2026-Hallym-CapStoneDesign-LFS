@@ -129,6 +129,12 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     SLPS->delegate_MeleeSweep_State.AddUObject(this, &USLGA_MeleeSweep::ChangeState);
     SLPS->delegate_MeleeSweep_TraceState.AddUObject(this, &USLGA_MeleeSweep::ChangeTraceState);
 
+    ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(ActorInfo->AvatarActor);
+    if (!SLChar) {
+        EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
+        return;
+    }
+    SLChar->delegate_CharacterMove.AddUObject(this, &USLGA_MeleeSweep::OnCharacteMove);
 
     hitchecker = USLAT_MeeleSweep_hit_checker::Create(
         this,
@@ -139,6 +145,8 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
 void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
     const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+    hitchecker->EndTask();
+
     // remove delegate biindings
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
     ASoulslikePlayerState* SLPS = Cast<ASoulslikePlayerState>(asc->GetOwner());
@@ -147,23 +155,18 @@ void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const
         SLPS->delegate_MeleeSweep_TraceState.RemoveAll(this);
     }
 
-    hitchecker->EndTask();
+    ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(ActorInfo->AvatarActor);
+    if (SLChar) {
+        SLChar->delegate_CharacterMove.AddUObject(this, &USLGA_MeleeSweep::OnCharacteMove);
+    }
+
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-}
-
-void USLGA_MeleeSweep::TraceStart()
-{
-    hitchecker->ReadyForActivation();
-
-}
-
-void USLGA_MeleeSweep::TraceEnd()
-{
-    hitchecker->EndTask();
 }
 
 void USLGA_MeleeSweep::ChangeState(ESL_MeleeSweep_State newstate)
 {
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate for state arrived"));
+
     state = newstate;
     switch (state)
     {
@@ -184,18 +187,28 @@ void USLGA_MeleeSweep::ChangeState(ESL_MeleeSweep_State newstate)
 
 void USLGA_MeleeSweep::ChangeTraceState(ESL_MeleeSweep_TraceState newState)
 {
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate for TRACE state arrived"));
+
     traceState = newState;
     switch (traceState)
     {
     case ESL_MeleeSweep_TraceState::none:
+        UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate response : trace end"));
         hitchecker->EndTask();
         break;
     case ESL_MeleeSweep_TraceState::trace:
+        UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate response : trace start"));
         hitchecker->ReadyForActivation();
         break;
     default:
         break;
     }
+}
+
+void USLGA_MeleeSweep::OnCharacteMove()
+{
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] melee canceld with character move"));
+    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
 }
 
 void USLGA_MeleeSweep::ComboInput()

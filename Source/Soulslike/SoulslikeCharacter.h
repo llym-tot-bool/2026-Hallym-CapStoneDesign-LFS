@@ -20,6 +20,7 @@ struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
+
 /**
  *  A simple player-controllable third person character
  *  Implements a controllable orbiting camera
@@ -44,10 +45,10 @@ protected:
 	FGameplayTag tag_tryingToMove;
 
 	UPROPERTY(EditAnywhere, Category = "SL Input")
-	FGameplayTag tag_isAttacking;
+	FGameplayTag tag_isMoving;
 
 	UPROPERTY(EditAnywhere, Category = "SL Input")
-	FGameplayTag tag_isMoving;
+	FGameplayTag tag_RootMotion;
 
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, Category="SL Input")
@@ -75,8 +76,6 @@ protected:
 	/** Skill slot 2 input action. */
 	UPROPERTY(EditAnywhere, Category = "SL Input")
 	UInputAction* SkillTwoAction;
-
-
 
 public:
 	/** Constructor */
@@ -137,5 +136,9 @@ public:
 
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+public:
+	FSL_MeleeSweep_ComboInput delegate_CharacterMove;
+
 };
 
