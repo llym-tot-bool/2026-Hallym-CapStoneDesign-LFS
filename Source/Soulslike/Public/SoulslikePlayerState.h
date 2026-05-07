@@ -15,6 +15,10 @@
  * 
  */
 
+DECLARE_MULTICAST_DELEGATE_OneParam(SLDelegate_MeleeSweep_State, ESL_MeleeSweep_State)
+DECLARE_MULTICAST_DELEGATE_OneParam(SLDelegate_MeleeSweep_TraceState, ESL_MeleeSweep_TraceState)
+
+
 UCLASS()
 class SOULSLIKE_API ASoulslikePlayerState : public APlayerState, public IAbilitySystemInterface
 {
@@ -40,4 +44,8 @@ protected:
 	TObjectPtr<USLDA_MeleeCombat> SLDA_MeleeCombat;
 
 	TArray<FGameplayAbilitySpecHandle> currentAbilityHandles;
+
+public:
+	SLDelegate_MeleeSweep_State delegate_MeleeSweep_State;
+	SLDelegate_MeleeSweep_TraceState delegate_MeleeSweep_TraceState;
 };

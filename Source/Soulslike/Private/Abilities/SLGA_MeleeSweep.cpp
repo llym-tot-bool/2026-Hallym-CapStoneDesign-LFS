@@ -87,20 +87,23 @@ void USLAT_MeeleSweep_hit_checker::EffectOnHit(AActor* hitActor)
     UE_LOG(LogTemp, Display, TEXT("[SL debug] %s EffectOnHit() : hit = %s"), *myName, *actorName);
 }
 
-void USLGA_MeleeSweep::addTag_stateAttacking(TObjectPtr<UAbilitySystemComponent> asc)
+void USLGA_MeleeSweep::setRootMotion()
 {
-    if (asc->HasMatchingGameplayTag(tag_isMoving)) {
-        asc->RemoveLooseGameplayTag(tag_isMoving);
+    TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
+    if (!asc) return;
+
+    if (!asc->HasMatchingGameplayTag(tag_RootMotion)) {
+        asc->AddLooseGameplayTag(tag_RootMotion);
     }
-    asc->AddLooseGameplayTag(tag_stateAttacking);
-    cnt_tag_stateAttackig++;
 }
 
-void USLGA_MeleeSweep::removeTag_stateAttacking(TObjectPtr<UAbilitySystemComponent> asc)
+void USLGA_MeleeSweep::removeRootMotion()
 {
-    if (cnt_tag_stateAttackig > 0) {
-        asc->RemoveLooseGameplayTag(tag_stateAttacking);
-        cnt_tag_stateAttackig--;
+    TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
+    if (!asc) return;
+
+    if (asc->HasMatchingGameplayTag(tag_RootMotion)) {
+        asc->RemoveLooseGameplayTag(tag_RootMotion);
     }
 }
 
@@ -108,76 +111,107 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
     Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+    state = ESL_MeleeSweep_State::Anticipation;
+    traceState = ESL_MeleeSweep_TraceState::none;
+
     FString myName = this->GetName();
     UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : called"), *myName); // debug
 
+    setRootMotion();
+    
+    // delegate binding
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
-    addTag_stateAttacking(asc);
+    ASoulslikePlayerState* SLPS =  Cast<ASoulslikePlayerState>(asc->GetOwner());
+    if (!SLPS) {
+        EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
+        return;
+    }
+    SLPS->delegate_MeleeSweep_State.AddUObject(this, &USLGA_MeleeSweep::ChangeState);
+    SLPS->delegate_MeleeSweep_TraceState.AddUObject(this, &USLGA_MeleeSweep::ChangeTraceState);
+
 
     hitchecker = USLAT_MeeleSweep_hit_checker::Create(
         this,
         socket_weapon_base, socket_weapon_tip, socket_weapon_length,
         BoxHalfExtents);
-
-    // 1. Wait for the 'Start' event from your ANS
-    if (UAbilityTask_WaitGameplayEvent* WaitTraceStart = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_traceStart)) {
-        WaitTraceStart->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::TraceStart);
-        WaitTraceStart->ReadyForActivation();
-    }
-    else {
-        UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : trace start event listener failed"), *myName);
-    }
-
-    // 2. Wait for the 'End'  to stop everything
-    if (UAbilityTask_WaitGameplayEvent* WaitTraceEnd = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_traceEnd)) {
-        WaitTraceEnd->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::TraceEnd);
-        WaitTraceEnd->ReadyForActivation();
-    }
-    else {
-        UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : tarce end event listener failed"), *myName);
-    }
-
-    // wait for free to move event
-    if (UAbilityTask_WaitGameplayEvent* WaitFreeToMove = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, tag_freeToMove)) {
-        WaitFreeToMove->EventReceived.AddDynamic(this, &USLGA_MeleeSweep::FreeToMove);
-        WaitFreeToMove->ReadyForActivation();
-    }
-    else {
-        UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : free to move event listener failed"), *myName);
-    }
 }
 
 void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
     const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+    // remove delegate biindings
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
-    removeTag_stateAttacking(asc);
+    ASoulslikePlayerState* SLPS = Cast<ASoulslikePlayerState>(asc->GetOwner());
+    if (SLPS) {
+        SLPS->delegate_MeleeSweep_State.RemoveAll(this);
+        SLPS->delegate_MeleeSweep_TraceState.RemoveAll(this);
+    }
 
     hitchecker->EndTask();
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-
-void USLGA_MeleeSweep::TraceStart(FGameplayEventData Payload)
+void USLGA_MeleeSweep::TraceStart()
 {
     hitchecker->ReadyForActivation();
+
 }
 
-void USLGA_MeleeSweep::TraceEnd(FGameplayEventData Payload)
+void USLGA_MeleeSweep::TraceEnd()
 {
     hitchecker->EndTask();
 }
 
-void USLGA_MeleeSweep::FreeToMove(FGameplayEventData Payload)
+void USLGA_MeleeSweep::ChangeState(ESL_MeleeSweep_State newstate)
 {
-    TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
-
-    if (asc->HasMatchingGameplayTag(tag_tryingToMove))
+    state = newstate;
+    switch (state)
     {
-        TObjectPtr<const UAnimMontage> targetMontage = Cast<UAnimMontage>(Payload.OptionalObject);
-
-        if (targetMontage == asc->GetCurrentMontage()) {
-            asc->CurrentMontageStop(0.2f);
-        }
+    case ESL_MeleeSweep_State::ComboInput:
+        ComboInput();
+        break;
+    case ESL_MeleeSweep_State::Translation:
+        Translate();
+        break;
+    case ESL_MeleeSweep_State::Recovery:
+        Recovery();
+        break;
+    default:
+        UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! melee sweep wrong tag"));
+        break;
     }
 }
+
+void USLGA_MeleeSweep::ChangeTraceState(ESL_MeleeSweep_TraceState newState)
+{
+    traceState = newState;
+    switch (traceState)
+    {
+    case ESL_MeleeSweep_TraceState::none:
+        hitchecker->EndTask();
+        break;
+    case ESL_MeleeSweep_TraceState::trace:
+        hitchecker->ReadyForActivation();
+        break;
+    default:
+        break;
+    }
+}
+
+void USLGA_MeleeSweep::ComboInput()
+{
+    delegate_ComboInput.Broadcast();
+}
+
+void USLGA_MeleeSweep::Translate()
+{
+    delegate_Translation.Broadcast();
+}
+
+void USLGA_MeleeSweep::Recovery()
+{
+    delegate_Recovery.Broadcast();
+    removeRootMotion();
+}
+
+

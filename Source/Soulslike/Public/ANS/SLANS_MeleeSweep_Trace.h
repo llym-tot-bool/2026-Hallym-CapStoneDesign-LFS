@@ -5,25 +5,24 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "GameplayTagContainer.h"
+#include "SLDA_MeleeCombat.h"
 
-#include "SLANS_MeleeSweepHitbox.generated.h"
+#include "SLANS_MeleeSweep_Trace.generated.h"
 
 /**
  * 
  */
 UCLASS(abstract)
-class SOULSLIKE_API USLANS_MeleeSweepHitbox : public UAnimNotifyState
+class SOULSLIKE_API USLANS_MeleeSweep_Trace : public UAnimNotifyState
 {
 	GENERATED_BODY()
 
 public:
-    // The Tag to send to the GA (must match HitEventTag in GA)
-    UPROPERTY(EditAnywhere, Category = "GAS")
-    FGameplayTag tag_traceStart;
+    UPROPERTY(EditAnywhere, Category = "TraceState");
+    ESL_MeleeSweep_TraceState state_trace;
 
-    UPROPERTY(EditAnywhere, Category = "GAS")
-    FGameplayTag tag_traceEnd;
-
+    UPROPERTY(EditAnywhere, Category = "TraceState");
+    ESL_MeleeSweep_TraceState state_none;
 
 public:
 

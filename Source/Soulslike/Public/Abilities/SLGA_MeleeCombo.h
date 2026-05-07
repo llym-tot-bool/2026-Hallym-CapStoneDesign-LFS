@@ -14,6 +14,8 @@
  * 
  */
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FComboInterruptDelegate);
+
 UCLASS()
 class SOULSLIKE_API USLAT_MeeleComboChecker : public UAbilityTask
 {
@@ -26,6 +28,8 @@ public:
 
     virtual void TickTask(float DeltaTime) override;
 
+    void CheckPlayerMoveInterrupt(TObjectPtr<UAbilitySystemComponent> asc);
+
 protected:
     FGameplayTag tag_comboAvailable;
     FGameplayTag tag_comboGrant;
@@ -34,7 +38,15 @@ protected:
     FGameplayTag tag_isMoving;
     FGameplayTag tag_interrupt;
 
-    FGameplayTagContainer& comboActionTagContainer;
+    FGameplayTagContainer comboActionTagContainer;
+
+public:
+    FComboInterruptDelegate OnInterruptDetected;
+};
+
+UENUM()
+enum class ESL_MeleeComboState : uint8 {
+
 };
 
 UCLASS(abstract)

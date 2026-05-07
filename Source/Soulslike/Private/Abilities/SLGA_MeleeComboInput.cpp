@@ -25,10 +25,6 @@ void USLGA_MeleeComboInput::ActivateAbility(const FGameplayAbilitySpecHandle Han
 	}
 
 	tag_combo = SLDA_WeaponCombo->tag_combo;
-	tag_inputAsComboStart = SLDA_WeaponCombo->tag_inputAsComboStart;
-	tag_inputAsComboEnd = SLDA_WeaponCombo->tag_inputAsComboEnd;
-	tag_comboGrant = SLDA_WeaponCombo->tag_comboGrant;
-	tag_comboLastAction = SLDA_WeaponCombo->tag_comboLastAction;
 
 	if (asc->HasMatchingGameplayTag(tag_inputAsComboStart)) {
 		UE_LOG(LogTemp, Display,

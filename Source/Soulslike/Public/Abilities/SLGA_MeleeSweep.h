@@ -5,12 +5,14 @@
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
 #include "Abilities/Tasks/AbilityTask.h"
+#include "SLDA_MeleeCombat.h"
 
 #include "SLGA_MeleeSweep.generated.h"
 
 /**
  * 
  */
+
 UCLASS()
 class SOULSLIKE_API USLAT_MeeleSweep_hit_checker : public UAbilityTask
 {
@@ -34,26 +36,14 @@ private:
     TArray<AActor*> actorsToIgnore;
 };
 
-UCLASS(abstract)
+UCLASS()
 class SOULSLIKE_API USLGA_MeleeSweep : public UGameplayAbility
 {
 	GENERATED_BODY()
 
 protected:
-
-    UPROPERTY(EditDefaultsOnly, Category = "Combat|Trace")
-    FGameplayTag tag_traceStart;
-    UPROPERTY(EditDefaultsOnly, Category = "Combat|Trace")
-    FGameplayTag tag_traceEnd;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
-    FGameplayTag tag_freeToMove;
-    UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
-    FGameplayTag tag_stateAttacking; int cnt_tag_stateAttackig;
-    UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
-    FGameplayTag tag_tryingToMove;
-    UPROPERTY(EditDefaultsOnly, Category = "Combat|Movement_restriction")
-    FGameplayTag tag_isMoving;
+    UPROPERTY(EditAnywhere, Category = "PlayerMovementRestriction")
+    FGameplayTag tag_RootMotion;
 
     UPROPERTY(EditAnywhere, Category = "Collision")
     FVector BoxHalfExtents = FVector(15.f, 15.f, 15.f);
@@ -67,12 +57,19 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Collision")
     float socket_weapon_length = 50.0f;
 
+    ESL_MeleeSweep_State state;
+    ESL_MeleeSweep_TraceState traceState;
     USLAT_MeeleSweep_hit_checker* hitchecker;
+
+    // broadcast to comboGA
+    FSL_MeleeSweep_ComboInput delegate_ComboInput;
+    FSL_MeleeSweep_Translation delegate_Translation;
+    FSL_MeleeSweep_Recovery delegate_Recovery;
 
 protected:
 
-    void addTag_stateAttacking(TObjectPtr<UAbilitySystemComponent> asc);
-    void removeTag_stateAttacking(TObjectPtr<UAbilitySystemComponent> asc);
+    void setRootMotion();
+    void removeRootMotion();
 
     virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
         const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
@@ -81,11 +78,18 @@ protected:
         const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
     UFUNCTION()
-    void TraceStart(FGameplayEventData Payload);
+    void TraceStart();
 
     UFUNCTION()
-    void TraceEnd(FGameplayEventData Payload);
+    void TraceEnd();
 
     UFUNCTION()
-    void FreeToMove(FGameplayEventData Payload);
+    void ChangeState(ESL_MeleeSweep_State newstate);
+    UFUNCTION()
+    void ChangeTraceState(ESL_MeleeSweep_TraceState newState);
+
+private:
+    void ComboInput();
+    void Translate();
+    void Recovery();
 };

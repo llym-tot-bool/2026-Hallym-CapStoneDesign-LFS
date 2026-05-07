@@ -23,26 +23,6 @@ public:
 	FGameplayTag tag_weapon;
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag")
 	FGameplayTag tag_combo;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Trace")
-	FGameplayTag tag_traceStart;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Trace")
-	FGameplayTag tag_traceEnd;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Event&State")
-	FGameplayTag tag_inputAsComboStart;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Event&State")
-	FGameplayTag tag_inputAsComboEnd;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Event&State")
-	FGameplayTag tag_comboPerform;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Event")
-	FGameplayTag tag_freeToMove;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|Event")
-	FGameplayTag tag_interrupt;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|State")
-	FGameplayTag tag_comboAvailable;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|State")
-	FGameplayTag tag_comboGrant;
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Tag|State")
-	FGameplayTag tag_comboLastAction;
 
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Input")
 	TObjectPtr<UInputAction> IA_combo;
@@ -84,4 +64,22 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "MeleeCombat|Weapon_list")
 	TArray<TObjectPtr<USLDA_WeaponStyle>> weaponStyle_list;
+};
+
+DECLARE_MULTICAST_DELEGATE(FSL_MeleeSweep_ComboInput)
+DECLARE_MULTICAST_DELEGATE(FSL_MeleeSweep_Translation)
+DECLARE_MULTICAST_DELEGATE(FSL_MeleeSweep_Recovery)
+
+UENUM()
+enum class ESL_MeleeSweep_State : uint8 {
+	Anticipation,
+	ComboInput,
+	Translation,
+	Recovery
+};
+
+UENUM()
+enum class ESL_MeleeSweep_TraceState : uint8 {
+	none,
+	trace
 };

@@ -22,6 +22,7 @@ void USLGA_MeleeCombo::StartComboChcker()
     EndComboChecker();
     comboChecker = USLAT_MeeleComboChecker::Create(this, tag_comboAvailable, tag_comboGrant, tag_comboPerform,
         tag_isMoving, tag_interrupt, comboActionTagContainer);
+    comboChecker->OnInterruptDetected.AddDynamic(this, &USLGA_MeleeCombo::SimpleEndAbility);
     comboChecker->ReadyForActivation();
     UE_LOG(LogTemp, Display, TEXT("[SL debug] combo checker activated"));
 }
@@ -56,7 +57,7 @@ void USLGA_MeleeCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
 
     comboActionTagContainer.Reset();
     for (TSubclassOf<UGameplayAbility> GA : SLDA_WeaponCombo->GA_list) {
-        UGameplayAbility* defaultGA = GA->GetDefaultObject<UGameplayAbility>();
+        const UGameplayAbility* defaultGA = GA->GetDefaultObject<UGameplayAbility>();
         if (!defaultGA) {
             UE_LOG(LogTemp, Display, 
                 TEXT("[SL debug] !!! melee combo ActivateAbility() : for some reason, there is no default class for %s"),
@@ -64,7 +65,7 @@ void USLGA_MeleeCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
             continue;
         }
 
-        FGameplayTagContainer tagCont_GA = defaultGA->AbilityTags;
+        const FGameplayTagContainer tagCont_GA = defaultGA->GetAssetTags();
         if (tagCont_GA.Num() <= 0) {
             UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! melee combo ActivateAbility() : for some reason, there is no default tag for %s"),
                 *GA->GetName());
@@ -255,13 +256,24 @@ void USLAT_MeeleComboChecker::TickTask(float DeltaTime)
         asc->HandleGameplayEvent(tag_comboPerform, &payload);
     }
 
-    for (const FGameplayTag& tag_eachGA : comboActionTagContainer.) {
-        // not implemented
+    CheckPlayerMoveInterrupt(asc);
+}
+
+void USLAT_MeeleComboChecker::CheckPlayerMoveInterrupt(TObjectPtr<UAbilitySystemComponent> asc)
+{
+    if (asc->HasMatchingGameplayTag(tag_comboGrant) ||
+        asc->HasMatchingGameplayTag(tag_comboPerform)) {
+        return;
     }
-    if () {
-        FGameplayEventData payload;
-        payload.EventTag = tag_interrupt;
-        UE_LOG(LogTemp, Display, TEXT("[SL debug] melee combo interrupt sent"));
-        asc->HandleGameplayEvent(tag_interrupt, &payload);
+
+    for (const FGameplayTag& tag_eachGA : comboActionTagContainer) {
+        if (asc->HasMatchingGameplayTag(tag_eachGA)) {
+            return;
+        }
     }
+
+    FGameplayEventData payload;
+    payload.EventTag = tag_interrupt;
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] melee combo interrupt sent"));
+    asc->HandleGameplayEvent(tag_interrupt, &payload);
 }
