@@ -88,11 +88,15 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		}
 
 		for (const TObjectPtr<USLDA_WeaponStyle> eachWeaponStyle : SLDA_MeleeCombat->weaponStyle_list) {
+			if (!eachWeaponStyle) continue;
+
 			UE_LOG(LogTemp, Display,
 				TEXT("[SL debug] SetupPlayerInputComponent() : weapon style = %s IA binding start"),
 				*eachWeaponStyle->tag_weapon.ToString());
 
 			for (const TObjectPtr<USLDA_WeaponCombo> eachCombo : eachWeaponStyle->combo_list) {
+				if (!eachCombo || !eachCombo->IA_combo) continue;
+
 				EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
 					this, &ASoulslikeCharacter::MeleeAction,
 					eachCombo);
@@ -131,20 +135,21 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 	ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>();
 	if (ps) {
 		UAbilitySystemComponent* ASC = ps->GetAbilitySystemComponent();
-		ASC->InitAbilityActorInfo(ps, this);
+		if (ASC) {
+			ASC->InitAbilityActorInfo(ps, this);
+			ps->AddDefaultAbilities();
 
-		ps->AddDefaultAbilities();
-
-		if (ASC && HasAuthority())
-		{
-			for (auto Effect : StartingEffectClasses)
+			if (HasAuthority())
 			{
-				FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
-				Ctx.AddSourceObject(this);
-				FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(Effect, 1.f, Ctx);
-				if (Spec.IsValid())
+				for (auto Effect : StartingEffectClasses)
 				{
-					ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+					FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
+					Ctx.AddSourceObject(this);
+					FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(Effect, 1.f, Ctx);
+					if (Spec.IsValid())
+					{
+						ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+					}
 				}
 			}
 		}
@@ -154,9 +159,11 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 void ASoulslikeCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	
-	if (AActor* target = GetLockOnComponent()->GetLockedTarget())
+
+	USLLockOnComponent* LockOn = GetLockOnComponent();
+	if (LockOn && LockOn->GetLockedTarget())
 	{
+		AActor* target = LockOn->GetLockedTarget();
 		FVector StartLocation = GetActorLocation();
 		FVector TargetLocation = target->GetActorLocation();
 		

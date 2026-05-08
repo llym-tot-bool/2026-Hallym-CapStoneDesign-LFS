@@ -20,6 +20,11 @@ UAbilitySystemComponent* ASoulslikePlayerState::GetAbilitySystemComponent() cons
 
 void ASoulslikePlayerState::AddDefaultAbilities()
 {
+	if (!SLDA_MeleeCombat) {
+		UE_LOG(LogTemp, Warning, TEXT("[SL debug] !!! AddDefaultAbilities() : SLDA_MeleeCombat is null"));
+		return;
+	}
+
 	UE_LOG(LogTemp, Display, 
 		TEXT("[SL debug] AddDefaultAbilities() : default weapon type = %s"), 
 		*SLDA_MeleeCombat->tag_default_weapon.ToString()); // debug
@@ -43,6 +48,8 @@ void ASoulslikePlayerState::AddDefaultAbilities()
 
 void ASoulslikePlayerState::ChangeMeleeStyle(FGameplayTag weapon_tag)
 {
+	if (!SLDA_MeleeCombat || !asc) return;
+
 	UE_LOG(LogTemp, Display, 
 		TEXT("[SL debug] ChangeMeleeStyle() : %s"),
 		*weapon_tag.ToString());
@@ -54,12 +61,16 @@ void ASoulslikePlayerState::ChangeMeleeStyle(FGameplayTag weapon_tag)
 	currentAbilityHandles.Empty();
 
 	for (TObjectPtr<USLDA_WeaponStyle> eachWeaponStyle : SLDA_MeleeCombat->weaponStyle_list) {
-		if (eachWeaponStyle->tag_weapon == weapon_tag) {
+		if (eachWeaponStyle && eachWeaponStyle->tag_weapon == weapon_tag) {
 			for (TObjectPtr<USLDA_WeaponCombo> eachWeaponCombo : eachWeaponStyle->combo_list) {
-				currentAbilityHandles.Add(asc->GiveAbility(FGameplayAbilitySpec(eachWeaponCombo->GA_Combo, 1)));
+				if (eachWeaponCombo) {
+					currentAbilityHandles.Add(asc->GiveAbility(FGameplayAbilitySpec(eachWeaponCombo->GA_Combo, 1)));
 
-				for (TSubclassOf<UGameplayAbility> eachGA : eachWeaponCombo->GA_list) {
-					currentAbilityHandles.Add(asc->GiveAbility(FGameplayAbilitySpec(eachGA, 1)));
+					for (TSubclassOf<UGameplayAbility> eachGA : eachWeaponCombo->GA_list) {
+						if (eachGA) {
+							currentAbilityHandles.Add(asc->GiveAbility(FGameplayAbilitySpec(eachGA, 1)));
+						}
+					}
 				}
 			}
 			break;

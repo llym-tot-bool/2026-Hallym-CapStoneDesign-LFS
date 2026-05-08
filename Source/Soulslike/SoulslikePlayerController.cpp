@@ -19,6 +19,11 @@ void ASoulslikePlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 
+	if (!SLDA_MeleeCombat) {
+		UE_LOG(LogTemp, Warning, TEXT("[SL debug] !!! SetupInputComponent() : SLDA_MeleeCombat is null"));
+		return;
+	}
+
 	UE_LOG(LogTemp, Display, 
 		TEXT("[SL debug] SetupInputComponent() : default weapon type = %s"),
 		*SLDA_MeleeCombat->tag_default_weapon.ToString()); // debug
@@ -93,9 +98,8 @@ void ASoulslikePlayerController::ChangeMeleeControlStyle(FGameplayTag weapon_tag
 				UE_LOG(LogTemp, Display,
 					TEXT("[SL debug] ChangeMeleeControlStyle() : current weapon type = %s"),
 					*tag_currentWeapon.ToString());
+				break;
 			}
-
-			break;
 		}
 	}
 }
