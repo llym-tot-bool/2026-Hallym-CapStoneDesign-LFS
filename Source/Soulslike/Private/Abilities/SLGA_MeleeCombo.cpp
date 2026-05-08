@@ -11,16 +11,14 @@ void USLGA_MeleeCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
     Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-    UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : called"),
-        *this->GetName());
 
     if (!SLDA_WeaponCombo) {
-        SimpleEndAbility(); return;
+        SimpleEndAbility(FString("no SLDA form activation")); return;
     }
     currentActionIdx = 0;
     lastActionIdx = SLDA_WeaponCombo->GA_list.Num() - 1;
     if (lastActionIdx < 0) {
-        SimpleEndAbility(); return;
+        SimpleEndAbility(FString("GA_list is empty")); return;
     }
 
     tag_combo = SLDA_WeaponCombo->tag_combo;
@@ -28,7 +26,7 @@ void USLGA_MeleeCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     for (TSubclassOf<UGameplayAbility> GA : SLDA_WeaponCombo->GA_list) {
         const UGameplayAbility* defaultGA = GA->GetDefaultObject<UGameplayAbility>();
         if (!defaultGA) {
-            SimpleEndAbility(); return;
+            SimpleEndAbility(FString("some GA from GA_list has no defaultGA")); return;
         }
 
         const FGameplayTagContainer tagCont_GA = defaultGA->GetAssetTags();
@@ -50,7 +48,7 @@ void USLGA_MeleeCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
 
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
     if (!asc) {
-        SimpleEndAbility(); return;
+        SimpleEndAbility(FString("no asc from ActiavteAbility()")); return;
     }
     
     StartAction();
@@ -66,8 +64,9 @@ void USLGA_MeleeCombo::EndAbility(const FGameplayAbilitySpecHandle Handle, const
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void USLGA_MeleeCombo::SimpleEndAbility()
+void USLGA_MeleeCombo::SimpleEndAbility(FString reason)
 {
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] simple end : %s"), *reason);
     const FGameplayAbilitySpecHandle Handle = GetCurrentAbilitySpecHandle();
     const FGameplayAbilityActorInfo* ActorInfo = GetCurrentActorInfo();
     const FGameplayAbilityActivationInfo ActivationInfo = GetCurrentActivationInfo();
@@ -79,6 +78,7 @@ void USLGA_MeleeCombo::SimpleEndAbility()
 
 void USLGA_MeleeCombo::StartAction()
 {
+    UE_LOG(LogTemp, Display, TEXT("[SL debug] start combo action"));
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
 
     if (!SLDA_WeaponCombo) {
@@ -101,7 +101,7 @@ void USLGA_MeleeCombo::StartAction()
         state = ESL_MeleeSweep_State::Anticipation;
     }
     else {
-        SimpleEndAbility(); return;
+        SimpleEndAbility(FString("StartAction() no current comboAction to observe")); return;
     }
 }
 
@@ -110,7 +110,7 @@ void USLGA_MeleeCombo::PlayNextComboAction()
     currentComboAction->SimpleEndAbility();
     
     if (currentActionIdx == lastActionIdx) {
-        SimpleEndAbility(); return;
+        SimpleEndAbility(FString("this is last combo action")); return;
     }
     currentActionIdx++;
     bIsInputBuffered = false;
@@ -129,7 +129,7 @@ void USLGA_MeleeCombo::PlayNextComboAction()
         state = ESL_MeleeSweep_State::Anticipation;
     }
     else {
-        SimpleEndAbility(); return;
+        SimpleEndAbility(FString("failed to get combo action GA. so, failed to bind observation delegate")); return;
     }
 }
 
@@ -150,12 +150,12 @@ void USLGA_MeleeCombo::OnTranslation()
 
 void USLGA_MeleeCombo::OnRecovery()
 {
-    SimpleEndAbility();
+    SimpleEndAbility(FString("recovery"));
 }
 
 void USLGA_MeleeCombo::OnCharacterMove()
 {
-    SimpleEndAbility();
+    SimpleEndAbility(FString("character move"));
 }
 
 void USLGA_MeleeCombo::OnPlayerInput(FGameplayTag tag)

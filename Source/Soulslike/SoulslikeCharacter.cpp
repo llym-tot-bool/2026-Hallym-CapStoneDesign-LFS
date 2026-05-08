@@ -194,15 +194,11 @@ void ASoulslikeCharacter::Look(const FInputActionValue& Value)
 
 void ASoulslikeCharacter::MeleeAction(const TObjectPtr<USLDA_WeaponCombo> combo)
 {
-	UE_LOG(LogTemp, Display, 
-		TEXT("[SL debug] MeleeAction() : ability tag = %s"),
-		*combo->tag_combo.ToString());
-
 	TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponent();
 
 	if (!asc) { UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! MeleeAction() : no ASC")); return; }
 
-	if (!combo->GA_Input) {
+	if (!combo->GA_Combo) {
 		UE_LOG(LogTemp, Display, 
 			TEXT("[SL debug] !!! MeleeAction() : no GA_Input for %s"), 
 			*combo->tag_weapon.ToString()); 
@@ -210,9 +206,14 @@ void ASoulslikeCharacter::MeleeAction(const TObjectPtr<USLDA_WeaponCombo> combo)
 	}
 
 	if (!asc->HasMatchingGameplayTag(combo->tag_combo)) {
-		asc->TryActivateAbilityByClass(combo->GA_Input);
+		UE_LOG(LogTemp, Display,
+			TEXT("[SL debug] input for combo : initial activation with tag = %s"),
+			*combo->tag_combo.ToString());
+		asc->TryActivateAbilityByClass(combo->GA_Combo);
 	}
 	else {
+		UE_LOG(LogTemp, Display,
+			TEXT("[SL debug] input for combo : delegate boradcast to existing combo"));
 		delegate_CharacterMeleeComboInput.Broadcast(combo->tag_combo);
 	}
 }
