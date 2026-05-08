@@ -44,6 +44,8 @@ class SOULSLIKE_API USLGA_MeleeSweep : public UGameplayAbility
 protected:
     UPROPERTY(EditAnywhere, Category = "PlayerMovementRestriction")
     FGameplayTag tag_RootMotion;
+    UPROPERTY(EditAnywhere, Category = "PlayerMovementRestriction")
+    FGameplayTag tag_IsMoving;
 
     UPROPERTY(EditAnywhere, Category = "Collision")
     FVector BoxHalfExtents = FVector(15.f, 15.f, 15.f);

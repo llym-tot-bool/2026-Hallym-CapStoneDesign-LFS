@@ -106,6 +106,10 @@ void USLGA_MeleeSweep::setRootMotion()
     if (!asc->HasMatchingGameplayTag(tag_RootMotion)) {
         asc->AddLooseGameplayTag(tag_RootMotion);
     }
+
+    if (asc->HasMatchingGameplayTag(tag_IsMoving)) {
+        asc->RemoveLooseGameplayTag(tag_IsMoving);
+    }
 }
 
 void USLGA_MeleeSweep::removeRootMotion()
