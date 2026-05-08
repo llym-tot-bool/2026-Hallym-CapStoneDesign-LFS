@@ -7,12 +7,18 @@
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
 #include "SLCharacterAttributeSet.h"
+#include "SLDA_MeleeCombat.h"
 
 #include "SoulslikePlayerState.generated.h"
 
 /**
  * 
  */
+
+DECLARE_MULTICAST_DELEGATE_OneParam(SLDelegate_MeleeSweep_State, ESL_MeleeSweep_State)
+DECLARE_MULTICAST_DELEGATE_OneParam(SLDelegate_MeleeSweep_TraceState, ESL_MeleeSweep_TraceState)
+
+
 UCLASS()
 class SOULSLIKE_API ASoulslikePlayerState : public APlayerState, public IAbilitySystemInterface
 {
@@ -25,13 +31,21 @@ public:
 
 	void AddDefaultAbilities();
 
+	void ChangeMeleeStyle(FGameplayTag weapon_tag);
+
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SL GAS")
 	class UAbilitySystemComponent* asc;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SL GAS")
 	class USLCharacterAttributeSet* AttributeSet;
 
-	UPROPERTY(EditAnywhere, Category = "GAS")
-	TArray<TSubclassOf<class UGameplayAbility>> defaultAbilities;
+	UPROPERTY(EditAnywhere, Category = "SL GAS")
+	TObjectPtr<USLDA_MeleeCombat> SLDA_MeleeCombat;
+
+	TArray<FGameplayAbilitySpecHandle> currentAbilityHandles;
+
+public:
+	SLDelegate_MeleeSweep_State delegate_MeleeSweep_State;
+	SLDelegate_MeleeSweep_TraceState delegate_MeleeSweep_TraceState;
 };

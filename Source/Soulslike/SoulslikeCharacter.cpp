@@ -19,6 +19,8 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "GameplayEffect.h"
+#include "SoulslikePlayerController.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -62,67 +64,44 @@ ASoulslikeCharacter::ASoulslikeCharacter()
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 }
 
-void ASoulslikeCharacter::PerformWeaponTrace()
-{
-	FVector start = GetMesh()->GetSocketLocation("Socket_weapon_base");
-	FVector end = GetMesh()->GetSocketLocation("Socket_weapon_tip");
-
-	TArray<AActor*> actorsToIgnore;
-	actorsToIgnore.Add(this);
-	FHitResult hitresult;
-
-	bool bHit = UKismetSystemLibrary::SphereTraceSingle(
-		this, start, end, 15.0f,
-		UEngineTypes::ConvertToTraceType(ECC_Pawn),
-		false, actorsToIgnore, EDrawDebugTrace::ForDuration,
-		hitresult, true
-	);
-
-	if (bHit && hitresult.GetActor()) {
-		AActor* hitActor = hitresult.GetActor();
-
-		if (!AlreadyHitActors.Contains(hitActor)) {
-			AlreadyHitActors.Add(hitActor);
-
-			IAbilitySystemInterface* hitInterface = Cast<IAbilitySystemInterface>(hitActor);
-			if (hitInterface) {
-				UAbilitySystemComponent* targetASC = hitInterface->GetAbilitySystemComponent();
-				UAbilitySystemComponent* myASC = GetAbilitySystemComponent();
-
-				if (targetASC && myASC) {
-					FGameplayEffectContextHandle effectHandle = myASC->MakeEffectContext();
-					effectHandle.AddHitResult(hitresult);
-
-					FGameplayEventData payload;
-					payload.Instigator = this;
-					payload.Target = hitActor;
-					payload.ContextHandle = effectHandle;
-
-					UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, FGameplayTag::RequestGameplayTag(FName("Event.Combat.HitLanded")), payload);
-					GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, TEXT("Hit Landed!"));
-				}
-			}
-
-
-		}
-	}
-}
-
-void ASoulslikeCharacter::ClearHitList()
-{
-	AlreadyHitActors.Empty();
-}
-
 void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
 		
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASoulslikeCharacter::Move);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &ASoulslikeCharacter::OnMoveStopped);
+
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &ASoulslikeCharacter::Look);
 
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASoulslikeCharacter::Look);
 
-		EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::LightAttack);
+		// bind for all Melee set
+		TObjectPtr<UEnhancedInputComponent> EIC = Cast<UEnhancedInputComponent>(InputComponent);
+		if (!EIC) {
+			UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! SetupPlayerInputComponent() : EnhancedInputComponent not found"));
+			return;
+		}
+
+		if (!SLDA_MeleeCombat) {
+			UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! SetupPlayerInputComponent() : SLDA_MeleeCombat is null"));
+			return;
+		}
+
+		for (const TObjectPtr<USLDA_WeaponStyle> eachWeaponStyle : SLDA_MeleeCombat->weaponStyle_list) {
+			UE_LOG(LogTemp, Display,
+				TEXT("[SL debug] SetupPlayerInputComponent() : weapon style = %s IA binding start"),
+				*eachWeaponStyle->tag_weapon.ToString());
+
+			for (const TObjectPtr<USLDA_WeaponCombo> eachCombo : eachWeaponStyle->combo_list) {
+				EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
+					this, &ASoulslikeCharacter::MeleeAction,
+					eachCombo);
+
+				UE_LOG(LogTemp, Display,
+					TEXT("[SL debug] SetupPlayerInputComponent() : weapon combo IA binding for tag = %s completed"),
+					*eachCombo->tag_combo.ToString());
+			}
+		}
 
 		if (SkillOneAction)
 		{
@@ -196,17 +175,62 @@ void ASoulslikeCharacter::Move(const FInputActionValue& Value)
 		return; // dead characters do not accept movement input
 	}
 
-	if (ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>()) {
-		if (ps->GetAbilitySystemComponent()->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Attacking")))) {
-			return; // don't move while attacking
-		}
-	}
-
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
+	TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponent();
+	if (!asc) {
+		UE_LOG(LogTemp, Display, TEXT("[SL debug] Move() : ASC is null"));
+		return;
+	}
+
+	if (!MovementVector.IsNearlyZero()) {
+		if (!asc->HasMatchingGameplayTag(tag_tryingToMove)) {
+			asc->AddLooseGameplayTag(tag_tryingToMove); // tag for informing whether player is trying to move
+		}
+	}
+
+	if (asc->HasMatchingGameplayTag(tag_RootMotion)) {
+		return; // don't move while attacking 
+	}
+
+	if (!asc->HasMatchingGameplayTag(tag_isMoving)) {
+		asc->AddLooseGameplayTag(tag_isMoving);
+		delegate_CharacterMove.Broadcast();
+	}
+
 	// route the input
 	DoMove(MovementVector.X, MovementVector.Y);
+}
+
+void ASoulslikeCharacter::OnMoveStopped(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Display, TEXT("[SL debug] OnMoveStopped() : player input for movement is stopped"));
+	TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponent();
+	if (!asc) {
+		UE_LOG(LogTemp, Display, TEXT("[SL debug] Move() : ASC is null"));
+		return;
+	}
+
+	if (asc->HasMatchingGameplayTag(tag_tryingToMove)) {
+		asc->RemoveLooseGameplayTag(tag_tryingToMove);
+	}
+
+	if (asc->HasMatchingGameplayTag(tag_isMoving)) {
+		asc->RemoveLooseGameplayTag(tag_isMoving);
+	}
+}
+
+void ASoulslikeCharacter::OnJumped_Implementation()
+{
+	// Always call the Super to ensure base engine logic runs
+	Super::OnJumped_Implementation();
+
+	// Broadcast your custom delegate
+	delegate_CharacterMove.Broadcast();
+
+	// Optional: Add a log or screen message for debugging
+	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, TEXT("Jump Succeeded!"));
 }
 
 void ASoulslikeCharacter::Look(const FInputActionValue& Value)
@@ -218,15 +242,31 @@ void ASoulslikeCharacter::Look(const FInputActionValue& Value)
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
 }
 
-void ASoulslikeCharacter::LightAttack()
+void ASoulslikeCharacter::MeleeAction(const TObjectPtr<USLDA_WeaponCombo> combo)
 {
-	if (ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>()) {
-		UAbilitySystemComponent* ASC = ps->GetAbilitySystemComponent();
+	if (GetCharacterMovement()->IsFalling()) return;
 
-		if (ASC) {
-			FGameplayTag attackTag = FGameplayTag::RequestGameplayTag(FName("PlayerAbility.Attack.Light"));
-			ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(attackTag));
-		}
+	TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponent();
+
+	if (!asc) { UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! MeleeAction() : no ASC")); return; }
+
+	if (!combo->GA_Combo) {
+		UE_LOG(LogTemp, Display, 
+			TEXT("[SL debug] !!! MeleeAction() : no GA_Input for %s"), 
+			*combo->tag_weapon.ToString()); 
+		return;
+	}
+
+	if (!asc->HasMatchingGameplayTag(combo->tag_combo)) {
+		UE_LOG(LogTemp, Display,
+			TEXT("[SL debug] input for combo : initial activation with tag = %s"),
+			*combo->tag_combo.ToString());
+		asc->TryActivateAbilityByClass(combo->GA_Combo);
+	}
+	else {
+		UE_LOG(LogTemp, Display,
+			TEXT("[SL debug] input for combo : delegate boradcast to existing combo"));
+		delegate_CharacterMeleeComboInput.Broadcast(combo->tag_combo);
 	}
 }
 
@@ -258,6 +298,18 @@ void ASoulslikeCharacter::DoLook(float Yaw, float Pitch)
 		AddControllerYawInput(Yaw);
 		AddControllerPitchInput(Pitch);
 	}
+}
+
+void ASoulslikeCharacter::DoJumpStart()
+{
+	// signal the character to jump
+	Jump();
+}
+
+void ASoulslikeCharacter::DoJumpEnd()
+{
+	// signal the character to stop jumping
+	StopJumping();
 }
 
 void ASoulslikeCharacter::SkillOne()
