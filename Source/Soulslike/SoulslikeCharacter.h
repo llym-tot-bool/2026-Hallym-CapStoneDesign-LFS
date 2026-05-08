@@ -7,6 +7,9 @@
 #include "Logging/LogMacros.h"
 #include "Abilities/SLSkillTypes.h"
 #include "AbilitySystemInterface.h"
+#include "Abilities/GameplayAbility.h"
+#include "SoulslikePlayerController.h"
+#include "SLDA_MeleeCombat.h"
 
 #include "SoulslikeCharacter.generated.h"
 
@@ -59,13 +62,23 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* LockOnAction;
 
-	UPROPERTY()
-	TArray<AActor*> AlreadyHitActors;
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* JumpAction;
+
+	UPROPERTY(EditAnywhere, Category = "SL Tag")
+	FGameplayTag tag_tryingToMove;
+
+	UPROPERTY(EditAnywhere, Category = "SL Tag")
+	FGameplayTag tag_isMoving;
+
+	UPROPERTY(EditAnywhere, Category = "SL Tag")
+	FGameplayTag tag_RootMotion;
+
+	UPROPERTY(EditAnywhere, Category = "SL Data Asset")
+	TObjectPtr<USLDA_MeleeCombat> SLDA_MeleeCombat;
 
 public:
-
 	ASoulslikeCharacter();	
-
 
 protected:
 
@@ -76,10 +89,12 @@ protected:
 protected:
 
 	void Move(const FInputActionValue& Value);
+	void OnMoveStopped(const FInputActionValue& Value);
+	virtual void OnJumped_Implementation() override;
 
 	void Look(const FInputActionValue& Value);
 
-	void LightAttack();
+	void MeleeAction(const TObjectPtr<USLDA_WeaponCombo> combo);
 
 	void SkillOne();
 	void SkillTwo();
@@ -107,15 +122,18 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Combat|Status")
 	bool IsDead() const;
-
-	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void PerformWeaponTrace();
-
-	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void ClearHitList();
 	
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	TArray<TSubclassOf<UGameplayEffect>> StartingEffectClasses;
+
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoJumpStart();
+
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoJumpEnd();
+
+	UFUNCTION(BlueprintCallable, Category = "Input|Skill")
+	virtual void DoActivateSkill(ESLSkillSlot Slot);
 
 public:
 
@@ -127,5 +145,10 @@ public:
 
 	/** Returns LockOn component **/
 	FORCEINLINE USLLockOnComponent* GetLockOnComponent() const { return LockOnComponent; }
+
+public:
+	FSL_MeleeSweep_ComboInput delegate_CharacterMove;
+	FSL_CharacterMeleeComboInput delegate_CharacterMeleeComboInput;
+
 };
 
