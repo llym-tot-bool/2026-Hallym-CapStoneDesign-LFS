@@ -13,6 +13,7 @@
 
 #include "SoulslikeCharacter.generated.h"
 
+class ASLWeaponBase;
 class UGameplayEffect;
 class USpringArmComponent;
 class UCameraComponent;
@@ -92,7 +93,6 @@ protected:
 
 	void Move(const FInputActionValue& Value);
 	void OnMoveStopped(const FInputActionValue& Value);
-	virtual void OnJumped_Implementation() override;
 
 	void Look(const FInputActionValue& Value);
 
@@ -125,14 +125,19 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Combat|Status")
 	bool IsDead() const;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "GAS")
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void EquipWeapon(TSubclassOf<ASLWeaponBase> WeaponClass);
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Starting Setup")
 	TArray<TSubclassOf<UGameplayEffect>> StartingEffectClasses;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Starting Setup")
+	TSubclassOf<ASLWeaponBase> StartingWeapon;
 
-	UFUNCTION(BlueprintCallable, Category="Input")
-	virtual void DoJumpStart();
 
-	UFUNCTION(BlueprintCallable, Category="Input")
-	virtual void DoJumpEnd();
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<ASLWeaponBase> CurrentWeapon;
 
 public:
 

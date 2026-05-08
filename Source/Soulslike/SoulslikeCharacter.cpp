@@ -16,6 +16,7 @@
 #include "Abilities/SLSkillTypes.h"
 #include "Combat/SLLockOnComponent.h"
 #include "Weapons/SLWeaponTypes.h"
+#include "Weapons/SLWeaponBase.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
@@ -59,6 +60,8 @@ ASoulslikeCharacter::ASoulslikeCharacter()
 
 	// Lock-on logic component — drives controller rotation while a target is held.
 	LockOnComponent = CreateDefaultSubobject<USLLockOnComponent>(TEXT("LockOnComponent"));
+
+	CurrentWeapon = nullptr;
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
@@ -151,8 +154,34 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 						ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
 					}
 				}
+
+				if (StartingWeapon)
+				{
+					EquipWeapon(StartingWeapon);
+				}
 			}
 		}
+	}
+}
+
+void ASoulslikeCharacter::EquipWeapon(TSubclassOf<ASLWeaponBase> WeaponClass)
+{
+	if (!WeaponClass) return;
+
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->Unequip();
+		CurrentWeapon->Destroy();
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = this;
+
+	CurrentWeapon = GetWorld()->SpawnActor<ASLWeaponBase>(WeaponClass, SpawnParams);
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->Equip(this);
 	}
 }
 
@@ -228,18 +257,6 @@ void ASoulslikeCharacter::OnMoveStopped(const FInputActionValue& Value)
 	}
 }
 
-void ASoulslikeCharacter::OnJumped_Implementation()
-{
-	// Always call the Super to ensure base engine logic runs
-	Super::OnJumped_Implementation();
-
-	// Broadcast your custom delegate
-	delegate_CharacterMove.Broadcast();
-
-	// Optional: Add a log or screen message for debugging
-	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, TEXT("Jump Succeeded!"));
-}
-
 void ASoulslikeCharacter::Look(const FInputActionValue& Value)
 {
 	// input is a Vector2D
@@ -305,18 +322,6 @@ void ASoulslikeCharacter::DoLook(float Yaw, float Pitch)
 		AddControllerYawInput(Yaw);
 		AddControllerPitchInput(Pitch);
 	}
-}
-
-void ASoulslikeCharacter::DoJumpStart()
-{
-	// signal the character to jump
-	Jump();
-}
-
-void ASoulslikeCharacter::DoJumpEnd()
-{
-	// signal the character to stop jumping
-	StopJumping();
 }
 
 void ASoulslikeCharacter::SkillOne()
