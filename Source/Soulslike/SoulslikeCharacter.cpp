@@ -17,6 +17,7 @@
 #include "Combat/SLLockOnComponent.h"
 #include "Weapons/SLWeaponTypes.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
@@ -171,6 +172,23 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 	}
 }
 
+void ASoulslikeCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	
+	if (AActor* target = GetLockOnComponent()->GetLockedTarget())
+	{
+		FVector StartLocation = GetActorLocation();
+		FVector TargetLocation = target->GetActorLocation();
+		
+		FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
+		
+		FRotator CurrentRotation = GetActorRotation();
+		FRotator SmoothedRotation = FMath::RInterpTo(CurrentRotation, LookAtRotation, DeltaSeconds, 5.0f);
+		SetActorRotation(FRotator(0.f, SmoothedRotation.Yaw, 0.f));
+	}
+}
+
 void ASoulslikeCharacter::Move(const FInputActionValue& Value)
 {
 	if (IsDead())
@@ -262,6 +280,7 @@ void ASoulslikeCharacter::LockOnToggle()
 	if (LockOnComponent)
 	{
 		LockOnComponent->ToggleLockOn();
+		GetCharacterMovement()->bOrientRotationToMovement = !GetCharacterMovement()->bOrientRotationToMovement;
 	}
 }
 
