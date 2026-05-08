@@ -5,6 +5,7 @@
 #include "SoulslikeCharacter.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
+#include "Weapons/SLWeaponTypes.h"
 //#include "SLGA_MeleeCombo.h"
 
 USLAT_MeeleSweep_hit_checker* USLAT_MeeleSweep_hit_checker::Create(UGameplayAbility* OwningAbility,
@@ -122,8 +123,26 @@ void USLGA_MeleeSweep::removeRootMotion()
     }
 }
 
+bool USLGA_MeleeSweep::CanActivateAbility(const FGameplayAbilitySpecHandle Handle,
+    const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags,
+    const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
+{
+    if (ActorInfo)
+    {
+        if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
+        {
+            const float CurrentStamina = ASC->GetNumericAttribute(USLCharacterAttributeSet::GetStaminaAttribute());
+            if (CurrentStamina < StaminaCost)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-    const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+                                       const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
     Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
     state = ESL_MeleeSweep_State::Anticipation;
@@ -155,6 +174,19 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
         this,
         socket_weapon_base, socket_weapon_tip, socket_weapon_length,
         BoxHalfExtents);
+    
+    FGameplayEffectContextHandle Ctx = asc->MakeEffectContext();
+    Ctx.AddSourceObject(ActorInfo->AvatarActor.Get());
+    FGameplayEffectSpecHandle SpecHandle = asc->MakeOutgoingSpec(StaminaCostGEClass, /*Level*/ GetAbilityLevel(), Ctx);
+    if (SpecHandle.IsValid())
+    {
+        const FGameplayTag CostTag = FGameplayTag::RequestGameplayTag(SLCombatTags::SetByCaller_StaminaCost, /*ErrorIfNotFound*/ false);
+        if (CostTag.IsValid())
+        {
+            SpecHandle.Data->SetSetByCallerMagnitude(CostTag, -StaminaCost);
+        }
+        asc->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+    }
 }
 
 void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
