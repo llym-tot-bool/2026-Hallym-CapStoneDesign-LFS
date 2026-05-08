@@ -144,6 +144,14 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 
 			if (HasAuthority())
 			{
+				for (auto Ability : StartingAbilities)
+				{
+					if (Ability)
+					{
+						ASC->GiveAbility(FGameplayAbilitySpec(Ability, 1));
+					}
+				}
+
 				for (auto Effect : StartingEffectClasses)
 				{
 					FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();

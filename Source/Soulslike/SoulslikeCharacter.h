@@ -130,6 +130,9 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Starting Setup")
 	TArray<TSubclassOf<UGameplayEffect>> StartingEffectClasses;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Starting Setup")
+	TArray<TSubclassOf<UGameplayAbility>> StartingAbilities;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Starting Setup")
 	TSubclassOf<ASLWeaponBase> StartingWeapon;
