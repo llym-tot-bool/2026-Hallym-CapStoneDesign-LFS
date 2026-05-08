@@ -35,7 +35,7 @@ protected:
     FGameplayTagContainer comboActionTagContainer;
 
     ESL_MeleeSweep_State state;
-    TObjectPtr<USLGA_MeleeSweep> currentComboAction;
+    TObjectPtr<USLGA_MeleeSweep> currentComboAction = nullptr;
 
     bool bIsInputBuffered = false;
 
@@ -50,6 +50,7 @@ protected:
 
     void StartAction();
 
+    void ObserveComboAction(TObjectPtr<USLGA_MeleeSweep> GA_sweep);
     void PlayNextComboAction();
 
     UFUNCTION()

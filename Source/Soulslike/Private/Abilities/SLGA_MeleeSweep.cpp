@@ -88,7 +88,13 @@ void USLAT_MeeleSweep_hit_checker::EffectOnHit(AActor* hitActor)
     UE_LOG(LogTemp, Display, TEXT("[SL debug] %s EffectOnHit() : hit = %s"), *myName, *actorName);
 }
 
-void USLGA_MeleeSweep::SimpleEndAbility() {
+void USLGA_MeleeSweep::InterruptAsCombo()
+{
+    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
+}
+
+void USLGA_MeleeSweep::InterruptAsCancelled()
+{
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, true);
 }
 
@@ -162,7 +168,11 @@ void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const
 
     ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(ActorInfo->AvatarActor);
     if (SLChar) {
-        SLChar->delegate_CharacterMove.AddUObject(this, &USLGA_MeleeSweep::OnCharacteMove);
+        SLChar->delegate_CharacterMove.RemoveAll(this);
+    }
+
+    if (bWasCancelled) {
+        removeRootMotion();
     }
 
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);

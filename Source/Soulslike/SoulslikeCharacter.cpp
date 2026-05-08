@@ -158,8 +158,8 @@ void ASoulslikeCharacter::Move(const FInputActionValue& Value)
 
 	if (!asc->HasMatchingGameplayTag(tag_isMoving)) {
 		asc->AddLooseGameplayTag(tag_isMoving);
+		delegate_CharacterMove.Broadcast();
 	}
-	delegate_CharacterMove.Broadcast();
 
 	// route the input
 	DoMove(MovementVector.X, MovementVector.Y);

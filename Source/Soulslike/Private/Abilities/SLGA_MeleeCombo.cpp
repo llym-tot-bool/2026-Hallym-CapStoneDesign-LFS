@@ -45,6 +45,7 @@ void USLGA_MeleeCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
         return;
     }
     SLChar->delegate_CharacterMove.AddUObject(this, &USLGA_MeleeCombo::OnCharacterMove);
+    SLChar->delegate_CharacterMeleeComboInput.AddUObject(this, &USLGA_MeleeCombo::OnPlayerInput);
 
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
     if (!asc) {
@@ -57,8 +58,13 @@ void USLGA_MeleeCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
 void USLGA_MeleeCombo::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
     const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-
     if (TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo()) {
+    }
+
+    ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(ActorInfo->AvatarActor);
+    if (SLChar) {
+        SLChar->delegate_CharacterMove.RemoveAll(this);
+        SLChar->delegate_CharacterMeleeComboInput.RemoveAll(this);
     }
 
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -67,13 +73,8 @@ void USLGA_MeleeCombo::EndAbility(const FGameplayAbilitySpecHandle Handle, const
 void USLGA_MeleeCombo::SimpleEndAbility(FString reason)
 {
     UE_LOG(LogTemp, Display, TEXT("[SL debug] simple end : %s"), *reason);
-    const FGameplayAbilitySpecHandle Handle = GetCurrentAbilitySpecHandle();
-    const FGameplayAbilityActorInfo* ActorInfo = GetCurrentActorInfo();
-    const FGameplayAbilityActivationInfo ActivationInfo = GetCurrentActivationInfo();
 
-    // Call EndAbility with the retrieved data
-    bool bReplicateEndAbility = true;
-    EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, false);
+    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, true);
 }
 
 void USLGA_MeleeCombo::StartAction()
@@ -92,7 +93,14 @@ void USLGA_MeleeCombo::StartAction()
 
     asc->TryActivateAbilityByClass(SLDA_WeaponCombo->GA_list[0]);
     FGameplayAbilitySpec* spec = asc->FindAbilitySpecFromClass(SLDA_WeaponCombo->GA_list[0]);
-    currentComboAction = Cast<USLGA_MeleeSweep>(spec->GetPrimaryInstance());
+
+    TObjectPtr<USLGA_MeleeSweep> nextComboAction = Cast<USLGA_MeleeSweep>(spec->GetPrimaryInstance());
+    ObserveComboAction(nextComboAction);
+}
+
+void USLGA_MeleeCombo::ObserveComboAction(TObjectPtr<USLGA_MeleeSweep> GA_sweep)
+{
+    currentComboAction = GA_sweep;
 
     if (currentComboAction) {
         currentComboAction->delegate_ComboInput.AddUObject(this, &USLGA_MeleeCombo::OnComboInput);
@@ -101,13 +109,15 @@ void USLGA_MeleeCombo::StartAction()
         state = ESL_MeleeSweep_State::Anticipation;
     }
     else {
-        SimpleEndAbility(FString("StartAction() no current comboAction to observe")); return;
+        SimpleEndAbility(FString("failed to get combo action GA. so, failed to bind observation delegate")); return;
     }
 }
 
 void USLGA_MeleeCombo::PlayNextComboAction()
 {
-    currentComboAction->SimpleEndAbility();
+    if (currentComboAction) {
+        currentComboAction->InterruptAsCombo();
+    }
     
     if (currentActionIdx == lastActionIdx) {
         SimpleEndAbility(FString("this is last combo action")); return;
@@ -120,17 +130,9 @@ void USLGA_MeleeCombo::PlayNextComboAction()
 
     asc->TryActivateAbilityByClass(SLDA_WeaponCombo->GA_list[currentActionIdx]);
     FGameplayAbilitySpec* spec = asc->FindAbilitySpecFromClass(SLDA_WeaponCombo->GA_list[currentActionIdx]);
-    currentComboAction = Cast<USLGA_MeleeSweep>(spec->GetPrimaryInstance());
 
-    if (currentComboAction) {
-        currentComboAction->delegate_ComboInput.AddUObject(this, &USLGA_MeleeCombo::OnComboInput);
-        currentComboAction->delegate_Translation.AddUObject(this, &USLGA_MeleeCombo::OnTranslation);
-        currentComboAction->delegate_Recovery.AddUObject(this, &USLGA_MeleeCombo::OnRecovery);
-        state = ESL_MeleeSweep_State::Anticipation;
-    }
-    else {
-        SimpleEndAbility(FString("failed to get combo action GA. so, failed to bind observation delegate")); return;
-    }
+    TObjectPtr<USLGA_MeleeSweep> nextComboAction = Cast<USLGA_MeleeSweep>(spec->GetPrimaryInstance());
+    ObserveComboAction(nextComboAction);
 }
 
 void USLGA_MeleeCombo::OnComboInput()
