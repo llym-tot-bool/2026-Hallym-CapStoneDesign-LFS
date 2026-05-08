@@ -227,7 +227,7 @@ void USLGA_MeleeSweep::ChangeTraceState(ESL_MeleeSweep_TraceState newState)
 void USLGA_MeleeSweep::OnCharacteMove()
 {
     UE_LOG(LogTemp, Display, TEXT("[SL debug] melee canceld with character move"));
-    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
+    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, true);
 }
 
 void USLGA_MeleeSweep::ComboInput()

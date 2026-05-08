@@ -183,6 +183,18 @@ void ASoulslikeCharacter::OnMoveStopped(const FInputActionValue& Value)
 	}
 }
 
+void ASoulslikeCharacter::OnJumped_Implementation()
+{
+	// Always call the Super to ensure base engine logic runs
+	Super::OnJumped_Implementation();
+
+	// Broadcast your custom delegate
+	delegate_CharacterMove.Broadcast();
+
+	// Optional: Add a log or screen message for debugging
+	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, TEXT("Jump Succeeded!"));
+}
+
 void ASoulslikeCharacter::Look(const FInputActionValue& Value)
 {
 	// input is a Vector2D
@@ -194,6 +206,8 @@ void ASoulslikeCharacter::Look(const FInputActionValue& Value)
 
 void ASoulslikeCharacter::MeleeAction(const TObjectPtr<USLDA_WeaponCombo> combo)
 {
+	if (GetCharacterMovement()->IsFalling()) return;
+
 	TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponent();
 
 	if (!asc) { UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! MeleeAction() : no ASC")); return; }

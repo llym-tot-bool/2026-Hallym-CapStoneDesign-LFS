@@ -94,6 +94,7 @@ protected:
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
 	void OnMoveStopped(const FInputActionValue& Value);
+	virtual void OnJumped_Implementation() override;
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
