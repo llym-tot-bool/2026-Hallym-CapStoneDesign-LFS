@@ -13,6 +13,7 @@
 
 #include "SoulslikeCharacter.generated.h"
 
+class ASLWeaponBase;
 class UGameplayEffect;
 class USpringArmComponent;
 class UCameraComponent;
@@ -85,12 +86,13 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void PossessedBy(AController* NewController) override;
+	
+	virtual void Tick(float DeltaSeconds) override;
 
 protected:
 
 	void Move(const FInputActionValue& Value);
 	void OnMoveStopped(const FInputActionValue& Value);
-	virtual void OnJumped_Implementation() override;
 
 	void Look(const FInputActionValue& Value);
 
@@ -123,14 +125,21 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Combat|Status")
 	bool IsDead() const;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "GAS")
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void EquipWeapon(TSubclassOf<ASLWeaponBase> WeaponClass);
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Starting Setup")
 	TArray<TSubclassOf<UGameplayEffect>> StartingEffectClasses;
 
-	UFUNCTION(BlueprintCallable, Category="Input")
-	virtual void DoJumpStart();
+	UPROPERTY(EditDefaultsOnly, Category = "Starting Setup")
+	TArray<TSubclassOf<UGameplayAbility>> StartingAbilities;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Starting Setup")
+	TSubclassOf<ASLWeaponBase> StartingWeapon;
 
-	UFUNCTION(BlueprintCallable, Category="Input")
-	virtual void DoJumpEnd();
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<ASLWeaponBase> CurrentWeapon;
 
 public:
 

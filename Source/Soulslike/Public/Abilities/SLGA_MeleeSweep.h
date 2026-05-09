@@ -61,6 +61,12 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Collision")
     float socket_weapon_length = 50.0f;
 
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack", meta = (ClampMin = "0.0"))
+    float StaminaCost = 25.f;
+    
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack|GAS")
+    TSubclassOf<UGameplayEffect> StaminaCostGEClass;
+
     ESL_MeleeSweep_State state;
     ESL_MeleeSweep_TraceState traceState;
     USLAT_MeeleSweep_hit_checker* hitchecker;
@@ -79,6 +85,10 @@ protected:
 
     void setRootMotion();
     void removeRootMotion();
+    
+    virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+        const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr,
+        FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 
     virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
         const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;

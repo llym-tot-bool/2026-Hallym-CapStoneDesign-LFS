@@ -16,7 +16,9 @@
 #include "Abilities/SLSkillTypes.h"
 #include "Combat/SLLockOnComponent.h"
 #include "Weapons/SLWeaponTypes.h"
+#include "Weapons/SLWeaponBase.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "GameplayEffect.h"
 #include "SoulslikePlayerController.h"
@@ -59,6 +61,8 @@ ASoulslikeCharacter::ASoulslikeCharacter()
 	// Lock-on logic component — drives controller rotation while a target is held.
 	LockOnComponent = CreateDefaultSubobject<USLLockOnComponent>(TEXT("LockOnComponent"));
 
+	CurrentWeapon = nullptr;
+
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 }
@@ -87,11 +91,15 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		}
 
 		for (const TObjectPtr<USLDA_WeaponStyle> eachWeaponStyle : SLDA_MeleeCombat->weaponStyle_list) {
+			if (!eachWeaponStyle) continue;
+
 			UE_LOG(LogTemp, Display,
 				TEXT("[SL debug] SetupPlayerInputComponent() : weapon style = %s IA binding start"),
 				*eachWeaponStyle->tag_weapon.ToString());
 
 			for (const TObjectPtr<USLDA_WeaponCombo> eachCombo : eachWeaponStyle->combo_list) {
+				if (!eachCombo || !eachCombo->IA_combo) continue;
+
 				EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
 					this, &ASoulslikeCharacter::MeleeAction,
 					eachCombo);
@@ -133,23 +141,77 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 	ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>();
 	if (ps) {
 		UAbilitySystemComponent* ASC = ps->GetAbilitySystemComponent();
-		ASC->InitAbilityActorInfo(ps, this);
+		if (ASC) {
+			ASC->InitAbilityActorInfo(ps, this);
+			ps->AddDefaultAbilities();
 
-		ps->AddDefaultAbilities();
-
-		if (ASC && HasAuthority())
-		{
-			for (auto Effect : StartingEffectClasses)
+			if (HasAuthority())
 			{
-				FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
-				Ctx.AddSourceObject(this);
-				FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(Effect, 1.f, Ctx);
-				if (Spec.IsValid())
+				for (auto Ability : StartingAbilities)
 				{
-					ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+					if (Ability)
+					{
+						ASC->GiveAbility(FGameplayAbilitySpec(Ability, 1));
+					}
+				}
+
+				for (auto Effect : StartingEffectClasses)
+				{
+					FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
+					Ctx.AddSourceObject(this);
+					FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(Effect, 1.f, Ctx);
+					if (Spec.IsValid())
+					{
+						ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+					}
+				}
+
+				if (StartingWeapon)
+				{
+					EquipWeapon(StartingWeapon);
 				}
 			}
 		}
+	}
+}
+
+void ASoulslikeCharacter::EquipWeapon(TSubclassOf<ASLWeaponBase> WeaponClass)
+{
+	if (!WeaponClass) return;
+
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->Unequip();
+		CurrentWeapon->Destroy();
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = this;
+
+	CurrentWeapon = GetWorld()->SpawnActor<ASLWeaponBase>(WeaponClass, SpawnParams);
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->Equip(this);
+	}
+}
+
+void ASoulslikeCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	USLLockOnComponent* LockOn = GetLockOnComponent();
+	if (LockOn && LockOn->GetLockedTarget())
+	{
+		AActor* target = LockOn->GetLockedTarget();
+		FVector StartLocation = GetActorLocation();
+		FVector TargetLocation = target->GetActorLocation();
+		
+		FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
+		
+		FRotator CurrentRotation = GetActorRotation();
+		FRotator SmoothedRotation = FMath::RInterpTo(CurrentRotation, LookAtRotation, DeltaSeconds, 5.0f);
+		SetActorRotation(FRotator(0.f, SmoothedRotation.Yaw, 0.f));
 	}
 }
 
@@ -204,18 +266,6 @@ void ASoulslikeCharacter::OnMoveStopped(const FInputActionValue& Value)
 	if (asc->HasMatchingGameplayTag(tag_isMoving)) {
 		asc->RemoveLooseGameplayTag(tag_isMoving);
 	}
-}
-
-void ASoulslikeCharacter::OnJumped_Implementation()
-{
-	// Always call the Super to ensure base engine logic runs
-	Super::OnJumped_Implementation();
-
-	// Broadcast your custom delegate
-	delegate_CharacterMove.Broadcast();
-
-	// Optional: Add a log or screen message for debugging
-	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, TEXT("Jump Succeeded!"));
 }
 
 void ASoulslikeCharacter::Look(const FInputActionValue& Value)
@@ -285,18 +335,6 @@ void ASoulslikeCharacter::DoLook(float Yaw, float Pitch)
 	}
 }
 
-void ASoulslikeCharacter::DoJumpStart()
-{
-	// signal the character to jump
-	Jump();
-}
-
-void ASoulslikeCharacter::DoJumpEnd()
-{
-	// signal the character to stop jumping
-	StopJumping();
-}
-
 void ASoulslikeCharacter::SkillOne()
 {
 	DoActivateSkill(ESLSkillSlot::SkillOne);
@@ -317,6 +355,7 @@ void ASoulslikeCharacter::LockOnToggle()
 	if (LockOnComponent)
 	{
 		LockOnComponent->ToggleLockOn();
+		GetCharacterMovement()->bOrientRotationToMovement = !GetCharacterMovement()->bOrientRotationToMovement;
 	}
 }
 

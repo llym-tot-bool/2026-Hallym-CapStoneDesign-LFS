@@ -121,7 +121,7 @@ void Aenemy_mobs::MoveToRandomReachableLocation()
 
 float Aenemy_mobs::ComputeBasicAttackDamage() const
 {
-	return 0.0f;
+	return 15.f;
 }
 
 bool Aenemy_mobs::TryBasicAttack(AActor* TargetActor)
