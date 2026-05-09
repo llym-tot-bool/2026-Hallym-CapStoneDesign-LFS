@@ -64,7 +64,7 @@ void ASoulslikePlayerState::ChangeMeleeStyle(FGameplayTag weapon_tag)
 		if (eachWeaponStyle && eachWeaponStyle->tag_weapon == weapon_tag) {
 			for (TObjectPtr<USLDA_WeaponCombo> eachWeaponCombo : eachWeaponStyle->combo_list) {
 				if (eachWeaponCombo) {
-					currentAbilityHandles.Add(asc->GiveAbility(FGameplayAbilitySpec(eachWeaponCombo->GA_Combo, 1)));
+					//currentAbilityHandles.Add(asc->GiveAbility(FGameplayAbilitySpec(eachWeaponCombo->GA_Combo, 1)));
 
 					for (TSubclassOf<UGameplayAbility> eachGA : eachWeaponCombo->GA_list) {
 						if (eachGA) {

@@ -10,6 +10,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "SoulslikePlayerController.h"
 #include "SLDA_MeleeCombat.h"
+#include "SL_ComboManger.h"
 
 #include "SoulslikeCharacter.generated.h"
 
@@ -20,6 +21,7 @@ class UCameraComponent;
 class UInputAction;
 class USLLockOnComponent;
 struct FInputActionValue;
+class USL_ComboManger;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -79,7 +81,7 @@ protected:
 	TObjectPtr<USLDA_MeleeCombat> SLDA_MeleeCombat;
 
 public:
-	ASoulslikeCharacter();	
+	ASoulslikeCharacter();
 
 protected:
 
@@ -153,7 +155,12 @@ public:
 	FORCEINLINE USLLockOnComponent* GetLockOnComponent() const { return LockOnComponent; }
 
 public:
-	FSL_MeleeSweep_ComboInput delegate_CharacterMove;
+	UPROPERTY(BlueprintReadOnly, Category = "GAS")
+	TObjectPtr<UAbilitySystemComponent> ASC;
+
+	TObjectPtr<USL_ComboManger> ComboManager;
+
+	FSL_CharacterMove delegate_CharacterMove;
 	FSL_CharacterMeleeComboInput delegate_CharacterMeleeComboInput;
 
 };

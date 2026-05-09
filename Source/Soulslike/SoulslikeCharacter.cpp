@@ -22,6 +22,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "GameplayEffect.h"
 #include "SoulslikePlayerController.h"
+#include "Soulslike.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -65,6 +66,8 @@ ASoulslikeCharacter::ASoulslikeCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+
+	ComboManager = CreateDefaultSubobject<USL_ComboManger>(TEXT("ComboManger"));
 }
 
 void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -139,38 +142,36 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 
 	ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>();
-	if (ps) {
-		UAbilitySystemComponent* ASC = ps->GetAbilitySystemComponent();
-		if (ASC) {
-			ASC->InitAbilityActorInfo(ps, this);
-			ps->AddDefaultAbilities();
+	ASC = ps->GetAbilitySystemComponent();
+	ensureOrQuit(ASC);
 
-			if (HasAuthority())
+	ASC->InitAbilityActorInfo(ps, this);
+	ps->AddDefaultAbilities();
+
+	if (HasAuthority())
+	{
+		for (auto Ability : StartingAbilities)
+		{
+			if (Ability)
 			{
-				for (auto Ability : StartingAbilities)
-				{
-					if (Ability)
-					{
-						ASC->GiveAbility(FGameplayAbilitySpec(Ability, 1));
-					}
-				}
-
-				for (auto Effect : StartingEffectClasses)
-				{
-					FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
-					Ctx.AddSourceObject(this);
-					FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(Effect, 1.f, Ctx);
-					if (Spec.IsValid())
-					{
-						ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
-					}
-				}
-
-				if (StartingWeapon)
-				{
-					EquipWeapon(StartingWeapon);
-				}
+				ASC->GiveAbility(FGameplayAbilitySpec(Ability, 1));
 			}
+		}
+
+		for (auto Effect : StartingEffectClasses)
+		{
+			FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
+			Ctx.AddSourceObject(this);
+			FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(Effect, 1.f, Ctx);
+			if (Spec.IsValid())
+			{
+				ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+			}
+		}
+
+		if (StartingWeapon)
+		{
+			EquipWeapon(StartingWeapon);
 		}
 	}
 }
@@ -225,24 +226,18 @@ void ASoulslikeCharacter::Move(const FInputActionValue& Value)
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
-	TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponent();
-	if (!asc) {
-		UE_LOG(LogTemp, Display, TEXT("[SL debug] Move() : ASC is null"));
-		return;
-	}
-
 	if (!MovementVector.IsNearlyZero()) {
-		if (!asc->HasMatchingGameplayTag(tag_tryingToMove)) {
-			asc->AddLooseGameplayTag(tag_tryingToMove); // tag for informing whether player is trying to move
+		if (!ASC->HasMatchingGameplayTag(tag_tryingToMove)) {
+			ASC->AddLooseGameplayTag(tag_tryingToMove); // tag for informing whether player is trying to move
 		}
 	}
 
-	if (asc->HasMatchingGameplayTag(tag_RootMotion)) {
+	if (ASC->HasMatchingGameplayTag(tag_RootMotion)) {
 		return; // don't move while attacking 
 	}
 
-	if (!asc->HasMatchingGameplayTag(tag_isMoving)) {
-		asc->AddLooseGameplayTag(tag_isMoving);
+	if (!ASC->HasMatchingGameplayTag(tag_isMoving)) {
+		ASC->AddLooseGameplayTag(tag_isMoving);
 		delegate_CharacterMove.Broadcast();
 	}
 
@@ -253,18 +248,13 @@ void ASoulslikeCharacter::Move(const FInputActionValue& Value)
 void ASoulslikeCharacter::OnMoveStopped(const FInputActionValue& Value)
 {
 	UE_LOG(LogTemp, Display, TEXT("[SL debug] OnMoveStopped() : player input for movement is stopped"));
-	TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponent();
-	if (!asc) {
-		UE_LOG(LogTemp, Display, TEXT("[SL debug] Move() : ASC is null"));
-		return;
+
+	if (ASC->HasMatchingGameplayTag(tag_tryingToMove)) {
+		ASC->RemoveLooseGameplayTag(tag_tryingToMove);
 	}
 
-	if (asc->HasMatchingGameplayTag(tag_tryingToMove)) {
-		asc->RemoveLooseGameplayTag(tag_tryingToMove);
-	}
-
-	if (asc->HasMatchingGameplayTag(tag_isMoving)) {
-		asc->RemoveLooseGameplayTag(tag_isMoving);
+	if (ASC->HasMatchingGameplayTag(tag_isMoving)) {
+		ASC->RemoveLooseGameplayTag(tag_isMoving);
 	}
 }
 
@@ -281,34 +271,12 @@ void ASoulslikeCharacter::MeleeAction(const TObjectPtr<USLDA_WeaponCombo> combo)
 {
 	if (GetCharacterMovement()->IsFalling()) return;
 
-	TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponent();
-
-	if (!asc) { UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! MeleeAction() : no ASC")); return; }
-
-	if (!combo->GA_Combo) {
-		UE_LOG(LogTemp, Display, 
-			TEXT("[SL debug] !!! MeleeAction() : no GA_Input for %s"), 
-			*combo->tag_weapon.ToString()); 
-		return;
-	}
-
-	if (!asc->HasMatchingGameplayTag(combo->tag_combo)) {
-		UE_LOG(LogTemp, Display,
-			TEXT("[SL debug] input for combo : initial activation with tag = %s"),
-			*combo->tag_combo.ToString());
-		asc->TryActivateAbilityByClass(combo->GA_Combo);
-	}
-	else {
-		UE_LOG(LogTemp, Display,
-			TEXT("[SL debug] input for combo : delegate boradcast to existing combo"));
-		delegate_CharacterMeleeComboInput.Broadcast(combo->tag_combo);
-	}
+	delegate_CharacterMeleeComboInput.Broadcast(combo->tag_combo);
 }
 
 UAbilitySystemComponent* ASoulslikeCharacter::GetAbilitySystemComponent() const
 {
-	ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>();
-	return ps ? ps->GetAbilitySystemComponent() : nullptr;
+	return ASC;
 }
 
 void ASoulslikeCharacter::DoMove(float Right, float Forward)
@@ -361,34 +329,21 @@ void ASoulslikeCharacter::LockOnToggle()
 
 void ASoulslikeCharacter::DoDodge()
 {
-	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	const FGameplayTag DodgeTag = FGameplayTag::RequestGameplayTag(SLCombatTags::Activate_Dodge, /*ErrorIfNotFound*/ false);
+	if (DodgeTag.IsValid())
 	{
-		const FGameplayTag DodgeTag = FGameplayTag::RequestGameplayTag(SLCombatTags::Activate_Dodge, /*ErrorIfNotFound*/ false);
-		if (DodgeTag.IsValid())
-		{
-			ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(DodgeTag));
-		}
+		ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(DodgeTag));
 	}
 }
 
 bool ASoulslikeCharacter::IsDead() const
 {
-	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
-	{
-		const FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Dead, /*ErrorIfNotFound*/ false);
-		return DeadTag.IsValid() && ASC->HasMatchingGameplayTag(DeadTag);
-	}
-	return false;
+	const FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Dead, /*ErrorIfNotFound*/ false);
+	return DeadTag.IsValid() && ASC->HasMatchingGameplayTag(DeadTag);
 }
 
 void ASoulslikeCharacter::DoActivateSkill(ESLSkillSlot Slot)
 {
-	ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>();
-	if (!ps) { return; }
-
-	UAbilitySystemComponent* ASC = ps->GetAbilitySystemComponent();
-	if (!ASC) { return; }
-
 	FName TagName;
 	switch (Slot)
 	{

@@ -27,9 +27,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|Input")
 	TObjectPtr<UInputAction> IA_combo;
 
-	UPROPERTY(EditAnywhere, Category = "WeaponCombo|GA_Combo")
-	TSubclassOf<UGameplayAbility> GA_Combo;
-
 	UPROPERTY(EditAnywhere, Category = "WeaponCombo|GA_list")
 	TArray<TSubclassOf<UGameplayAbility>> GA_list;
 };
