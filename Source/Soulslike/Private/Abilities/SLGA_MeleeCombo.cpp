@@ -115,13 +115,14 @@ void USLGA_MeleeCombo::ObserveComboAction(TObjectPtr<USLGA_MeleeSweep> GA_sweep)
 
 void USLGA_MeleeCombo::PlayNextComboAction()
 {
+    if (currentActionIdx >= lastActionIdx) {
+        SimpleEndAbility(FString("this is last combo action")); return;
+    }
+
     if (currentComboAction) {
         currentComboAction->InterruptAsCombo();
     }
     
-    if (currentActionIdx == lastActionIdx) {
-        SimpleEndAbility(FString("this is last combo action")); return;
-    }
     currentActionIdx++;
     bIsInputBuffered = false;
     state = ESL_MeleeSweep_State::Anticipation;

@@ -101,6 +101,9 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 					*eachCombo->tag_combo.ToString());
 			}
 		}
+		if (JumpAction) {
+			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::Jump);
+		}
 
 		if (SkillOneAction)
 		{

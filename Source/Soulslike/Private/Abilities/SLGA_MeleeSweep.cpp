@@ -101,7 +101,7 @@ void USLGA_MeleeSweep::InterruptAsCombo()
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
 }
 
-void USLGA_MeleeSweep::InterruptAsCancelled()
+void USLGA_MeleeSweep::InterruptAsCancel()
 {
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, true);
 }

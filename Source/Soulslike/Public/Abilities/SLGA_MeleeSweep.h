@@ -73,7 +73,7 @@ public:
 
 public:
     void InterruptAsCombo();
-    void InterruptAsCancelled();
+    void InterruptAsCancel();
 
 protected:
 
