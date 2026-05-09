@@ -158,6 +158,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> ASC;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USL_ComboManger> ComboManager;
 
 	FSL_CharacterMove delegate_CharacterMove;

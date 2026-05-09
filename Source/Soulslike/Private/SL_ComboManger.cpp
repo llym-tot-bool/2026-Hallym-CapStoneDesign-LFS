@@ -24,6 +24,15 @@ void USL_ComboManger::BeginPlay()
 
 	ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(GetOwner()); ensureOrQuit(SLChar);
 	SLChar->delegate_CharacterMeleeComboInput.AddUObject(this, &USL_ComboManger::OnCharacterInput);
+
+	ASC = SLChar->GetAbilitySystemComponent();
+	ensureOrQuit(ASC);
+	ensureOrQuit(combo);
+	
+	currentActionIdx = 0;
+	lastActionIdx = combo->GA_list.Num() - 1;
+	ensureOrQuit(lastActionIdx >= 0);
+
 }
 
 
@@ -37,7 +46,25 @@ void USL_ComboManger::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 
 void USL_ComboManger::OnCharacterInput(FGameplayTag tag_combo)
 {
-	SLDEBUG("Hello debugging shit %s, %d", *FString("debug"), 12345)
+	if (!bIsPlaying) { // initial action start
+		bool result = ASC->TryActivateAbilityByClass(combo->GA_list[0]);
+		if (!result) { SLDEBUG("fail to activate combo"); return; }
+	}
+	else { // continue combo action
+		if (currentActionIdx == lastActionIdx) {
+			currentActionIdx = 0;
+		}
+		else {
+			currentActionIdx++;
+		}
+
+		bool result = ASC->TryActivateAbilityByClass(combo->GA_list[currentActionIdx]);
+		if (!result) { 
+			currentActionIdx--;
+			SLDEBUG("fail to continue combo"); 
+			return;
+		}
+	}
 }
 
 

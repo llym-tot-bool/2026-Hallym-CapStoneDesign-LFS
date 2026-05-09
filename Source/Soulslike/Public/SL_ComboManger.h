@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "SLDA_MeleeCombat.h"
+#include "SoulslikePlayerState.h"
 
 #include "SL_ComboManger.generated.h"
 
@@ -14,6 +15,16 @@ UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class SOULSLIKE_API USL_ComboManger : public UActorComponent
 {
 	GENERATED_BODY()
+
+protected:
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	TObjectPtr<USLDA_WeaponCombo> combo;
+
+	TObjectPtr<UAbilitySystemComponent> ASC;
+
+	bool bIsPlaying = false;
+	int currentActionIdx;
+	int lastActionIdx;
 
 public:	
 	// Sets default values for this component's properties
