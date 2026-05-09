@@ -132,9 +132,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
 
-	UFUNCTION(BlueprintCallable, Category = "Input|Skill")
-	virtual void DoActivateSkill(ESLSkillSlot Slot);
-
 public:
 
 	/** Returns CameraBoom subobject **/

@@ -24,7 +24,8 @@ void USLANS_MeleeSweep_Trace::NotifyBegin(USkeletalMeshComponent* MeshComp, UAni
 
     ASoulslikePlayerState* SLPS = Cast<ASoulslikePlayerState>(PS);
     if (!SLPS) return;
-
+    if (!SLPS->delegate_MeleeSweep_TraceState.IsBound()) return;
+    
     SLPS->delegate_MeleeSweep_TraceState.Broadcast(state_trace);
 }
 

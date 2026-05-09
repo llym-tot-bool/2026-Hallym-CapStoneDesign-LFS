@@ -24,6 +24,7 @@ public:
         float trace_length, FVector boxHalfExtents);
 
     bool IgnoreSelf();
+    void SetIsScanning(const bool value);
 
     virtual void TickTask(float DeltaTime) override;
     void EffectOnHit(AActor* hitActor);
@@ -34,6 +35,7 @@ private:
     float trace_length;
     FVector boxHalfExtents;
     TArray<AActor*> actorsToIgnore;
+    bool isScanning;
 };
 
 UCLASS()

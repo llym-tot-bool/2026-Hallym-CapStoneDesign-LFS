@@ -16,6 +16,7 @@ USLAT_MeeleSweep_hit_checker* USLAT_MeeleSweep_hit_checker::Create(UGameplayAbil
     hit_checker->socket_tip_name = socket_end_name;
     hit_checker->trace_length = trace_length;
     hit_checker->boxHalfExtents = boxHalfExtents;
+    hit_checker->isScanning = false;
 
     hit_checker->actorsToIgnore.Empty();
     if (!hit_checker->IgnoreSelf()) return nullptr;
@@ -32,9 +33,16 @@ bool USLAT_MeeleSweep_hit_checker::IgnoreSelf()
     return true;
 }
 
+void USLAT_MeeleSweep_hit_checker::SetIsScanning(const bool value)
+{
+    isScanning = value;
+}
+
 void USLAT_MeeleSweep_hit_checker::TickTask(float DeltaTime)
 {
     Super::TickTask(DeltaTime);
+
+    if (!isScanning) return;
 
     AActor* avatar = GetAvatarActor();
     if (!avatar) return;
@@ -155,12 +163,15 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
         this,
         socket_weapon_base, socket_weapon_tip, socket_weapon_length,
         BoxHalfExtents);
+    hitchecker->ReadyForActivation();
 }
 
 void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
     const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-    hitchecker->EndTask();
+    if (hitchecker) {
+        hitchecker->EndTask();
+    }
 
     // remove delegate biindings
     TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
@@ -208,16 +219,21 @@ void USLGA_MeleeSweep::ChangeTraceState(ESL_MeleeSweep_TraceState newState)
 {
     UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate for TRACE state arrived"));
 
+    if (!hitchecker) {
+        UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! no hitchecker for MeleeSweep"));
+        return;
+    }
+
     traceState = newState;
     switch (traceState)
     {
     case ESL_MeleeSweep_TraceState::none:
         UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate response : trace end"));
-        hitchecker->EndTask();
+        hitchecker->SetIsScanning(false);
         break;
     case ESL_MeleeSweep_TraceState::trace:
         UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate response : trace start"));
-        hitchecker->ReadyForActivation();
+        hitchecker->SetIsScanning(true);
         break;
     default:
         break;
