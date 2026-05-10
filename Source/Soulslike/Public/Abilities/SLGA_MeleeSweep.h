@@ -6,6 +6,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "Abilities/Tasks/AbilityTask.h"
 #include "SLDA_MeleeCombat.h"
+#include "SoulslikePlayerState.h"
 
 #include "SLGA_MeleeSweep.generated.h"
 
@@ -71,8 +72,12 @@ protected:
     ESL_MeleeSweep_TraceState traceState;
     USLAT_MeeleSweep_hit_checker* hitchecker;
 
+    TObjectPtr<UAbilitySystemComponent> ASC;
+    TObjectPtr<ASoulslikePlayerState> SLPS;
+    bool bInterruptAsCombo = false;
+
 public:
-    // broadcast to comboGA
+    // broadcast to combo component
     FSL_MeleeSweep_ComboInput delegate_ComboInput;
     FSL_MeleeSweep_Translation delegate_Translation;
     FSL_MeleeSweep_Recovery delegate_Recovery;
@@ -104,6 +109,8 @@ protected:
     void OnCharacteMove();
 
 private:
+
+    // deligate binding function
     void ComboInput();
     void Translate();
     void Recovery();

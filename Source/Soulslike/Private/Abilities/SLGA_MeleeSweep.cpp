@@ -6,7 +6,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Weapons/SLWeaponTypes.h"
-//#include "SLGA_MeleeCombo.h"
+#include "Soulslike.h"
 
 USLAT_MeeleSweep_hit_checker* USLAT_MeeleSweep_hit_checker::Create(UGameplayAbility* OwningAbility,
     FName socket_start_name, FName socket_end_name,
@@ -99,6 +99,7 @@ void USLAT_MeeleSweep_hit_checker::EffectOnHit(AActor* hitActor)
 
 void USLGA_MeleeSweep::InterruptAsCombo()
 {
+    bInterruptAsCombo = true;
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
 }
 
@@ -137,9 +138,9 @@ bool USLGA_MeleeSweep::CanActivateAbility(const FGameplayAbilitySpecHandle Handl
 {
     if (ActorInfo)
     {
-        if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
+        if (UAbilitySystemComponent* asc = ActorInfo->AbilitySystemComponent.Get())
         {
-            const float CurrentStamina = ASC->GetNumericAttribute(USLCharacterAttributeSet::GetStaminaAttribute());
+            const float CurrentStamina = asc->GetNumericAttribute(USLCharacterAttributeSet::GetStaminaAttribute());
             if (CurrentStamina < StaminaCost)
             {
                 return false;
@@ -155,27 +156,16 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
     state = ESL_MeleeSweep_State::Anticipation;
     traceState = ESL_MeleeSweep_TraceState::none;
-
-    FString myName = this->GetName();
-    UE_LOG(LogTemp, Display, TEXT("[SL debug] %s ActivateAbility() : called"), *myName); // debug
-
+    bInterruptAsCombo = false;
     setRootMotion();
-    
+
     // delegate binding
-    TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
-    ASoulslikePlayerState* SLPS =  Cast<ASoulslikePlayerState>(asc->GetOwner());
-    if (!SLPS) {
-        EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
-        return;
-    }
+    ASC = GetAbilitySystemComponentFromActorInfo(); ensureOrQuit(ASC);
+    SLPS = Cast<ASoulslikePlayerState>(ASC->GetOwner()); ensureOrQuit(SLPS)
     SLPS->delegate_MeleeSweep_State.AddUObject(this, &USLGA_MeleeSweep::ChangeState);
     SLPS->delegate_MeleeSweep_TraceState.AddUObject(this, &USLGA_MeleeSweep::ChangeTraceState);
 
-    ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(ActorInfo->AvatarActor);
-    if (!SLChar) {
-        EndAbility(Handle, ActorInfo, ActivationInfo, false, false);
-        return;
-    }
+    ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(ActorInfo->AvatarActor); ensureOrQuit(SLChar);
     SLChar->delegate_CharacterMove.AddUObject(this, &USLGA_MeleeSweep::OnCharacteMove);
 
     hitchecker = USLAT_MeeleSweep_hit_checker::Create(
@@ -184,9 +174,9 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
         BoxHalfExtents);
     hitchecker->ReadyForActivation();
     
-    FGameplayEffectContextHandle Ctx = asc->MakeEffectContext();
+    FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
     Ctx.AddSourceObject(ActorInfo->AvatarActor.Get());
-    FGameplayEffectSpecHandle SpecHandle = asc->MakeOutgoingSpec(StaminaCostGEClass, /*Level*/ GetAbilityLevel(), Ctx);
+    FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(StaminaCostGEClass, /*Level*/ GetAbilityLevel(), Ctx);
     if (SpecHandle.IsValid())
     {
         const FGameplayTag CostTag = FGameplayTag::RequestGameplayTag(SLCombatTags::SetByCaller_StaminaCost, /*ErrorIfNotFound*/ false);
@@ -194,7 +184,7 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
         {
             SpecHandle.Data->SetSetByCallerMagnitude(CostTag, -StaminaCost);
         }
-        asc->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+        ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
     }
 }
 
@@ -206,8 +196,6 @@ void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const
     }
 
     // remove delegate biindings
-    TObjectPtr<UAbilitySystemComponent> asc = GetAbilitySystemComponentFromActorInfo();
-    ASoulslikePlayerState* SLPS = Cast<ASoulslikePlayerState>(asc->GetOwner());
     if (SLPS) {
         SLPS->delegate_MeleeSweep_State.RemoveAll(this);
         SLPS->delegate_MeleeSweep_TraceState.RemoveAll(this);
@@ -218,7 +206,7 @@ void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const
         SLChar->delegate_CharacterMove.RemoveAll(this);
     }
 
-    if (bWasCancelled) {
+    if (!bInterruptAsCombo) {
         removeRootMotion();
     }
 
@@ -227,18 +215,19 @@ void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const
 
 void USLGA_MeleeSweep::ChangeState(ESL_MeleeSweep_State newstate)
 {
-    UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate for state arrived"));
-
     state = newstate;
     switch (state)
     {
     case ESL_MeleeSweep_State::ComboInput:
+        UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate arrived : ComboInput "));
         ComboInput();
         break;
     case ESL_MeleeSweep_State::Translation:
+        UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate arrived : Translation "));
         Translate();
         break;
     case ESL_MeleeSweep_State::Recovery:
+        UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate arrived : Recovery "));
         Recovery();
         break;
     default:
