@@ -10,7 +10,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "SoulslikePlayerController.h"
 #include "SLDA_MeleeCombat.h"
-#include "SL_ComboManger.h"
+#include "SL_ComboManager.h"
 
 #include "SoulslikeCharacter.generated.h"
 
@@ -21,7 +21,7 @@ class UCameraComponent;
 class UInputAction;
 class USLLockOnComponent;
 struct FInputActionValue;
-class USL_ComboManger;
+class USL_ComboManager;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -158,8 +158,12 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> ASC;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USL_ComboManger> ComboManager;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager|Katana_Base", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USL_ComboManager> ComboManager_Katana_Base;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager|Katana_Special", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USL_ComboManager> ComboManager_Katana_Special;
+
 
 	FSL_CharacterMove delegate_CharacterMove;
 	FSL_CharacterMeleeComboInput delegate_CharacterMeleeComboInput;

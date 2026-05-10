@@ -8,12 +8,12 @@
 #include "SoulslikePlayerState.h"
 #include "Abilities/SLGA_MeleeSweep.h"
 
-#include "SL_ComboManger.generated.h"
+#include "SL_ComboManager.generated.h"
 
 class ASoulslikeCharacter;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class SOULSLIKE_API USL_ComboManger : public UActorComponent
+class SOULSLIKE_API USL_ComboManager : public UActorComponent
 {
 	GENERATED_BODY()
 
@@ -33,7 +33,7 @@ protected:
 
 public:	
 	// Sets default values for this component's properties
-	USL_ComboManger();
+	USL_ComboManager();
 
 protected:
 	// Called when the game starts

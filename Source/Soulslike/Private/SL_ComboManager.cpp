@@ -1,13 +1,13 @@
 
 
 
-#include "SL_ComboManger.h"
+#include "SL_ComboManager.h"
 #include "Soulslike.h"
 #include "SoulslikeCharacter.h"
 
 
 // Sets default values for this component's properties
-USL_ComboManger::USL_ComboManger()
+USL_ComboManager::USL_ComboManager()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
@@ -16,12 +16,12 @@ USL_ComboManger::USL_ComboManger()
 
 
 // Called when the game starts
-void USL_ComboManger::BeginPlay()
+void USL_ComboManager::BeginPlay()
 {
 	Super::BeginPlay();
 
 	ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(GetOwner()); ensureOrQuit(SLChar);
-	SLChar->delegate_CharacterMeleeComboInput.AddUObject(this, &USL_ComboManger::OnCharacterInput);
+	SLChar->delegate_CharacterMeleeComboInput.AddUObject(this, &USL_ComboManager::OnCharacterInput);
 
 	ASC = SLChar->GetAbilitySystemComponent();
 	ensureOrQuit(ASC);
@@ -34,14 +34,14 @@ void USL_ComboManger::BeginPlay()
 
 
 // Called every frame
-void USL_ComboManger::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void USL_ComboManager::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// empty
 }
 
-void USL_ComboManger::OnCharacterInput(FGameplayTag tag_combo)
+void USL_ComboManager::OnCharacterInput(FGameplayTag tag_combo)
 {
 	if (tag_combo != combo->tag_combo) return;
 
@@ -67,7 +67,7 @@ void USL_ComboManger::OnCharacterInput(FGameplayTag tag_combo)
 	}
 }
 
-void USL_ComboManger::StartInitialGA()
+void USL_ComboManager::StartInitialGA()
 {
 	ensureOrQuit(!bIsPlaying);
 
@@ -85,7 +85,7 @@ void USL_ComboManger::StartInitialGA()
 	ObserveGA(sweepGA);
 }
 
-void USL_ComboManger::ContinueNextGA()
+void USL_ComboManager::ContinueNextGA()
 {
 	ensureOrQuit(currentGA);
 	ensureOrQuit(bIsPlaying);
@@ -125,18 +125,18 @@ void USL_ComboManger::ContinueNextGA()
 	ObserveGA(sweepGA);
 }
 
-void USL_ComboManger::ObserveGA(USLGA_MeleeSweep* targetGA)
+void USL_ComboManager::ObserveGA(USLGA_MeleeSweep* targetGA)
 {
 	ensureOrQuit(bIsPlaying);
 
 	currentGA = targetGA;
 
-	targetGA->delegate_ComboInput.AddUObject(this, &USL_ComboManger::OnComboInput);
-	targetGA->delegate_Translation.AddUObject(this, &USL_ComboManger::OnTranslation);
-	targetGA->delegate_Recovery.AddUObject(this, &USL_ComboManger::OnRecovery);
+	targetGA->delegate_ComboInput.AddUObject(this, &USL_ComboManager::OnComboInput);
+	targetGA->delegate_Translation.AddUObject(this, &USL_ComboManager::OnTranslation);
+	targetGA->delegate_Recovery.AddUObject(this, &USL_ComboManager::OnRecovery);
 }
 
-void USL_ComboManger::ObserveQuit()
+void USL_ComboManager::ObserveQuit()
 {
 	ensureOrQuit(currentGA);
 
@@ -145,7 +145,7 @@ void USL_ComboManger::ObserveQuit()
 	currentGA->delegate_Recovery.RemoveAll(this);
 }
 
-void USL_ComboManger::EndCombo()
+void USL_ComboManager::EndCombo()
 {
 	ensureOrQuit(bIsPlaying);
 
@@ -154,14 +154,14 @@ void USL_ComboManger::EndCombo()
 	SLDEBUG("END combo")
 }
 
-void USL_ComboManger::OnComboInput()
+void USL_ComboManager::OnComboInput()
 {
 	ensureOrQuit(bIsPlaying);
 
 	state = ESL_MeleeSweep_State::ComboInput;
 }
 
-void USL_ComboManger::OnTranslation()
+void USL_ComboManager::OnTranslation()
 {
 	ensureOrQuit(bIsPlaying);
 
@@ -172,7 +172,7 @@ void USL_ComboManger::OnTranslation()
 	}
 }
 
-void USL_ComboManger::OnRecovery()
+void USL_ComboManager::OnRecovery()
 {
 	ensureOrQuit(bIsPlaying);
 
