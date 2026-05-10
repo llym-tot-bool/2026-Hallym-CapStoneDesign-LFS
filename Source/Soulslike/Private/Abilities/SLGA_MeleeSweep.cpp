@@ -206,8 +206,27 @@ void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const
         SLChar->delegate_CharacterMove.RemoveAll(this);
     }
 
-    if (!bInterruptAsCombo) {
+
+    if (bInterruptAsCombo) {
         removeRootMotion();
+    }
+    else {
+        switch (state) {
+        case ESL_MeleeSweep_State::Anticipation:
+            SLDEBUG("non combo End ability with sweep state : Anticipation")
+            Recovery();
+            break;
+        case ESL_MeleeSweep_State::ComboInput:
+            SLDEBUG("non combo End ability with sweep state : ComboInput")
+            Recovery();
+            break;
+        case ESL_MeleeSweep_State::Translation:
+            SLDEBUG("non combo End ability with sweep state : Translation")
+            Recovery();
+            break;
+        case ESL_MeleeSweep_State::Recovery:
+            break;
+        }
     }
 
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -279,8 +298,9 @@ void USLGA_MeleeSweep::Translate()
 
 void USLGA_MeleeSweep::Recovery()
 {
-    delegate_Recovery.Broadcast();
+    SLDEBUG("Recovery boradcasted from = %s", *this->GetName());
     removeRootMotion();
+    delegate_Recovery.Broadcast();
 }
 
 

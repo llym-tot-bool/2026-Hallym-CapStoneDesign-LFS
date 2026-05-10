@@ -48,6 +48,8 @@ void USL_ComboManger::OnCharacterInput(FGameplayTag tag_combo)
 		return;
 	}
 
+	if (currentActionIdx >= lastActionIdx) return;
+
 	switch (state)
 	{
 	case ESL_MeleeSweep_State::Anticipation:
@@ -67,13 +69,14 @@ void USL_ComboManger::StartInitialGA()
 {
 	ensureOrQuit(!bIsPlaying);
 
-	bool result = ASC->TryActivateAbilityByClass(combo->GA_list[0]);
+	currentActionIdx = 0;
+	bool result = ASC->TryActivateAbilityByClass(combo->GA_list[currentActionIdx]);
 	if (!result) { SLDEBUG("fail to activate combo"); return; }
 	SLDEBUG("START combo");
 	bIsPlaying = true;
 	state = ESL_MeleeSweep_State::Anticipation;
 
-	FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(combo->GA_list[0]); ensureOrQuit(Spec);
+	FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(combo->GA_list[currentActionIdx]); ensureOrQuit(Spec);
 	UGameplayAbility* Inst = Spec->GetPrimaryInstance(); ensureOrQuit(Inst);
 	USLGA_MeleeSweep* sweepGA = Cast<USLGA_MeleeSweep>(Inst); ensureOrQuit(sweepGA);
 
@@ -86,10 +89,8 @@ void USL_ComboManger::ContinueNextGA()
 	ensureOrQuit(bIsPlaying);
 
 	bIsInputBuffered = false;
-	state = ESL_MeleeSweep_State::Anticipation;
-	ObserveQuit();
 
-	int nextActionIdx = currentActionIdx >= lastActionIdx ? 0 : currentActionIdx + 1;
+	int nextActionIdx = currentActionIdx + 1;
 	FGameplayAbilitySpec* nextGASpec = ASC->FindAbilitySpecFromClass(combo->GA_list[nextActionIdx]); ensureOrQuit(nextGASpec);
 	FGameplayTagContainer FailureTags;
 
@@ -103,14 +104,16 @@ void USL_ComboManger::ContinueNextGA()
 
 	if (!bCanActivate)
 	{
-		SLDEBUG("fail to continue combo : %s", *FailureTags.ToString());
-		EndCombo();
+		SLDEBUG("fail to continue combo");
 		return;
 	}
 
+	state = ESL_MeleeSweep_State::Anticipation;
+	ObserveQuit();
 	currentGA->InterruptAsCombo();
 	currentGA = nullptr;
 
+	SLDEBUG("this is last action for combo");
 	currentActionIdx = nextActionIdx;
 	bool result = ASC->TryActivateAbilityByClass(combo->GA_list[currentActionIdx]); ensureOrQuit(result);
 	FGameplayAbilitySpec* spec = ASC->FindAbilitySpecFromClass(combo->GA_list[currentActionIdx]); ensureOrQuit(spec);
@@ -136,8 +139,8 @@ void USL_ComboManger::ObserveQuit()
 	ensureOrQuit(currentGA);
 
 	currentGA->delegate_ComboInput.RemoveAll(this);
-	currentGA->delegate_ComboInput.RemoveAll(this);
-	currentGA->delegate_ComboInput.RemoveAll(this);
+	currentGA->delegate_Translation.RemoveAll(this);
+	currentGA->delegate_Recovery.RemoveAll(this);
 }
 
 void USL_ComboManger::EndCombo()
