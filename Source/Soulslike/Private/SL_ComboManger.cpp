@@ -43,6 +43,8 @@ void USL_ComboManger::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 
 void USL_ComboManger::OnCharacterInput(FGameplayTag tag_combo)
 {
+	if (tag_combo != combo->tag_combo) return;
+
 	if (!bIsPlaying) { // initial action start
 		StartInitialGA();
 		return;
