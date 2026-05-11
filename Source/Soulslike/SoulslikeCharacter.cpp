@@ -70,7 +70,12 @@ ASoulslikeCharacter::ASoulslikeCharacter()
 
 
 	ComboManager_Katana_Base = CreateDefaultSubobject<USL_ComboManager>(TEXT("ComboManager_Katana_Base"));
-	ComboManager_Katana_Special = CreateDefaultSubobject<USL_ComboManager>(TEXT("ComboManager_Katana_Special"));
+	ComboManager_Katana_Special = CreateDefaultSubobject<USL_OneShotManager>(TEXT("ComboManager_Katana_Special"));
+}
+
+bool ASoulslikeCharacter::IsFalling()
+{
+	return GetCharacterMovement()->IsFalling();
 }
 
 void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -106,9 +111,15 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 			for (const TObjectPtr<USLDA_WeaponCombo> eachCombo : eachWeaponStyle->combo_list) {
 				if (!eachCombo || !eachCombo->IA_combo) continue;
 
-				EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
-					this, &ASoulslikeCharacter::MeleeAction,
-					eachCombo);
+				if (eachCombo == ComboManager_Katana_Base->combo) {
+					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
+						ComboManager_Katana_Base.Get(), &USL_ComboManager::OnCharacterInput);
+				}
+
+				if (eachCombo == ComboManager_Katana_Special->combo) {
+					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
+						ComboManager_Katana_Special.Get(), &USL_OneShotManager::OnCharacterInput);
+				}
 
 				UE_LOG(LogTemp, Display,
 					TEXT("[SL debug] SetupPlayerInputComponent() : weapon combo IA binding for tag = %s completed"),
@@ -268,13 +279,6 @@ void ASoulslikeCharacter::Look(const FInputActionValue& Value)
 
 	// route the input
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
-}
-
-void ASoulslikeCharacter::MeleeAction(const TObjectPtr<USLDA_WeaponCombo> combo)
-{
-	if (GetCharacterMovement()->IsFalling()) return;
-
-	delegate_CharacterMeleeComboInput.Broadcast(combo->tag_combo);
 }
 
 UAbilitySystemComponent* ASoulslikeCharacter::GetAbilitySystemComponent() const

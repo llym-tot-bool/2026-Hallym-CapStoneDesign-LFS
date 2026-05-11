@@ -11,6 +11,7 @@
 #include "SoulslikePlayerController.h"
 #include "SLDA_MeleeCombat.h"
 #include "SL_ComboManager.h"
+#include "SL_OneShotManager.h"
 
 #include "SoulslikeCharacter.generated.h"
 
@@ -83,6 +84,8 @@ protected:
 public:
 	ASoulslikeCharacter();
 
+	bool IsFalling();
+
 protected:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -97,8 +100,6 @@ protected:
 	void OnMoveStopped(const FInputActionValue& Value);
 
 	void Look(const FInputActionValue& Value);
-
-	void MeleeAction(const TObjectPtr<USLDA_WeaponCombo> combo);
 
 	void SkillOne();
 	void SkillTwo();
@@ -162,11 +163,10 @@ public:
 	TObjectPtr<USL_ComboManager> ComboManager_Katana_Base;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager|Katana_Special", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USL_ComboManager> ComboManager_Katana_Special;
+	TObjectPtr<USL_OneShotManager> ComboManager_Katana_Special;
 
 
-	FSL_CharacterMove delegate_CharacterMove;
-	FSL_CharacterMeleeComboInput delegate_CharacterMeleeComboInput;
+	FSLDLG_CharacterMove delegate_CharacterMove;
 
 };
 

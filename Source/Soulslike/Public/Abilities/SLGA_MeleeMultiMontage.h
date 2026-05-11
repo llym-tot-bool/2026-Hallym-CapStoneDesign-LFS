@@ -59,9 +59,9 @@ protected:
 
 public:
     // broadcast to combo component
-    FSL_MeleeSweep_ComboInput delegate_ComboInput;
-    FSL_MeleeSweep_Translation delegate_Translation;
-    FSL_MeleeSweep_Recovery delegate_Recovery;
+    FSLDLG_AN_ComboInput delegate_ComboInput;
+    FSLDLG_AN_Translation delegate_Translation;
+    FSLDLG_AN_Recovery delegate_Recovery;
 
 public:
     void InterruptAsCancel();

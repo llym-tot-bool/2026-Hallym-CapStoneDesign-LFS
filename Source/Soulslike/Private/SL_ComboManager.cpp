@@ -7,22 +7,12 @@
 #include "Abilities/SLGA_MeleeMultiMontage.h"
 
 
-// Sets default values for this component's properties
-USL_ComboManager::USL_ComboManager()
-{
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = false;
-}
-
-
 // Called when the game starts
 void USL_ComboManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(GetOwner()); ensureOrQuit(SLChar);
-	SLChar->delegate_CharacterMeleeComboInput.AddUObject(this, &USL_ComboManager::OnCharacterInput);
+	SLChar = Cast<ASoulslikeCharacter>(GetOwner()); ensureOrQuit(SLChar);
 
 	ASC = SLChar->GetAbilitySystemComponent();
 	ensureOrQuit(ASC);
@@ -34,17 +24,9 @@ void USL_ComboManager::BeginPlay()
 }
 
 
-// Called every frame
-void USL_ComboManager::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void USL_ComboManager::OnCharacterInput()
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// empty
-}
-
-void USL_ComboManager::OnCharacterInput(FGameplayTag tag_combo)
-{
-	if (tag_combo != combo->tag_combo) return;
+	if (SLChar->IsFalling()) return;
 
 	if (!bIsPlaying) { // initial action start
 		StartInitialGA();
@@ -125,6 +107,7 @@ void USL_ComboManager::ContinueNextGA()
 
 	ObserveGA(sweepGA);
 }
+
 
 void USL_ComboManager::ObserveGA(USLGA_MeleeSweep* targetGA)
 {
