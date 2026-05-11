@@ -19,7 +19,7 @@ class SOULSLIKE_API USLAN_MeleeSweep_State : public UAnimNotify {
 
 public:
     UPROPERTY(EditAnywhere, Category = "State")
-    ESL_MeleeSweep_State state;
+    ESL_Melee_State state;
 
     virtual void Notify(
         USkeletalMeshComponent* MeshComp,

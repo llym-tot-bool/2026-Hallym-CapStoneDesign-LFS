@@ -63,21 +63,24 @@ public:
 DECLARE_MULTICAST_DELEGATE(FSL_MeleeSweep_ComboInput)
 DECLARE_MULTICAST_DELEGATE(FSL_MeleeSweep_Translation)
 DECLARE_MULTICAST_DELEGATE(FSL_MeleeSweep_Recovery)
+DECLARE_MULTICAST_DELEGATE(FSL_MeleeSweep_CutMontage)
+
 
 DECLARE_MULTICAST_DELEGATE(FSL_CharacterMove)
 DECLARE_MULTICAST_DELEGATE_OneParam(FSL_CharacterMeleeComboInput, FGameplayTag)
 
 
 UENUM()
-enum class ESL_MeleeSweep_State : uint8 {
+enum class ESL_Melee_State : uint8 {
 	Anticipation,
 	ComboInput,
 	Translation,
-	Recovery
+	Recovery,
+	CutMontage
 };
 
 UENUM()
-enum class ESL_MeleeSweep_TraceState : uint8 {
+enum class ESL_Melee_TraceState : uint8 {
 	none,
 	trace
 };

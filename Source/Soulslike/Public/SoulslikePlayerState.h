@@ -15,8 +15,8 @@
  * 
  */
 
-DECLARE_MULTICAST_DELEGATE_OneParam(SLDelegate_MeleeSweep_State, ESL_MeleeSweep_State)
-DECLARE_MULTICAST_DELEGATE_OneParam(SLDelegate_MeleeSweep_TraceState, ESL_MeleeSweep_TraceState)
+DECLARE_MULTICAST_DELEGATE_OneParam(SLDelegate_MeleeSweep_State, ESL_Melee_State)
+DECLARE_MULTICAST_DELEGATE_OneParam(SLDelegate_MeleeSweep_TraceState, ESL_Melee_TraceState)
 
 
 UCLASS()

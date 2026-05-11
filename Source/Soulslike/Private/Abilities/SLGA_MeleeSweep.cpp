@@ -8,11 +8,11 @@
 #include "Weapons/SLWeaponTypes.h"
 #include "Soulslike.h"
 
-USLAT_MeeleSweep_hit_checker* USLAT_MeeleSweep_hit_checker::Create(UGameplayAbility* OwningAbility,
+USLAT_Meele_hit_checker* USLAT_Meele_hit_checker::Create(UGameplayAbility* OwningAbility,
     FName socket_start_name, FName socket_end_name,
     float trace_length, FVector boxHalfExtents)
 {
-    USLAT_MeeleSweep_hit_checker* hit_checker = NewAbilityTask<USLAT_MeeleSweep_hit_checker>(OwningAbility);
+    USLAT_Meele_hit_checker* hit_checker = NewAbilityTask<USLAT_Meele_hit_checker>(OwningAbility);
     hit_checker->socket_base_name = socket_start_name;
     hit_checker->socket_tip_name = socket_end_name;
     hit_checker->trace_length = trace_length;
@@ -26,7 +26,7 @@ USLAT_MeeleSweep_hit_checker* USLAT_MeeleSweep_hit_checker::Create(UGameplayAbil
     return hit_checker;
 }
 
-bool USLAT_MeeleSweep_hit_checker::IgnoreSelf()
+bool USLAT_Meele_hit_checker::IgnoreSelf()
 {
     AActor* avatar = GetAvatarActor();
     if (!avatar) return false;
@@ -34,12 +34,12 @@ bool USLAT_MeeleSweep_hit_checker::IgnoreSelf()
     return true;
 }
 
-void USLAT_MeeleSweep_hit_checker::SetIsScanning(const bool value)
+void USLAT_Meele_hit_checker::SetIsScanning(const bool value)
 {
     isScanning = value;
 }
 
-void USLAT_MeeleSweep_hit_checker::TickTask(float DeltaTime)
+void USLAT_Meele_hit_checker::TickTask(float DeltaTime)
 {
     Super::TickTask(DeltaTime);
 
@@ -89,7 +89,7 @@ void USLAT_MeeleSweep_hit_checker::TickTask(float DeltaTime)
     }
 }
 
-void USLAT_MeeleSweep_hit_checker::EffectOnHit(AActor* hitActor)
+void USLAT_Meele_hit_checker::EffectOnHit(AActor* hitActor)
 {
     FString myName = this->GetName();
 
@@ -150,12 +150,12 @@ bool USLGA_MeleeSweep::CanActivateAbility(const FGameplayAbilitySpecHandle Handl
     return true;
 }
 
-void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-                                       const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
+    const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
     Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-    state = ESL_MeleeSweep_State::Anticipation;
-    traceState = ESL_MeleeSweep_TraceState::none;
+    state = ESL_Melee_State::Anticipation;
+    traceState = ESL_Melee_TraceState::none;
     bInterruptAsCombo = false;
     setRootMotion();
 
@@ -168,7 +168,7 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(ActorInfo->AvatarActor); ensureOrQuit(SLChar);
     SLChar->delegate_CharacterMove.AddUObject(this, &USLGA_MeleeSweep::OnCharacteMove);
 
-    hitchecker = USLAT_MeeleSweep_hit_checker::Create(
+    hitchecker = USLAT_Meele_hit_checker::Create(
         this,
         socket_weapon_base, socket_weapon_tip, socket_weapon_length,
         BoxHalfExtents);
@@ -212,19 +212,19 @@ void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const
     }
     else {
         switch (state) {
-        case ESL_MeleeSweep_State::Anticipation:
+        case ESL_Melee_State::Anticipation:
             SLDEBUG("non combo End ability with sweep state : Anticipation")
             Recovery();
             break;
-        case ESL_MeleeSweep_State::ComboInput:
+        case ESL_Melee_State::ComboInput:
             SLDEBUG("non combo End ability with sweep state : ComboInput")
             Recovery();
             break;
-        case ESL_MeleeSweep_State::Translation:
+        case ESL_Melee_State::Translation:
             SLDEBUG("non combo End ability with sweep state : Translation")
             Recovery();
             break;
-        case ESL_MeleeSweep_State::Recovery:
+        case ESL_Melee_State::Recovery:
             break;
         }
     }
@@ -232,20 +232,20 @@ void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void USLGA_MeleeSweep::ChangeState(ESL_MeleeSweep_State newstate)
+void USLGA_MeleeSweep::ChangeState(ESL_Melee_State newstate)
 {
     state = newstate;
     switch (state)
     {
-    case ESL_MeleeSweep_State::ComboInput:
+    case ESL_Melee_State::ComboInput:
         UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate arrived : ComboInput "));
         ComboInput();
         break;
-    case ESL_MeleeSweep_State::Translation:
+    case ESL_Melee_State::Translation:
         UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate arrived : Translation "));
         Translate();
         break;
-    case ESL_MeleeSweep_State::Recovery:
+    case ESL_Melee_State::Recovery:
         UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate arrived : Recovery "));
         Recovery();
         break;
@@ -255,23 +255,20 @@ void USLGA_MeleeSweep::ChangeState(ESL_MeleeSweep_State newstate)
     }
 }
 
-void USLGA_MeleeSweep::ChangeTraceState(ESL_MeleeSweep_TraceState newState)
+void USLGA_MeleeSweep::ChangeTraceState(ESL_Melee_TraceState newState)
 {
     UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate for TRACE state arrived"));
 
-    if (!hitchecker) {
-        UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! no hitchecker for MeleeSweep"));
-        return;
-    }
+    ensure(hitchecker);
 
     traceState = newState;
     switch (traceState)
     {
-    case ESL_MeleeSweep_TraceState::none:
+    case ESL_Melee_TraceState::none:
         UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate response : trace end"));
         hitchecker->SetIsScanning(false);
         break;
-    case ESL_MeleeSweep_TraceState::trace:
+    case ESL_Melee_TraceState::trace:
         UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate response : trace start"));
         hitchecker->SetIsScanning(true);
         break;

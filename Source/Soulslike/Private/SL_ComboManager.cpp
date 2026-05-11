@@ -4,6 +4,7 @@
 #include "SL_ComboManager.h"
 #include "Soulslike.h"
 #include "SoulslikeCharacter.h"
+#include "Abilities/SLGA_MeleeMultiMontage.h"
 
 
 // Sets default values for this component's properties
@@ -54,15 +55,15 @@ void USL_ComboManager::OnCharacterInput(FGameplayTag tag_combo)
 
 	switch (state)
 	{
-	case ESL_MeleeSweep_State::Anticipation:
+	case ESL_Melee_State::Anticipation:
 		return;
-	case ESL_MeleeSweep_State::ComboInput:
+	case ESL_Melee_State::ComboInput:
 		bIsInputBuffered = true;
 		return;
-	case ESL_MeleeSweep_State::Translation:
+	case ESL_Melee_State::Translation:
 		ContinueNextGA();
 		return;
-	case ESL_MeleeSweep_State::Recovery:
+	case ESL_Melee_State::Recovery:
 		return;
 	}
 }
@@ -76,7 +77,7 @@ void USL_ComboManager::StartInitialGA()
 	if (!result) { SLDEBUG("fail to activate combo"); return; }
 	SLDEBUG("START combo");
 	bIsPlaying = true;
-	state = ESL_MeleeSweep_State::Anticipation;
+	state = ESL_Melee_State::Anticipation;
 
 	FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(combo->GA_list[currentActionIdx]); ensureOrQuit(Spec);
 	UGameplayAbility* Inst = Spec->GetPrimaryInstance(); ensureOrQuit(Inst);
@@ -110,7 +111,7 @@ void USL_ComboManager::ContinueNextGA()
 		return;
 	}
 
-	state = ESL_MeleeSweep_State::Anticipation;
+	state = ESL_Melee_State::Anticipation;
 	ObserveQuit();
 	currentGA->InterruptAsCombo();
 	currentGA = nullptr;
@@ -150,7 +151,7 @@ void USL_ComboManager::EndCombo()
 	ensureOrQuit(bIsPlaying);
 
 	bIsPlaying = false;
-	state = ESL_MeleeSweep_State::Recovery;
+	state = ESL_Melee_State::Recovery;
 	SLDEBUG("END combo")
 }
 
@@ -158,14 +159,14 @@ void USL_ComboManager::OnComboInput()
 {
 	ensureOrQuit(bIsPlaying);
 
-	state = ESL_MeleeSweep_State::ComboInput;
+	state = ESL_Melee_State::ComboInput;
 }
 
 void USL_ComboManager::OnTranslation()
 {
 	ensureOrQuit(bIsPlaying);
 
-	state = ESL_MeleeSweep_State::Translation;
+	state = ESL_Melee_State::Translation;
 
 	if (bIsInputBuffered) {
 		ContinueNextGA();

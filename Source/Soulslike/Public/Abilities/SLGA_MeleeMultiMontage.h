@@ -5,42 +5,15 @@
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
 #include "Abilities/Tasks/AbilityTask.h"
+#include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "SLDA_MeleeCombat.h"
 #include "SoulslikePlayerState.h"
+#include "SLGA_MeleeSweep.h"
 
-#include "SLGA_MeleeSweep.generated.h"
-
-/**
- * 
- */
+#include "SLGA_MeleeMultiMontage.generated.h"
 
 UCLASS()
-class SOULSLIKE_API USLAT_Meele_hit_checker : public UAbilityTask
-{
-    GENERATED_BODY()
-public:
-    // This allows the GA to create the task easily
-    static USLAT_Meele_hit_checker* Create(UGameplayAbility* OwningAbility,
-        FName socket_base_name, FName socket_tip_name,
-        float trace_length, FVector boxHalfExtents);
-
-    bool IgnoreSelf();
-    void SetIsScanning(const bool value);
-
-    virtual void TickTask(float DeltaTime) override;
-    void EffectOnHit(AActor* hitActor);
-
-private:
-    FName socket_base_name;
-    FName socket_tip_name;
-    float trace_length;
-    FVector boxHalfExtents;
-    TArray<AActor*> actorsToIgnore;
-    bool isScanning;
-};
-
-UCLASS()
-class SOULSLIKE_API USLGA_MeleeSweep : public UGameplayAbility
+class SOULSLIKE_API USLGA_MeleeMultiMontage : public UGameplayAbility
 {
 	GENERATED_BODY()
 
@@ -64,7 +37,7 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack", meta = (ClampMin = "0.0"))
     float StaminaCost = 25.f;
-    
+
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack|GAS")
     TSubclassOf<UGameplayEffect> StaminaCostGEClass;
 
@@ -74,7 +47,15 @@ protected:
 
     TObjectPtr<UAbilitySystemComponent> ASC;
     TObjectPtr<ASoulslikePlayerState> SLPS;
-    bool bInterruptAsCombo = false;
+    TObjectPtr<UAnimInstance> AnimInst;
+
+    UPROPERTY(EditAnywhere, Category = Montage)
+    TArray<TObjectPtr<UAnimMontage>> Montage_list;
+    
+    int currentMontageIdx;
+    int lastMontageIdx;
+
+    TObjectPtr<UAbilityTask_PlayMontageAndWait> currentMontageTask;
 
 public:
     // broadcast to combo component
@@ -83,14 +64,13 @@ public:
     FSL_MeleeSweep_Recovery delegate_Recovery;
 
 public:
-    void InterruptAsCombo();
     void InterruptAsCancel();
 
 protected:
 
     void setRootMotion();
     void removeRootMotion();
-    
+
     virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
         const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr,
         FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
@@ -101,6 +81,12 @@ protected:
     virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
         const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
+    void PlayFirstMontage();
+    void PlayNextMontage();
+
+    void ObserveMontage();
+    void ObserveQuit();
+
     UFUNCTION()
     void ChangeState(ESL_Melee_State newstate);
     UFUNCTION()
@@ -108,10 +94,12 @@ protected:
     UFUNCTION()
     void OnCharacteMove();
 
+    UFUNCTION()
+    void OnMontageFinished();
+
 private:
 
     // deligate binding function
-    void ComboInput();
-    void Translate();
     void Recovery();
+	
 };

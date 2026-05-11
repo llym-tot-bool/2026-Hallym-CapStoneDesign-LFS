@@ -26,7 +26,7 @@ protected:
 	bool bIsPlaying = false;
 	int currentActionIdx;
 	int lastActionIdx;
-	ESL_MeleeSweep_State state;
+	ESL_Melee_State state;
 
 	bool bIsInputBuffered = false;
 	TObjectPtr<USLGA_MeleeSweep> currentGA = nullptr;

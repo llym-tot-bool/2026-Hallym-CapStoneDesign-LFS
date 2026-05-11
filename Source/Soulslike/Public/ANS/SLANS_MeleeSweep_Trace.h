@@ -19,10 +19,10 @@ class SOULSLIKE_API USLANS_MeleeSweep_Trace : public UAnimNotifyState
 
 public:
     UPROPERTY(EditAnywhere, Category = "TraceState");
-    ESL_MeleeSweep_TraceState state_trace;
+    ESL_Melee_TraceState state_trace;
 
     UPROPERTY(EditAnywhere, Category = "TraceState");
-    ESL_MeleeSweep_TraceState state_none;
+    ESL_Melee_TraceState state_none;
 
 public:
 
