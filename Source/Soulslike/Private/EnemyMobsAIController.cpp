@@ -1,5 +1,6 @@
 #include <EnemyMobsAIController.h>
 #include "enemy_mobs.h"
+#include "Boss.h"
 #include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -44,46 +45,50 @@ void AEnemyMobsAIController::OnUnPossess()
 void AEnemyMobsAIController::UpdateChaseTarget()
 {
 	Aenemy_mobs* EnemyPawn = Cast<Aenemy_mobs>(GetPawn());
-	auto ApplyMoveSpeed = [EnemyPawn](const float NewSpeed)
+	ABoss* BossPawn = Cast<ABoss>(GetPawn());
+	ACharacter* ControlledCharacter = Cast<ACharacter>(GetPawn());
+
+	auto ApplyMoveSpeed = [ControlledCharacter](const float NewSpeed)
 	{
-		if (!EnemyPawn)
+		if (!ControlledCharacter)
 		{
 			return;
 		}
 
-		if (UCharacterMovementComponent* MoveComp = EnemyPawn->GetCharacterMovement())
+		if (UCharacterMovementComponent* MoveComp = ControlledCharacter->GetCharacterMovement())
 		{
 			MoveComp->MaxWalkSpeed = NewSpeed;
 		}
 	};
 
-	if (!EnemyPawn || !EnemyPawn->IsPlayerChaseEnabled())
+	const bool bCanChasePlayer = EnemyPawn ? EnemyPawn->IsPlayerChaseEnabled() : (BossPawn ? BossPawn->IsPlayerChaseEnabled() : false);
+	if ((!EnemyPawn && !BossPawn) || !bCanChasePlayer)
 	{
 		StopMovement();
 		CachedTargetActor = nullptr;
-		if (EnemyPawn)
-		{
-			ApplyMoveSpeed(EnemyPawn->GetDefaultMoveSpeed());
-		}
+		const float DefaultSpeed = EnemyPawn ? EnemyPawn->GetDefaultMoveSpeed() : (BossPawn ? BossPawn->GetDefaultMoveSpeed() : 0.0f);
+		ApplyMoveSpeed(DefaultSpeed);
 		return;
 	}
 
-	if (EnemyPawn->IsDebugDrawDetectionRangeEnabled())
+	const bool bDebugDrawDetection = EnemyPawn ? EnemyPawn->IsDebugDrawDetectionRangeEnabled() : BossPawn->IsDebugDrawDetectionRangeEnabled();
+	if (bDebugDrawDetection)
 	{
-		const FVector PawnLocation = EnemyPawn->GetActorLocation();
-		const FVector Forward = EnemyPawn->GetActorForwardVector().GetSafeNormal();
-		const float ChaseDistance = EnemyPawn->GetMaxChaseDistance();
-		const float ConeHalfAngleRad = FMath::DegreesToRadians(EnemyPawn->GetChaseDetectionHalfAngleDeg());
+		const FVector PawnLocation = GetPawn()->GetActorLocation();
+		const FVector Forward = GetPawn()->GetActorForwardVector().GetSafeNormal();
+		const float ChaseDistance = EnemyPawn ? EnemyPawn->GetMaxChaseDistance() : BossPawn->GetMaxChaseDistance();
+		const float ConeHalfAngleRad = FMath::DegreesToRadians(EnemyPawn ? EnemyPawn->GetChaseDetectionHalfAngleDeg() : BossPawn->GetChaseDetectionHalfAngleDeg());
 		const float DrawDuration = TargetSearchInterval + 0.05f;
 
 		DrawDebugSphere(GetWorld(), PawnLocation, ChaseDistance, 36, FColor::Cyan, false, DrawDuration, 0, 1.2f);
 		DrawDebugCone(GetWorld(), PawnLocation, Forward, ChaseDistance, ConeHalfAngleRad, ConeHalfAngleRad, 24, FColor::Green, false, DrawDuration, 0, 1.8f);
 	}
 
-	if (EnemyPawn->IsDebugDrawAttackRangeEnabled())
+	const bool bDebugDrawAttackRange = EnemyPawn ? EnemyPawn->IsDebugDrawAttackRangeEnabled() : BossPawn->IsDebugDrawAttackRangeEnabled();
+	if (bDebugDrawAttackRange)
 	{
-		const FVector PawnLocation = EnemyPawn->GetActorLocation();
-		const float AttackRange = EnemyPawn->GetBasicAttackRange();
+		const FVector PawnLocation = GetPawn()->GetActorLocation();
+		const float AttackRange = EnemyPawn ? EnemyPawn->GetBasicAttackRange() : BossPawn->GetBasicAttackRange();
 		const float DrawDuration = TargetSearchInterval + 0.05f;
 		const FVector AttackRangeCenter = PawnLocation + FVector(0.0f, 0.0f, 5.0f);
 
@@ -97,24 +102,26 @@ void AEnemyMobsAIController::UpdateChaseTarget()
 	{
 		StopMovement();
 		CachedTargetActor = nullptr;
-		ApplyMoveSpeed(EnemyPawn->GetDefaultMoveSpeed());
+		ApplyMoveSpeed(EnemyPawn ? EnemyPawn->GetDefaultMoveSpeed() : BossPawn->GetDefaultMoveSpeed());
 		return;
 	}
 
 	if (!bHasLockedTarget)
 	{
-		const float DistanceToTarget = FVector::Dist(EnemyPawn->GetActorLocation(), TargetActor->GetActorLocation());
-		if (DistanceToTarget > EnemyPawn->GetMaxChaseDistance())
+		const FVector PawnLocation = GetPawn()->GetActorLocation();
+		const float MaxChaseDistance = EnemyPawn ? EnemyPawn->GetMaxChaseDistance() : BossPawn->GetMaxChaseDistance();
+		const float DistanceToTarget = FVector::Dist(PawnLocation, TargetActor->GetActorLocation());
+		if (DistanceToTarget > MaxChaseDistance)
 		{
 			StopMovement();
 			CachedTargetActor = nullptr;
-			ApplyMoveSpeed(EnemyPawn->GetDefaultMoveSpeed());
+			ApplyMoveSpeed(EnemyPawn ? EnemyPawn->GetDefaultMoveSpeed() : BossPawn->GetDefaultMoveSpeed());
 			return;
 		}
 
-		const FVector ToTarget2D = (TargetActor->GetActorLocation() - EnemyPawn->GetActorLocation()).GetSafeNormal2D();
-		const FVector Forward2D = EnemyPawn->GetActorForwardVector().GetSafeNormal2D();
-		const float ConeHalfAngleDeg = EnemyPawn->GetChaseDetectionHalfAngleDeg();
+		const FVector ToTarget2D = (TargetActor->GetActorLocation() - PawnLocation).GetSafeNormal2D();
+		const FVector Forward2D = GetPawn()->GetActorForwardVector().GetSafeNormal2D();
+		const float ConeHalfAngleDeg = EnemyPawn ? EnemyPawn->GetChaseDetectionHalfAngleDeg() : BossPawn->GetChaseDetectionHalfAngleDeg();
 		const float CosThreshold = FMath::Cos(FMath::DegreesToRadians(ConeHalfAngleDeg));
 		const float DotToTarget = FVector::DotProduct(Forward2D, ToTarget2D);
 
@@ -122,26 +129,27 @@ void AEnemyMobsAIController::UpdateChaseTarget()
 		{
 			StopMovement();
 			CachedTargetActor = nullptr;
-			ApplyMoveSpeed(EnemyPawn->GetDefaultMoveSpeed());
+			ApplyMoveSpeed(EnemyPawn ? EnemyPawn->GetDefaultMoveSpeed() : BossPawn->GetDefaultMoveSpeed());
 			return;
 		}
 	}
 
 	CachedTargetActor = TargetActor;
-	ApplyMoveSpeed(EnemyPawn->GetChaseMoveSpeed());
+	ApplyMoveSpeed(EnemyPawn ? EnemyPawn->GetChaseMoveSpeed() : BossPawn->GetChaseMoveSpeed());
 
-	if (EnemyPawn->IsTargetInBasicAttackContact(TargetActor))
+	const bool bInAttackRange = EnemyPawn ? EnemyPawn->IsTargetInBasicAttackContact(TargetActor) : BossPawn->IsTargetInBasicAttackContact(TargetActor);
+	if (bInAttackRange)
 	{
-		const bool bAttackStarted = EnemyPawn->TryBasicAttack(TargetActor);
-		if (bAttackStarted || EnemyPawn->IsBasicAttackInProgress())
+		const bool bAttackStarted = EnemyPawn ? EnemyPawn->TryBasicAttack(TargetActor) : BossPawn->TryBasicAttack(TargetActor);
+		const bool bAttackInProgress = EnemyPawn ? EnemyPawn->IsBasicAttackInProgress() : BossPawn->IsBasicAttackInProgress();
+		if (bAttackStarted || bAttackInProgress)
 		{
 			StopMovement();
 			return;
 		}
 	}
 
-	float AcceptanceRadius = 120.0f;
-	AcceptanceRadius = EnemyPawn->GetChaseAcceptanceRadius();
+	const float AcceptanceRadius = EnemyPawn ? EnemyPawn->GetChaseAcceptanceRadius() : BossPawn->GetChaseAcceptanceRadius();
 
 	MoveToActor(TargetActor, AcceptanceRadius, true, true, true, nullptr, true);
 }
