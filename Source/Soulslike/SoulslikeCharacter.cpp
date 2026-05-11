@@ -68,7 +68,6 @@ ASoulslikeCharacter::ASoulslikeCharacter()
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
 
-
 	ComboManager_Katana_Base = CreateDefaultSubobject<USL_ComboManager>(TEXT("ComboManager_Katana_Base"));
 	ComboManager_Katana_Special = CreateDefaultSubobject<USL_OneShotManager>(TEXT("ComboManager_Katana_Special"));
 }

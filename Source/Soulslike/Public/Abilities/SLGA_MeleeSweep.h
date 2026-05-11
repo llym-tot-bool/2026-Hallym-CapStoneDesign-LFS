@@ -112,6 +112,6 @@ private:
 
     // deligate binding function
     void ComboInput();
-    void Translate();
+    void Translation();
     void Recovery();
 };

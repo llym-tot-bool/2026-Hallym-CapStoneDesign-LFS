@@ -43,6 +43,8 @@ bool USLGA_MeleeMultiMontage::CanActivateAbility(const FGameplayAbilitySpecHandl
     const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, 
     const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
 {
+    if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags)) return false;
+
     if (ActorInfo)
     {
         if (UAbilitySystemComponent* asc = ActorInfo->AbilitySystemComponent.Get())
@@ -112,6 +114,7 @@ void USLGA_MeleeMultiMontage::EndAbility(const FGameplayAbilitySpecHandle Handle
 {
     ensureOrQuit(hitchecker);
     hitchecker->EndTask();
+    hitchecker = nullptr;
 
     ensureOrQuit(SLPS);
     // remove delegate biindings
@@ -199,8 +202,7 @@ void USLGA_MeleeMultiMontage::ObserveQuit()
 
 void USLGA_MeleeMultiMontage::ChangeState(ESL_Melee_State newstate)
 {
-    state = newstate;
-    switch (state)
+    switch (newstate)
     {
     case ESL_Melee_State::CutMontage:
         SLDEBUG("delegate arrived : CutMontage");
@@ -208,6 +210,7 @@ void USLGA_MeleeMultiMontage::ChangeState(ESL_Melee_State newstate)
         break;
     case ESL_Melee_State::Recovery:
         UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate arrived : Recovery "));
+        state = newstate;
         Recovery();
         break;
     default:
@@ -248,10 +251,9 @@ void USLGA_MeleeMultiMontage::OnMontageFinished()
 {
     ensureOrQuit(hitchecker);
 
-    hitchecker->EndTask();
-    hitchecker = nullptr;
+    hitchecker->SetIsScanning(false);
 
-    Recovery();
+    //Recovery();
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
 }
 

@@ -136,6 +136,8 @@ bool USLGA_MeleeSweep::CanActivateAbility(const FGameplayAbilitySpecHandle Handl
     const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags,
     const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
 {
+    if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags)) return false;
+
     if (ActorInfo)
     {
         if (UAbilitySystemComponent* asc = ActorInfo->AbilitySystemComponent.Get())
@@ -234,8 +236,7 @@ void USLGA_MeleeSweep::EndAbility(const FGameplayAbilitySpecHandle Handle, const
 
 void USLGA_MeleeSweep::ChangeState(ESL_Melee_State newstate)
 {
-    state = newstate;
-    switch (state)
+    switch (newstate)
     {
     case ESL_Melee_State::ComboInput:
         UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate arrived : ComboInput "));
@@ -243,7 +244,7 @@ void USLGA_MeleeSweep::ChangeState(ESL_Melee_State newstate)
         break;
     case ESL_Melee_State::Translation:
         UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate arrived : Translation "));
-        Translate();
+        Translation();
         break;
     case ESL_Melee_State::Recovery:
         UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate arrived : Recovery "));
@@ -285,16 +286,19 @@ void USLGA_MeleeSweep::OnCharacteMove()
 
 void USLGA_MeleeSweep::ComboInput()
 {
+    state = ESL_Melee_State::ComboInput;
     delegate_ComboInput.Broadcast();
 }
 
-void USLGA_MeleeSweep::Translate()
+void USLGA_MeleeSweep::Translation()
 {
+    state = ESL_Melee_State::Translation;
     delegate_Translation.Broadcast();
 }
 
 void USLGA_MeleeSweep::Recovery()
 {
+    state = ESL_Melee_State::Recovery;
     SLDEBUG("Recovery boradcasted from = %s", *this->GetName());
     removeRootMotion();
     delegate_Recovery.Broadcast();
