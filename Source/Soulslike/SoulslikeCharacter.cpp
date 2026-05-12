@@ -70,6 +70,9 @@ ASoulslikeCharacter::ASoulslikeCharacter()
 
 	ComboManager_Katana_Base = CreateDefaultSubobject<USL_ComboManager>(TEXT("ComboManager_Katana_Base"));
 	ComboManager_Katana_Special = CreateDefaultSubobject<USL_OneShotManager>(TEXT("ComboManager_Katana_Special"));
+
+	ComboManager_SAS_Base = CreateDefaultSubobject<USL_ComboManager>(TEXT("ComboManager_SAS_Base"));
+	ComboManager_SAS_Special = CreateDefaultSubobject<USL_OneShotManager>(TEXT("ComboManager_SAS_Special"));
 }
 
 bool ASoulslikeCharacter::IsFalling()
@@ -110,14 +113,24 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 			for (const TObjectPtr<USLDA_WeaponCombo> eachCombo : eachWeaponStyle->combo_list) {
 				if (!eachCombo || !eachCombo->IA_combo) continue;
 
+				// katana input binding
 				if (eachCombo == ComboManager_Katana_Base->combo) {
 					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
 						ComboManager_Katana_Base.Get(), &USL_ComboManager::OnCharacterInput);
 				}
-
 				if (eachCombo == ComboManager_Katana_Special->combo) {
 					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
 						ComboManager_Katana_Special.Get(), &USL_OneShotManager::OnCharacterInput);
+				}
+
+				// SAS input binding
+				if (eachCombo == ComboManager_SAS_Base->combo) {
+					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
+						ComboManager_SAS_Base.Get(), &USL_ComboManager::OnCharacterInput);
+				}
+				if (eachCombo == ComboManager_SAS_Special->combo) {
+					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
+						ComboManager_SAS_Special.Get(), &USL_OneShotManager::OnCharacterInput);
 				}
 
 				UE_LOG(LogTemp, Display,

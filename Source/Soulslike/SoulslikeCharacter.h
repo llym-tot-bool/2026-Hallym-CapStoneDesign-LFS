@@ -165,6 +165,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager|Katana_Special", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USL_OneShotManager> ComboManager_Katana_Special;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager|SAS_Base", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USL_ComboManager> ComboManager_SAS_Base;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager|SAS_Special", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USL_OneShotManager> ComboManager_SAS_Special;
+
 
 	FSLDLG_CharacterMove delegate_CharacterMove;
 
