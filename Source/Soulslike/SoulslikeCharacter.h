@@ -159,17 +159,23 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> ASC;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager|Katana_Base", meta = (AllowPrivateAccess = "true"))
+	// katana combo managers
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USL_ComboManager> ComboManager_Katana_Base;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager|Katana_Special", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USL_OneShotManager> ComboManager_Katana_Special;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager|SAS_Base", meta = (AllowPrivateAccess = "true"))
+	// SAS combo managers
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USL_ComboManager> ComboManager_SAS_Base;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager|SAS_Special", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USL_OneShotManager> ComboManager_SAS_Special;
+
+	// HS combo managers
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USL_ComboManager> ComboManager_HS_Base;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USL_OneShotManager> ComboManager_HS_Special;
 
 
 	FSLDLG_CharacterMove delegate_CharacterMove;

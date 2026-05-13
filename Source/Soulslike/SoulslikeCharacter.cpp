@@ -73,6 +73,9 @@ ASoulslikeCharacter::ASoulslikeCharacter()
 
 	ComboManager_SAS_Base = CreateDefaultSubobject<USL_ComboManager>(TEXT("ComboManager_SAS_Base"));
 	ComboManager_SAS_Special = CreateDefaultSubobject<USL_OneShotManager>(TEXT("ComboManager_SAS_Special"));
+
+	ComboManager_HS_Base = CreateDefaultSubobject<USL_ComboManager>(TEXT("ComboManager_HS_Base"));
+	ComboManager_HS_Special = CreateDefaultSubobject<USL_OneShotManager>(TEXT("ComboManager_HS_Special"));
 }
 
 bool ASoulslikeCharacter::IsFalling()
@@ -131,6 +134,16 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 				if (eachCombo == ComboManager_SAS_Special->combo) {
 					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
 						ComboManager_SAS_Special.Get(), &USL_OneShotManager::OnCharacterInput);
+				}
+
+				// HS input binding
+				if (eachCombo == ComboManager_HS_Base->combo) {
+					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
+						ComboManager_HS_Base.Get(), &USL_ComboManager::OnCharacterInput);
+				}
+				if (eachCombo == ComboManager_HS_Special->combo) {
+					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
+						ComboManager_HS_Special.Get(), &USL_OneShotManager::OnCharacterInput);
 				}
 
 				UE_LOG(LogTemp, Display,
