@@ -24,6 +24,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
@@ -45,6 +46,14 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Movement", meta = (ClampMin = 0.0))
 	float ChaseMoveSpeed = 280.0f;
+
+	// If true, boss rotates to face its movement direction while moving.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Movement")
+	bool bFaceMovementDirection = true;
+
+	// Rotation interpolation speed while facing movement direction.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Movement", meta = (ClampMin = 0.0))
+	float MoveFacingInterpSpeed = 10.0f;
 
 	// Half-angle of forward detection cone in degrees.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Perception", meta = (ClampMin = 1.0, ClampMax = 180.0))

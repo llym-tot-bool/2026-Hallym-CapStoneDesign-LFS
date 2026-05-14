@@ -17,7 +17,7 @@
 
 ABoss::ABoss()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	bUseControllerRotationYaw = false;
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	AIControllerClass = AEnemyMobsAIController::StaticClass();
@@ -32,6 +32,7 @@ ABoss::ABoss()
 		MoveComp->MaxWalkSpeed = DefaultMoveSpeed;
 		MoveComp->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
 		MoveComp->bOrientRotationToMovement = true;
+		MoveComp->bUseControllerDesiredRotation = false;
 	}
 }
 
@@ -52,6 +53,27 @@ void ABoss::BeginPlay()
 	{
 		PlayBossMontage(IntroMontage);
 	}
+}
+
+void ABoss::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (!bFaceMovementDirection || IsDead())
+	{
+		return;
+	}
+
+	const FVector Velocity2D = FVector(GetVelocity().X, GetVelocity().Y, 0.0f);
+	if (Velocity2D.SizeSquared() <= FMath::Square(3.0f))
+	{
+		return;
+	}
+
+	const FRotator CurrentRot = GetActorRotation();
+	const FRotator DesiredRot = Velocity2D.Rotation();
+	const FRotator NewRot = FMath::RInterpTo(CurrentRot, FRotator(0.0f, DesiredRot.Yaw, 0.0f), DeltaSeconds, MoveFacingInterpSpeed);
+	SetActorRotation(NewRot);
 }
 
 void ABoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
