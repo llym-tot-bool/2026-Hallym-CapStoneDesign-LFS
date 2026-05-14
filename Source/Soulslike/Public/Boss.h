@@ -24,6 +24,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
@@ -39,6 +40,45 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI", meta = (ClampMin = 10.0))
 	float ChaseAcceptanceRadius = 150.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Movement", meta = (ClampMin = 0.0))
+	float DefaultMoveSpeed = 180.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Movement", meta = (ClampMin = 0.0))
+	float ChaseMoveSpeed = 280.0f;
+
+	// If true, boss rotates to face its movement direction while moving.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Movement")
+	bool bFaceMovementDirection = true;
+
+	// Rotation interpolation speed while facing movement direction.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Movement", meta = (ClampMin = 0.0))
+	float MoveFacingInterpSpeed = 10.0f;
+
+	// Half-angle of forward detection cone in degrees.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Perception", meta = (ClampMin = 1.0, ClampMax = 180.0))
+	float ChaseDetectionHalfAngleDeg = 45.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Perception|Debug")
+	bool bDebugDrawDetectionRange = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat|Debug")
+	bool bDebugDrawAttackRange = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat", meta = (ClampMin = 0.0))
+	float BasicAttackRange = 130.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat", meta = (ClampMin = 0.1))
+	float BasicAttackCooldown = 1.6f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat", meta = (ClampMin = 0.0))
+	float BasicAttackBaseDamage = 20.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat", meta = (ClampMin = 0.0))
+	float BasicAttackPowerScale = 0.9f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat|Animation", meta = (ClampMin = 0.0))
+	float BasicAttackHitDelay = 0.25f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI", meta = (ClampMin = 0.1))
 	float TargetSearchInterval = 0.35f;
@@ -63,6 +103,10 @@ protected:
 
 	FTimerHandle ChaseTimer;
 	FTimerHandle PeriodicMoveTimer;
+	FTimerHandle BasicAttackHitTimer;
+	float LastBasicAttackTime = -1000.0f;
+	bool bBasicAttackInProgress = false;
+	TWeakObjectPtr<AActor> PendingAttackTarget;
 
 	UFUNCTION()
 	void UpdateChaseTarget();
@@ -70,7 +114,47 @@ protected:
 	UFUNCTION()
 	void MoveToRandomReachableLocation();
 
+	float ComputeBasicAttackDamage() const;
+	bool IsTargetTouchingAttackRange(AActor* TargetActor) const;
+	void ResolveBasicAttackHit();
+
 public:
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI")
+	float GetChaseAcceptanceRadius() const { return ChaseAcceptanceRadius; }
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI")
+	bool IsPlayerChaseEnabled() const { return bEnablePlayerChase; }
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Movement")
+	float GetDefaultMoveSpeed() const { return DefaultMoveSpeed; }
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Movement")
+	float GetChaseMoveSpeed() const { return ChaseMoveSpeed; }
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI")
+	float GetMaxChaseDistance() const { return MaxChaseDistance; }
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Perception")
+	float GetChaseDetectionHalfAngleDeg() const { return ChaseDetectionHalfAngleDeg; }
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Perception|Debug")
+	bool IsDebugDrawDetectionRangeEnabled() const { return bDebugDrawDetectionRange; }
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Combat|Debug")
+	bool IsDebugDrawAttackRangeEnabled() const { return bDebugDrawAttackRange; }
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Combat")
+	float GetBasicAttackRange() const { return BasicAttackRange; }
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Combat")
+	bool TryBasicAttack(AActor* TargetActor);
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Combat")
+	bool IsTargetInBasicAttackContact(AActor* TargetActor) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Combat")
+	bool IsBasicAttackInProgress() const { return bBasicAttackInProgress; }
+
 	UFUNCTION(BlueprintCallable, Category = "Boss|AI")
 	void StartChase();
 
