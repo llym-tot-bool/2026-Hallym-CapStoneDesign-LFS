@@ -14,6 +14,32 @@
 #include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameplayEffectTypes.h"
+#include "GameplayTagContainer.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerState.h"
+
+namespace
+{
+	UAbilitySystemComponent* ResolveTargetASC(AActor* TargetActor)
+	{
+		if (!IsValid(TargetActor))
+		{
+			return nullptr;
+		}
+		if (IAbilitySystemInterface* TargetASI = Cast<IAbilitySystemInterface>(TargetActor))
+		{
+			return TargetASI->GetAbilitySystemComponent();
+		}
+		if (APawn* TargetPawn = Cast<APawn>(TargetActor))
+		{
+			if (IAbilitySystemInterface* PlayerStateASI = Cast<IAbilitySystemInterface>(TargetPawn->GetPlayerState()))
+			{
+				return PlayerStateASI->GetAbilitySystemComponent();
+			}
+		}
+		return nullptr;
+	}
+}
 
 ABoss::ABoss()
 {
@@ -43,6 +69,17 @@ void ABoss::BeginPlay()
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	Tags.AddUnique(FName("Boss"));
 	Tags.AddUnique(FName("Enemy"));
+
+	if (AbilitySystemComponent)
+	{
+		const FGameplayTag GroggyTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Groggy, false);
+		if (GroggyTag.IsValid())
+		{
+			AbilitySystemComponent->RegisterGameplayTagEvent(GroggyTag, EGameplayTagEventType::NewOrRemoved)
+				.AddUObject(this, &ABoss::OnGroggyTagChanged);
+			bIsGroggy = AbilitySystemComponent->HasMatchingGameplayTag(GroggyTag);
+		}
+	}
 
 	if (bEnablePeriodicMove)
 	{
@@ -208,6 +245,11 @@ bool ABoss::PlayDeathMontage(float PlayRate)
 	return PlayBossMontage(DeathMontage, PlayRate);
 }
 
+bool ABoss::PlayGroggyMontage(float PlayRate)
+{
+	return PlayBossMontage(GroggyMontage, PlayRate);
+}
+
 float ABoss::GetGroundSpeed() const
 {
 	FVector Velocity2D = GetVelocity();
@@ -238,7 +280,7 @@ float ABoss::ComputeBasicAttackDamage() const
 
 bool ABoss::TryBasicAttack(AActor* TargetActor)
 {
-	if (!HasAuthority() || !IsValid(TargetActor) || bBasicAttackInProgress || !AttackMontage)
+	if (!HasAuthority() || !IsValid(TargetActor) || bBasicAttackInProgress || bIsGroggy || !AttackMontage)
 	{
 		return false;
 	}
@@ -260,33 +302,18 @@ bool ABoss::TryBasicAttack(AActor* TargetActor)
 		return false;
 	}
 
-	if (!PlayDefaultAttackMontage(1.0f))
-	{
-		return false;
-	}
+	MulticastPlayBasicAttackMontage(AttackMontage, 1.0f);
 
 	PendingAttackTarget = TargetActor;
 	bBasicAttackInProgress = true;
 	LastBasicAttackTime = Now;
 
-	float ResolveDelay = AttackMontage->GetPlayLength();
-	if (ResolveDelay <= 0.0f)
+	float NotifyTimeout = AttackMontage->GetPlayLength() + 0.2f;
+	if (NotifyTimeout <= 0.2f)
 	{
-		ResolveDelay = BasicAttackHitDelay;
+		NotifyTimeout = 1.0f;
 	}
-
-	if (ResolveDelay <= 0.0f)
-	{
-		ResolveBasicAttackHit();
-		return true;
-	}
-
-	World->GetTimerManager().SetTimer(
-		BasicAttackHitTimer,
-		this,
-		&ABoss::ResolveBasicAttackHit,
-		ResolveDelay,
-		false);
+	World->GetTimerManager().SetTimer(BasicAttackHitTimer, this, &ABoss::OnBasicAttackNotifyTimeout, NotifyTimeout, false);
 
 	return true;
 }
@@ -309,6 +336,16 @@ bool ABoss::IsTargetTouchingAttackRange(AActor* TargetActor) const
 
 void ABoss::ResolveBasicAttackHit()
 {
+	if (!bBasicAttackInProgress)
+	{
+		return;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
+	}
+
 	bBasicAttackInProgress = false;
 
 	AActor* TargetActor = PendingAttackTarget.Get();
@@ -324,11 +361,7 @@ void ABoss::ResolveBasicAttackHit()
 		return;
 	}
 
-	UAbilitySystemComponent* TargetASC = nullptr;
-	if (IAbilitySystemInterface* TargetASI = Cast<IAbilitySystemInterface>(TargetActor))
-	{
-		TargetASC = TargetASI->GetAbilitySystemComponent();
-	}
+	UAbilitySystemComponent* TargetASC = ResolveTargetASC(TargetActor);
 	if (!TargetASC)
 	{
 		return;
@@ -353,5 +386,72 @@ void ABoss::ResolveBasicAttackHit()
 	const float FinalDamage = ComputeBasicAttackDamage();
 	SpecHandle.Data->SetSetByCallerMagnitude(DamageTag, FinalDamage);
 	AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+}
+
+void ABoss::OnBasicAttackNotifyTimeout()
+{
+	if (!bBasicAttackInProgress)
+	{
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[Boss] Attack notify timeout: montage notify missing or montage did not trigger notify. Boss=%s"), *GetNameSafe(this));
+	bBasicAttackInProgress = false;
+	PendingAttackTarget = nullptr;
+}
+
+void ABoss::OnBasicAttackDamageNotify()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	ResolveBasicAttackHit();
+}
+
+void ABoss::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	bIsGroggy = NewCount > 0;
+	if (!bIsGroggy)
+	{
+		return;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
+	}
+	bBasicAttackInProgress = false;
+	PendingAttackTarget = nullptr;
+
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		AIController->StopMovement();
+	}
+
+	if (GroggyKnockbackDistance > 0.0f)
+	{
+		const float Duration = FMath::Max(0.05f, GroggyKnockbackDuration);
+		const float KnockbackSpeed = GroggyKnockbackDistance / Duration;
+		const FVector BackwardDir = -GetActorForwardVector().GetSafeNormal2D();
+		LaunchCharacter(BackwardDir * KnockbackSpeed, true, false);
+	}
+
+	PlayGroggyMontage(1.0f);
+}
+
+void ABoss::MulticastPlayBasicAttackMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
+{
+	if (!MontageToPlay)
+	{
+		return;
+	}
+
+	const float Played = PlayAnimMontage(MontageToPlay, PlayRate);
+	if (Played <= 0.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Boss] Failed to play attack montage: Boss=%s Montage=%s"), *GetNameSafe(this), *GetNameSafe(MontageToPlay));
+	}
 }
 

@@ -8,11 +8,42 @@
 #include "NavigationSystem.h"
 #include "TimerManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerState.h"
 #include "GameplayEffectTypes.h"
+#include "GameplayTagContainer.h"
+
+namespace
+{
+	UAbilitySystemComponent* ResolveTargetASC(AActor* TargetActor)
+	{
+		if (!IsValid(TargetActor))
+		{
+			return nullptr;
+		}
+
+		if (IAbilitySystemInterface* TargetASI = Cast<IAbilitySystemInterface>(TargetActor))
+		{
+			return TargetASI->GetAbilitySystemComponent();
+		}
+
+		if (APawn* TargetPawn = Cast<APawn>(TargetActor))
+		{
+			if (IAbilitySystemInterface* PlayerStateASI = Cast<IAbilitySystemInterface>(TargetPawn->GetPlayerState()))
+			{
+				return PlayerStateASI->GetAbilitySystemComponent();
+			}
+		}
+
+		return nullptr;
+	}
+}
 
 Aenemy_mobs::Aenemy_mobs()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	bReplicates = true;
+	SetReplicateMovement(true);
 
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
@@ -40,10 +71,30 @@ void Aenemy_mobs::BeginPlay()
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	Tags.AddUnique(FName("Enemy"));
 
+	if (AbilitySystemComponent)
+	{
+		const FGameplayTag GroggyTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Groggy, false);
+		if (GroggyTag.IsValid())
+		{
+			AbilitySystemComponent->RegisterGameplayTagEvent(GroggyTag, EGameplayTagEventType::NewOrRemoved)
+				.AddUObject(this, &Aenemy_mobs::OnGroggyTagChanged);
+			bIsGroggy = AbilitySystemComponent->HasMatchingGameplayTag(GroggyTag);
+		}
+	}
+
 	if (AttributeSet && AttributeSet->GetPower() <= 0.0f)
 	{
 		AttributeSet->SetMaxPower(FMath::Max(AttributeSet->GetMaxPower(), InitialPowerStat));
 		AttributeSet->SetPower(InitialPowerStat);
+	}
+
+	if (AttributeSet && AttributeSet->GetMaxGroggy() <= 1.0f)
+	{
+		AttributeSet->SetMaxGroggy(InitialGroggyStat);
+	}
+	if (AttributeSet && AttributeSet->GetGroggy() <= 0.0f)
+	{
+		AttributeSet->SetGroggy(AttributeSet->GetMaxGroggy());
 	}
 
 	if (bEnablePeriodicMove)
@@ -121,23 +172,18 @@ void Aenemy_mobs::MoveToRandomReachableLocation()
 
 float Aenemy_mobs::ComputeBasicAttackDamage() const
 {
-	return 15.f;
+	const float Power = AttributeSet ? AttributeSet->GetPower() : 0.0f;
+	return BasicAttackBaseDamage + (Power * BasicAttackPowerScale);
 }
 
 bool Aenemy_mobs::TryBasicAttack(AActor* TargetActor)
 {
-	if (!HasAuthority() || !IsValid(TargetActor) || !AbilitySystemComponent || bBasicAttackInProgress)
+	if (!HasAuthority() || !IsValid(TargetActor) || !AbilitySystemComponent || bBasicAttackInProgress || bIsGroggy)
 	{
-		return false;
-	}
-
-	UAbilitySystemComponent* TargetASC = nullptr;
-	if (IAbilitySystemInterface* TargetASI = Cast<IAbilitySystemInterface>(TargetActor))
-	{
-		TargetASC = TargetASI->GetAbilitySystemComponent();
-	}
-	if (!TargetASC)
-	{
+		if (HasAuthority() && bBasicAttackInProgress)
+		{
+			UE_LOG(LogTemp, Verbose, TEXT("[EnemyMob] TryBasicAttack blocked: already in progress (%s)"), *GetNameSafe(this));
+		}
 		return false;
 	}
 
@@ -150,11 +196,13 @@ bool Aenemy_mobs::TryBasicAttack(AActor* TargetActor)
 	const float Now = World->GetTimeSeconds();
 	if ((Now - LastBasicAttackTime) < BasicAttackCooldown)
 	{
+		UE_LOG(LogTemp, Verbose, TEXT("[EnemyMob] TryBasicAttack blocked by cooldown. Attacker=%s"), *GetNameSafe(this));
 		return false;
 	}
 
 	if (!IsTargetTouchingAttackRange(TargetActor))
 	{
+		UE_LOG(LogTemp, Verbose, TEXT("[EnemyMob] TryBasicAttack blocked: target out of range. Attacker=%s Target=%s"), *GetNameSafe(this), *GetNameSafe(TargetActor));
 		return false;
 	}
 
@@ -184,33 +232,22 @@ bool Aenemy_mobs::TryBasicAttack(AActor* TargetActor)
 	bBasicAttackInProgress = true;
 	LastBasicAttackTime = Now;
 
-	float ResolveDelay = MontageToPlay->GetPlayLength();
-	if (ResolveDelay <= 0.0f)
-	{
-		ResolveDelay = BasicAttackHitDelay;
-	}
-
-	if (ResolveDelay <= 0.0f)
-	{
-		ResolveBasicAttackHit();
-		return true;
-	}
-
 	UE_LOG(
 		LogTemp,
 		Log,
-		TEXT("[EnemyMob] Attack started: Attacker=%s Target=%s Montage=%s ResolveDelay=%.2f"),
+		TEXT("[EnemyMob] Attack started: Attacker=%s Target=%s Montage=%s (Damage by AnimNotify)"),
 		*GetNameSafe(this),
 		*GetNameSafe(TargetActor),
-		*GetNameSafe(MontageToPlay),
-		ResolveDelay);
+		*GetNameSafe(MontageToPlay));
 
-	World->GetTimerManager().SetTimer(
-		BasicAttackHitTimer,
-		this,
-		&Aenemy_mobs::ResolveBasicAttackHit,
-		ResolveDelay,
-		false);
+	// Safety: if the montage notify is missing (or montage failed to play on mesh),
+	// release attack state so AI doesn't get stuck forever.
+	float NotifyTimeout = MontageToPlay->GetPlayLength() + 0.2f;
+	if (NotifyTimeout <= 0.2f)
+	{
+		NotifyTimeout = 1.0f;
+	}
+	World->GetTimerManager().SetTimer(BasicAttackHitTimer, this, &Aenemy_mobs::OnBasicAttackNotifyTimeout, NotifyTimeout, false);
 
 	return true;
 }
@@ -233,6 +270,16 @@ bool Aenemy_mobs::IsTargetTouchingAttackRange(AActor* TargetActor) const
 
 void Aenemy_mobs::ResolveBasicAttackHit()
 {
+	if (!bBasicAttackInProgress)
+	{
+		return;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
+	}
+
 	bBasicAttackInProgress = false;
 
 	AActor* TargetActor = PendingAttackTarget.Get();
@@ -249,13 +296,12 @@ void Aenemy_mobs::ResolveBasicAttackHit()
 		return;
 	}
 
-	UAbilitySystemComponent* TargetASC = nullptr;
-	if (IAbilitySystemInterface* TargetASI = Cast<IAbilitySystemInterface>(TargetActor))
-	{
-		TargetASC = TargetASI->GetAbilitySystemComponent();
-	}
+	UAbilitySystemComponent* TargetASC = ResolveTargetASC(TargetActor);
+	const float FinalDamage = ComputeBasicAttackDamage();
+
 	if (!TargetASC)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[EnemyMob] Attack hit but target ASC was not found. GAS damage skipped. Attacker=%s Target=%s"), *GetNameSafe(this), *GetNameSafe(TargetActor));
 		return;
 	}
 
@@ -264,22 +310,76 @@ void Aenemy_mobs::ResolveBasicAttackHit()
 	Ctx.AddSourceObject(this);
 
 	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(USLGE_WeaponDamage::StaticClass(), 1.0f, Ctx);
-	if (!SpecHandle.IsValid())
+	if (SpecHandle.IsValid())
 	{
-		return;
+		const FGameplayTag DamageTag = FGameplayTag::RequestGameplayTag(SLCombatTags::SetByCaller_DamageBase, false);
+		if (DamageTag.IsValid())
+		{
+			SpecHandle.Data->SetSetByCallerMagnitude(DamageTag, FinalDamage);
+			AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+		}
 	}
-
-	const FGameplayTag DamageTag = FGameplayTag::RequestGameplayTag(SLCombatTags::SetByCaller_DamageBase, false);
-	if (!DamageTag.IsValid())
-	{
-		return;
-	}
-
-	const float FinalDamage = ComputeBasicAttackDamage();
-	SpecHandle.Data->SetSetByCallerMagnitude(DamageTag, FinalDamage);
-	AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 
 	UE_LOG(LogTemp, Log, TEXT("[EnemyMob] Attack success: Attacker=%s Target=%s Damage=%.2f"), *GetNameSafe(this), *GetNameSafe(TargetActor), FinalDamage);
+}
+
+void Aenemy_mobs::OnBasicAttackDamageNotify()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	ResolveBasicAttackHit();
+}
+
+void Aenemy_mobs::OnBasicAttackNotifyTimeout()
+{
+	if (!bBasicAttackInProgress)
+	{
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[EnemyMob] Attack notify timeout: montage notify missing or montage did not trigger notify. Attacker=%s"), *GetNameSafe(this));
+	bBasicAttackInProgress = false;
+	PendingAttackTarget = nullptr;
+}
+
+void Aenemy_mobs::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	bIsGroggy = NewCount > 0;
+	if (!bIsGroggy)
+	{
+		return;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
+	}
+	bBasicAttackInProgress = false;
+	PendingAttackTarget = nullptr;
+
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		AIController->StopMovement();
+	}
+
+	// Knock the enemy backward a fixed distance when groggy is triggered.
+	if (GroggyKnockbackDistance > 0.0f)
+	{
+		const float Duration = FMath::Max(0.05f, GroggyKnockbackDuration);
+		const float KnockbackSpeed = GroggyKnockbackDistance / Duration;
+		const FVector BackwardDir = -GetActorForwardVector().GetSafeNormal2D();
+		LaunchCharacter(BackwardDir * KnockbackSpeed, true, false);
+	}
+
+	if (GroggyMontage)
+	{
+		MulticastPlayGroggyMontage(GroggyMontage, 1.0f);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[EnemyMob] Entered groggy state: %s"), *GetNameSafe(this));
 }
 
 void Aenemy_mobs::MulticastPlayBasicAttackMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
@@ -299,5 +399,19 @@ void Aenemy_mobs::MulticastPlayBasicAttackMontage_Implementation(UAnimMontage* M
 			*GetNameSafe(this),
 			*GetNameSafe(MontageToPlay),
 			*GetNameSafe(GetMesh() ? GetMesh()->GetAnimInstance() : nullptr));
+	}
+}
+
+void Aenemy_mobs::MulticastPlayGroggyMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
+{
+	if (!MontageToPlay)
+	{
+		return;
+	}
+
+	const float Played = PlayAnimMontage(MontageToPlay, PlayRate);
+	if (Played <= 0.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[EnemyMob] Failed to play groggy montage: Mob=%s Montage=%s"), *GetNameSafe(this), *GetNameSafe(MontageToPlay));
 	}
 }

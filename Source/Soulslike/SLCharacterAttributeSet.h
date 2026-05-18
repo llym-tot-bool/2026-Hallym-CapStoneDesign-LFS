@@ -26,6 +26,9 @@ public:
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Mana);
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, MaxPoise);
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Poise);
+	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, MaxGroggy);
+	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Groggy);
+	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, GroggyDamage);
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, MaxPower);
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Power);
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, MaxLevel);
@@ -56,6 +59,14 @@ protected:
 	FGameplayAttributeData MaxPoise;
 	UPROPERTY(BlueprintReadOnly, Category="Attribute")
 	FGameplayAttributeData Poise;
+
+	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	FGameplayAttributeData MaxGroggy;
+	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	FGameplayAttributeData Groggy;
+	/** Meta attribute: accumulated per-hit groggy damage consumed in PostGameplayEffectExecute. */
+	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	FGameplayAttributeData GroggyDamage;
 	
 	UPROPERTY(BlueprintReadOnly, Category="Attribute")
 	FGameplayAttributeData MaxPower;
