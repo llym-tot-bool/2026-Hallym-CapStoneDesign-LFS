@@ -18,6 +18,7 @@ USLCharacterAttributeSet::USLCharacterAttributeSet() :
 	MaxStamina(100.f),
 	MaxMana(40.f),
 	MaxPoise(0.f),
+	MaxGroggy(100.f),
 	MaxPower(0.f),
 	MaxLevel(99.f)
 {
@@ -25,6 +26,7 @@ USLCharacterAttributeSet::USLCharacterAttributeSet() :
 	InitStamina(GetMaxStamina());
 	InitMana(GetMaxMana());
 	InitPoise(GetMaxPoise());
+	InitGroggy(GetMaxGroggy());
 	InitPower(GetMaxPower());
 	InitLevel(GetMaxLevel());
 }
@@ -45,6 +47,10 @@ void USLCharacterAttributeSet::PreAttributeChange(const FGameplayAttribute& Attr
 		NewValue = FMath::Max(1, NewValue);
 	}
 	else if (Attribute == GetMaxPoiseAttribute())
+	{
+		NewValue = FMath::Max(1, NewValue);
+	}
+	else if (Attribute == GetMaxGroggyAttribute())
 	{
 		NewValue = FMath::Max(1, NewValue);
 	}
@@ -72,6 +78,10 @@ void USLCharacterAttributeSet::PreAttributeChange(const FGameplayAttribute& Attr
 	else if (Attribute == GetPoiseAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0, GetMaxPoise());
+	}
+	else if (Attribute == GetGroggyAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0, GetMaxGroggy());
 	}
 	else if (Attribute == GetPowerAttribute())
 	{
@@ -168,6 +178,29 @@ void USLCharacterAttributeSet::PostGameplayEffectExecute(const struct FGameplayE
 					UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Avatar, DeathEvent, Payload);
 				}
 			}
+		}
+	}
+
+	if (Data.EvaluatedData.Attribute == GetGroggyDamageAttribute())
+	{
+		const float IncomingGroggy = GetGroggyDamage();
+		SetGroggyDamage(0.f);
+
+		if (IncomingGroggy <= 0.f)
+		{
+			return;
+		}
+
+		UAbilitySystemComponent* TargetASC = &Data.Target;
+		const FGameplayTag GroggyTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Groggy, /*ErrorIfNotFound*/ false);
+
+		const float NewGroggy = FMath::Clamp(GetGroggy() - IncomingGroggy, 0.f, GetMaxGroggy());
+		SetGroggy(NewGroggy);
+
+		if (TargetASC && GroggyTag.IsValid())
+		{
+			// Enter groggy when gauge is fully broken; clear tag when recovered above 0.
+			TargetASC->SetLooseGameplayTagCount(GroggyTag, NewGroggy <= 0.f ? 1 : 0);
 		}
 	}
 }

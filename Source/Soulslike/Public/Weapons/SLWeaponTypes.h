@@ -48,6 +48,7 @@ namespace SLCombatTags
 	// Applied as a loose gameplay tag on the actor's ASC when Health hits 0.
 	// Movement / input / abilities short-circuit on this.
 	static const FName State_Dead = TEXT("State.Dead");
+	static const FName State_Groggy = TEXT("State.Groggy");
 
 	// Loose tag set whenever Stamina is consumed. USLGE_StaminaRegen lists this
 	// in its OngoingTagRequirements.IgnoreTags so periodic regen ticks pause
