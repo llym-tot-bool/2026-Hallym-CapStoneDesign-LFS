@@ -7,8 +7,36 @@
 #include "AIController.h"
 #include "NavigationSystem.h"
 #include "TimerManager.h"
+#include "Animation/AnimInstance.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameplayEffectTypes.h"
+#include "GameplayTagContainer.h"
+
+namespace
+{
+	UAbilitySystemComponent* ResolveEnemyTargetASC(AActor* TargetActor)
+	{
+		if (!IsValid(TargetActor))
+		{
+			return nullptr;
+		}
+
+		if (IAbilitySystemInterface* TargetASI = Cast<IAbilitySystemInterface>(TargetActor))
+		{
+			return TargetASI->GetAbilitySystemComponent();
+		}
+
+		if (APawn* TargetPawn = Cast<APawn>(TargetActor))
+		{
+			if (IAbilitySystemInterface* PlayerStateASI = Cast<IAbilitySystemInterface>(TargetPawn->GetPlayerState()))
+			{
+				return PlayerStateASI->GetAbilitySystemComponent();
+			}
+		}
+
+		return nullptr;
+	}
+}
 
 Aenemy_mobs::Aenemy_mobs()
 {
@@ -249,11 +277,9 @@ void Aenemy_mobs::ResolveBasicAttackHit()
 		return;
 	}
 
-	UAbilitySystemComponent* TargetASC = nullptr;
-	if (IAbilitySystemInterface* TargetASI = Cast<IAbilitySystemInterface>(TargetActor))
-	{
-		TargetASC = TargetASI->GetAbilitySystemComponent();
-	}
+	UAbilitySystemComponent* TargetASC = ResolveEnemyTargetASC(TargetActor);
+	const float FinalDamage = ComputeBasicAttackDamage();
+
 	if (!TargetASC)
 	{
 		return;
@@ -269,8 +295,47 @@ void Aenemy_mobs::ResolveBasicAttackHit()
 		return;
 	}
 
-	const FGameplayTag DamageTag = FGameplayTag::RequestGameplayTag(SLCombatTags::SetByCaller_DamageBase, false);
-	if (!DamageTag.IsValid())
+	ResolveBasicAttackHit();
+}
+
+void Aenemy_mobs::OnBasicAttackSpeedResetNotify()
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = MeshComp->GetAnimInstance();
+	if (!AnimInstance)
+	{
+		return;
+	}
+
+	if (UAnimMontage* ActiveMontage = AnimInstance->GetCurrentActiveMontage())
+	{
+		const float BaseRateScale = ActiveMontage->RateScale;
+		const float PlayRateForOneX = FMath::IsNearlyZero(BaseRateScale) ? 1.0f : (1.0f / BaseRateScale);
+		AnimInstance->Montage_SetPlayRate(ActiveMontage, PlayRateForOneX);
+	}
+}
+
+void Aenemy_mobs::OnBasicAttackNotifyTimeout()
+{
+	if (!bBasicAttackInProgress)
+	{
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[EnemyMob] Attack notify timeout: montage notify missing or montage did not trigger notify. Attacker=%s"), *GetNameSafe(this));
+	bBasicAttackInProgress = false;
+	PendingAttackTarget = nullptr;
+}
+
+void Aenemy_mobs::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	bIsGroggy = NewCount > 0;
+	if (!bIsGroggy)
 	{
 		return;
 	}
