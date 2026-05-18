@@ -71,14 +71,6 @@ void AEnemyMobsAIController::UpdateChaseTarget()
 		return;
 	}
 
-	if ((EnemyPawn && EnemyPawn->IsGroggy()) || (BossPawn && BossPawn->IsGroggy()))
-	{
-		StopMovement();
-		ApplyMoveSpeed(EnemyPawn ? EnemyPawn->GetDefaultMoveSpeed() : BossPawn->GetDefaultMoveSpeed());
-		CachedTargetActor = nullptr;
-		return;
-	}
-
 	const bool bDebugDrawDetection = EnemyPawn ? EnemyPawn->IsDebugDrawDetectionRangeEnabled() : BossPawn->IsDebugDrawDetectionRangeEnabled();
 	if (bDebugDrawDetection)
 	{
@@ -150,30 +142,11 @@ void AEnemyMobsAIController::UpdateChaseTarget()
 	{
 		const bool bAttackStarted = EnemyPawn ? EnemyPawn->TryBasicAttack(TargetActor) : BossPawn->TryBasicAttack(TargetActor);
 		const bool bAttackInProgress = EnemyPawn ? EnemyPawn->IsBasicAttackInProgress() : BossPawn->IsBasicAttackInProgress();
-		UE_LOG(
-			LogTemp,
-			Log,
-			TEXT("[EnemyAI] AttackCheck Pawn=%s Target=%s InRange=1 Started=%d InProgress=%d Dist2D=%.1f"),
-			*GetNameSafe(GetPawn()),
-			*GetNameSafe(TargetActor),
-			bAttackStarted ? 1 : 0,
-			bAttackInProgress ? 1 : 0,
-			FVector::Dist2D(GetPawn()->GetActorLocation(), TargetActor->GetActorLocation()));
 		if (bAttackStarted || bAttackInProgress)
 		{
 			StopMovement();
 			return;
 		}
-	}
-	else
-	{
-		UE_LOG(
-			LogTemp,
-			Verbose,
-			TEXT("[EnemyAI] OutOfRange Pawn=%s Target=%s Dist2D=%.1f"),
-			*GetNameSafe(GetPawn()),
-			*GetNameSafe(TargetActor),
-			FVector::Dist2D(GetPawn()->GetActorLocation(), TargetActor->GetActorLocation()));
 	}
 
 	const float AcceptanceRadius = EnemyPawn ? EnemyPawn->GetChaseAcceptanceRadius() : BossPawn->GetChaseAcceptanceRadius();
