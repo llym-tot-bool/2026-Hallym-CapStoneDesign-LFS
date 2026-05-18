@@ -10,7 +10,6 @@
 class UAbilitySystemComponent;
 class USLCharacterAttributeSet;
 class UAnimMontage;
-struct FGameplayTag;
 struct FTimerHandle;
 
 UCLASS()
@@ -73,26 +72,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Stats", meta = (ClampMin = 0.0))
 	float InitialPowerStat = 20.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Stats", meta = (ClampMin = 1.0))
-	float InitialGroggyStat = 100.0f;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation")
 	TObjectPtr<UAnimMontage> BasicAttackMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation")
 	TObjectPtr<UAnimMontage> BasicAttackMontageAlt;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation")
-	TObjectPtr<UAnimMontage> GroggyMontage;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation", meta = (ClampMin = 0.0))
 	float BasicAttackHitDelay = 0.25f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Groggy", meta = (ClampMin = 0.0))
-	float GroggyKnockbackDistance = 180.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Groggy", meta = (ClampMin = 0.05))
-	float GroggyKnockbackDuration = 0.2f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Wander")
 	bool bEnablePeriodicMove = false;
@@ -165,19 +152,13 @@ public:
 private:
 	float LastBasicAttackTime = -1000.0f;
 	bool bBasicAttackInProgress = false;
-	bool bIsGroggy = false;
 	FTimerHandle BasicAttackHitTimer;
 	TWeakObjectPtr<AActor> PendingAttackTarget;
 
 	float ComputeBasicAttackDamage() const;
 	bool IsTargetTouchingAttackRange(AActor* TargetActor) const;
 	void ResolveBasicAttackHit();
-	void OnBasicAttackNotifyTimeout();
-	void OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayBasicAttackMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastPlayGroggyMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);
 };

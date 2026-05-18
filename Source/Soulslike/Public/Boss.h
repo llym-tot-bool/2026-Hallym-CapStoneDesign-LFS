@@ -10,7 +10,6 @@
 class UAbilitySystemComponent;
 class USLCharacterAttributeSet;
 class UAnimMontage;
-struct FGameplayTag;
 struct FTimerHandle;
 
 UCLASS()
@@ -102,21 +101,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animation")
 	TObjectPtr<UAnimMontage> DeathMontage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animation")
-	TObjectPtr<UAnimMontage> GroggyMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Combat|Groggy", meta = (ClampMin = 0.0))
-	float GroggyKnockbackDistance = 220.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Combat|Groggy", meta = (ClampMin = 0.05))
-	float GroggyKnockbackDuration = 0.25f;
-
 	FTimerHandle ChaseTimer;
 	FTimerHandle PeriodicMoveTimer;
 	FTimerHandle BasicAttackHitTimer;
 	float LastBasicAttackTime = -1000.0f;
 	bool bBasicAttackInProgress = false;
-	bool bIsGroggy = false;
 	TWeakObjectPtr<AActor> PendingAttackTarget;
 
 	UFUNCTION()
@@ -128,8 +117,6 @@ protected:
 	float ComputeBasicAttackDamage() const;
 	bool IsTargetTouchingAttackRange(AActor* TargetActor) const;
 	void ResolveBasicAttackHit();
-	void OnBasicAttackNotifyTimeout();
-	void OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount);
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Boss|AI")
@@ -168,13 +155,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Combat")
 	bool IsBasicAttackInProgress() const { return bBasicAttackInProgress; }
 
-	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Combat")
-	bool IsGroggy() const { return bIsGroggy; }
-
-	/** Called by boss attack montage AnimNotify at the exact hit frame. */
-	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Combat")
-	void OnBasicAttackDamageNotify();
-
 	UFUNCTION(BlueprintCallable, Category = "Boss|AI")
 	void StartChase();
 
@@ -195,12 +175,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Boss|Animation")
 	bool PlayDeathMontage(float PlayRate = 1.0f);
-
-	UFUNCTION(BlueprintCallable, Category = "Boss|Animation")
-	bool PlayGroggyMontage(float PlayRate = 1.0f);
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastPlayBasicAttackMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);
 
 	UFUNCTION(BlueprintPure, Category = "Boss|Animation")
 	float GetGroundSpeed() const;
