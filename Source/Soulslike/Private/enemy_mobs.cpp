@@ -7,6 +7,7 @@
 #include "AIController.h"
 #include "NavigationSystem.h"
 #include "TimerManager.h"
+#include "Animation/AnimInstance.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerState.h"
@@ -15,7 +16,7 @@
 
 namespace
 {
-	UAbilitySystemComponent* ResolveTargetASC(AActor* TargetActor)
+	UAbilitySystemComponent* ResolveEnemyTargetASC(AActor* TargetActor)
 	{
 		if (!IsValid(TargetActor))
 		{
@@ -296,7 +297,7 @@ void Aenemy_mobs::ResolveBasicAttackHit()
 		return;
 	}
 
-	UAbilitySystemComponent* TargetASC = ResolveTargetASC(TargetActor);
+	UAbilitySystemComponent* TargetASC = ResolveEnemyTargetASC(TargetActor);
 	const float FinalDamage = ComputeBasicAttackDamage();
 
 	if (!TargetASC)
@@ -331,6 +332,28 @@ void Aenemy_mobs::OnBasicAttackDamageNotify()
 	}
 
 	ResolveBasicAttackHit();
+}
+
+void Aenemy_mobs::OnBasicAttackSpeedResetNotify()
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = MeshComp->GetAnimInstance();
+	if (!AnimInstance)
+	{
+		return;
+	}
+
+	if (UAnimMontage* ActiveMontage = AnimInstance->GetCurrentActiveMontage())
+	{
+		const float BaseRateScale = ActiveMontage->RateScale;
+		const float PlayRateForOneX = FMath::IsNearlyZero(BaseRateScale) ? 1.0f : (1.0f / BaseRateScale);
+		AnimInstance->Montage_SetPlayRate(ActiveMontage, PlayRateForOneX);
+	}
 }
 
 void Aenemy_mobs::OnBasicAttackNotifyTimeout()

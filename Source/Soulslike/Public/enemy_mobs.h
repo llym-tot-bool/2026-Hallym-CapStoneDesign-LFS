@@ -152,6 +152,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AI|Combat|Animation")
 	void OnBasicAttackDamageNotify();
 
+	/** Called by attack montage AnimNotify to reset play rate to default. */
+	UFUNCTION(BlueprintCallable, Category = "AI|Combat|Animation")
+	void OnBasicAttackSpeedResetNotify();
+
 	UFUNCTION(BlueprintCallable, Category = "AI|Wander")
 	void StartPeriodicMove();
 
