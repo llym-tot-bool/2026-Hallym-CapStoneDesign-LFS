@@ -14,6 +14,7 @@ USLGE_WeaponDamage::USLGE_WeaponDamage()
 	FGameplayModifierInfo DamageMod;
 	DamageMod.Attribute = USLCharacterAttributeSet::GetDamageAttribute();
 	DamageMod.ModifierOp = EGameplayModOp::Additive;
+	DamageMod.TargetTags.IgnoreTags.AddTag(FGameplayTag::RequestGameplayTag(SLCombatTags::State_Invulnerable));
 
 	FSetByCallerFloat SetByCaller;
 	SetByCaller.DataTag = FGameplayTag::RequestGameplayTag(SLCombatTags::SetByCaller_DamageBase, /*ErrorIfNotFound*/ false);

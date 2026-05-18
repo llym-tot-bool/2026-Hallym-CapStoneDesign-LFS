@@ -16,31 +16,20 @@ public class Soulslike : ModuleRules
 			"EnhancedInput",
 			"GameplayAbilities",
 			"GameplayTags",
+			"GameplayTasks",
 			"AIModule",
 			"NavigationSystem",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
-		});
+			"Slate",
+            "UnrealEd"
+        });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"Soulslike",
-			"Soulslike/Variant_Platforming",
-			"Soulslike/Variant_Platforming/Animation",
-			"Soulslike/Variant_Combat",
-			"Soulslike/Variant_Combat/AI",
-			"Soulslike/Variant_Combat/Animation",
-			"Soulslike/Variant_Combat/Gameplay",
-			"Soulslike/Variant_Combat/Interfaces",
-			"Soulslike/Variant_Combat/UI",
-			"Soulslike/Variant_SideScrolling",
-			"Soulslike/Variant_SideScrolling/AI",
-			"Soulslike/Variant_SideScrolling/Gameplay",
-			"Soulslike/Variant_SideScrolling/Interfaces",
-			"Soulslike/Variant_SideScrolling/UI"
 		});
 
 		// Uncomment if you are using Slate UI

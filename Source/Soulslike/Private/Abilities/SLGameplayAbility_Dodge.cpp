@@ -1,6 +1,5 @@
 #include "Abilities/SLGameplayAbility_Dodge.h"
 
-#include "Abilities/SLGE_StaminaCost.h"
 #include "SLCharacterAttributeSet.h"
 #include "Weapons/SLWeaponTypes.h"
 
@@ -14,8 +13,6 @@ USLGameplayAbility_Dodge::USLGameplayAbility_Dodge()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
-
-	StaminaCostGEClass = USLGE_StaminaCost::StaticClass();
 	
 	const FGameplayTag DodgingTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Dodging, /*ErrorIfNotFound*/ false);
 	const FGameplayTag InvulnTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Invulnerable, /*ErrorIfNotFound*/ false);
@@ -31,9 +28,9 @@ USLGameplayAbility_Dodge::USLGameplayAbility_Dodge()
 	const FGameplayTag ActivateTag = FGameplayTag::RequestGameplayTag(SLCombatTags::Activate_Dodge, /*ErrorIfNotFound*/ false);
 	if (ActivateTag.IsValid())
 	{
-		FGameplayTagContainer AssetTags;
-		AssetTags.AddTag(ActivateTag);
-		SetAssetTags(AssetTags);
+		FGameplayTagContainer Tags = GetAssetTags();
+		Tags.AddTag(ActivateTag);
+		SetAssetTags(Tags);
 	}
 	
 }
@@ -45,12 +42,12 @@ bool USLGameplayAbility_Dodge::CanActivateAbility(const FGameplayAbilitySpecHand
 		return false;
 	}
 	
-	// Block dodge if there isn't enough stamina available.
 	if (ActorInfo)
 	{
 		if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
 		{
-			if (ASC->GetNumericAttribute(USLCharacterAttributeSet::GetStaminaAttribute()) < StaminaCost)
+			const float CurrentStamina = ASC->GetNumericAttribute(USLCharacterAttributeSet::GetStaminaAttribute());
+			if (CurrentStamina < StaminaCost)
 			{
 				return false;
 			}
@@ -76,8 +73,6 @@ void USLGameplayAbility_Dodge::ActivateAbility(const FGameplayAbilitySpecHandle 
 
 	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
 
-	// Apply stamina cost via SetByCaller. We pass a negative number so the
-	// additive modifier inside USLGE_StaminaCost subtracts from Stamina.
 	if (StaminaCostGEClass)
 	{
 		FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();

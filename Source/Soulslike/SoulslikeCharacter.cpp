@@ -10,19 +10,19 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
-#include "Soulslike.h"
 #include "SoulslikePlayerState.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayTagContainer.h"
 #include "Abilities/SLSkillTypes.h"
-#include "Abilities/SLGE_StaminaCost.h"
-#include "Abilities/SLGE_StaminaRegen.h"
-#include "SLCharacterAttributeSet.h"
 #include "Combat/SLLockOnComponent.h"
 #include "Weapons/SLWeaponTypes.h"
+#include "Weapons/SLWeaponBase.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "GameplayEffect.h"
+#include "SoulslikePlayerController.h"
+#include "Soulslike.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -62,77 +62,99 @@ ASoulslikeCharacter::ASoulslikeCharacter()
 	// Lock-on logic component — drives controller rotation while a target is held.
 	LockOnComponent = CreateDefaultSubobject<USLLockOnComponent>(TEXT("LockOnComponent"));
 
+	CurrentWeapon = nullptr;
+
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+
+
+	ComboManager_Katana_Base = CreateDefaultSubobject<USL_ComboManager>(TEXT("ComboManager_Katana_Base"));
+	ComboManager_Katana_Special = CreateDefaultSubobject<USL_OneShotManager>(TEXT("ComboManager_Katana_Special"));
+
+	ComboManager_SAS_Base = CreateDefaultSubobject<USL_ComboManager>(TEXT("ComboManager_SAS_Base"));
+	ComboManager_SAS_Special = CreateDefaultSubobject<USL_OneShotManager>(TEXT("ComboManager_SAS_Special"));
+
+	ComboManager_HS_Base = CreateDefaultSubobject<USL_ComboManager>(TEXT("ComboManager_HS_Base"));
+	ComboManager_HS_Special = CreateDefaultSubobject<USL_OneShotManager>(TEXT("ComboManager_HS_Special"));
 }
 
-void ASoulslikeCharacter::PerformWeaponTrace()
+bool ASoulslikeCharacter::IsFalling()
 {
-	FVector start = GetMesh()->GetSocketLocation("Socket_weapon_base");
-	FVector end = GetMesh()->GetSocketLocation("Socket_weapon_tip");
-
-	TArray<AActor*> actorsToIgnore;
-	actorsToIgnore.Add(this);
-	FHitResult hitresult;
-
-	bool bHit = UKismetSystemLibrary::SphereTraceSingle(
-		this, start, end, 15.0f,
-		UEngineTypes::ConvertToTraceType(ECC_Pawn),
-		false, actorsToIgnore, EDrawDebugTrace::ForDuration,
-		hitresult, true
-	);
-
-	if (bHit && hitresult.GetActor()) {
-		AActor* hitActor = hitresult.GetActor();
-
-		if (!AlreadyHitActors.Contains(hitActor)) {
-			AlreadyHitActors.Add(hitActor);
-
-			IAbilitySystemInterface* hitInterface = Cast<IAbilitySystemInterface>(hitActor);
-			if (hitInterface) {
-				UAbilitySystemComponent* targetASC = hitInterface->GetAbilitySystemComponent();
-				UAbilitySystemComponent* myASC = GetAbilitySystemComponent();
-
-				if (targetASC && myASC) {
-					FGameplayEffectContextHandle effectHandle = myASC->MakeEffectContext();
-					effectHandle.AddHitResult(hitresult);
-
-					FGameplayEventData payload;
-					payload.Instigator = this;
-					payload.Target = hitActor;
-					payload.ContextHandle = effectHandle;
-
-					UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, FGameplayTag::RequestGameplayTag(FName("Event.Combat.HitLanded")), payload);
-					GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, TEXT("Hit Landed!"));
-				}
-			}
-
-
-		}
-	}
-}
-
-void ASoulslikeCharacter::ClearHitList()
-{
-	AlreadyHitActors.Empty();
+	return GetCharacterMovement()->IsFalling();
 }
 
 void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-
-		// Moving
+		
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASoulslikeCharacter::Move);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &ASoulslikeCharacter::OnMoveStopped);
+
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &ASoulslikeCharacter::Look);
 
-		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASoulslikeCharacter::Look);
 
-		// light attack
-		EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::LightAttack);
+		// bind for all Melee set
+		TObjectPtr<UEnhancedInputComponent> EIC = Cast<UEnhancedInputComponent>(InputComponent);
+		if (!EIC) {
+			UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! SetupPlayerInputComponent() : EnhancedInputComponent not found"));
+			return;
+		}
 
-		// skills
+		if (!SLDA_MeleeCombat) {
+			UE_LOG(LogTemp, Display, TEXT("[SL debug] !!! SetupPlayerInputComponent() : SLDA_MeleeCombat is null"));
+			return;
+		}
+
+		for (const TObjectPtr<USLDA_WeaponStyle> eachWeaponStyle : SLDA_MeleeCombat->weaponStyle_list) {
+			if (!eachWeaponStyle) continue;
+
+			UE_LOG(LogTemp, Display,
+				TEXT("[SL debug] SetupPlayerInputComponent() : weapon style = %s IA binding start"),
+				*eachWeaponStyle->tag_weapon.ToString());
+
+			for (const TObjectPtr<USLDA_WeaponCombo> eachCombo : eachWeaponStyle->combo_list) {
+				if (!eachCombo || !eachCombo->IA_combo) continue;
+
+				// katana input binding
+				if (eachCombo == ComboManager_Katana_Base->combo) {
+					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
+						ComboManager_Katana_Base.Get(), &USL_ComboManager::OnCharacterInput);
+				}
+				if (eachCombo == ComboManager_Katana_Special->combo) {
+					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
+						ComboManager_Katana_Special.Get(), &USL_OneShotManager::OnCharacterInput);
+				}
+
+				// SAS input binding
+				if (eachCombo == ComboManager_SAS_Base->combo) {
+					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
+						ComboManager_SAS_Base.Get(), &USL_ComboManager::OnCharacterInput);
+				}
+				if (eachCombo == ComboManager_SAS_Special->combo) {
+					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
+						ComboManager_SAS_Special.Get(), &USL_OneShotManager::OnCharacterInput);
+				}
+
+				// HS input binding
+				if (eachCombo == ComboManager_HS_Base->combo) {
+					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
+						ComboManager_HS_Base.Get(), &USL_ComboManager::OnCharacterInput);
+				}
+				if (eachCombo == ComboManager_HS_Special->combo) {
+					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
+						ComboManager_HS_Special.Get(), &USL_OneShotManager::OnCharacterInput);
+				}
+
+				UE_LOG(LogTemp, Display,
+					TEXT("[SL debug] SetupPlayerInputComponent() : weapon combo IA binding for tag = %s completed"),
+					*eachCombo->tag_combo.ToString());
+			}
+		}
+		if (JumpAction) {
+			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::Jump);
+		}
+
 		if (SkillOneAction)
 		{
 			EnhancedInputComponent->BindAction(SkillOneAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::SkillOne);
@@ -142,21 +164,15 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 			EnhancedInputComponent->BindAction(SkillTwoAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::SkillTwo);
 		}
 
-		// dodge
 		if (DodgeAction)
 		{
 			EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::Dodge);
 		}
 
-		// lock-on
 		if (LockOnAction)
 		{
 			EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Started, this, &ASoulslikeCharacter::LockOnToggle);
 		}
-	}
-	else
-	{
-		UE_LOG(LogSoulslike, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
 }
 
@@ -165,24 +181,77 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 
 	ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>();
-	if (ps) {
-		UAbilitySystemComponent* ASC = ps->GetAbilitySystemComponent();
-		ASC->InitAbilityActorInfo(ps, this);
+	ASC = ps->GetAbilitySystemComponent();
+	ensureOrQuit(ASC);
 
-		ps->AddDefaultAbilities();
+	ASC->InitAbilityActorInfo(ps, this);
+	ps->AddDefaultAbilities();
 
-		// Apply the always-on stamina regen GE. It pauses itself via
-		// OngoingTagRequirements while State.Stamina.Spending is on the ASC.
-		if (ASC && HasAuthority())
+	if (HasAuthority())
+	{
+		for (auto Ability : StartingAbilities)
+		{
+			if (Ability)
+			{
+				ASC->GiveAbility(FGameplayAbilitySpec(Ability, 1));
+			}
+		}
+
+		for (auto Effect : StartingEffectClasses)
 		{
 			FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
 			Ctx.AddSourceObject(this);
-			FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(USLGE_StaminaRegen::StaticClass(), 1.f, Ctx);
+			FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(Effect, 1.f, Ctx);
 			if (Spec.IsValid())
 			{
 				ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
 			}
 		}
+
+		if (StartingWeapon)
+		{
+			EquipWeapon(StartingWeapon);
+		}
+	}
+}
+
+void ASoulslikeCharacter::EquipWeapon(TSubclassOf<ASLWeaponBase> WeaponClass)
+{
+	if (!WeaponClass) return;
+
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->Unequip();
+		CurrentWeapon->Destroy();
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = this;
+
+	CurrentWeapon = GetWorld()->SpawnActor<ASLWeaponBase>(WeaponClass, SpawnParams);
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->Equip(this);
+	}
+}
+
+void ASoulslikeCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	USLLockOnComponent* LockOn = GetLockOnComponent();
+	if (LockOn && LockOn->GetLockedTarget())
+	{
+		AActor* target = LockOn->GetLockedTarget();
+		FVector StartLocation = GetActorLocation();
+		FVector TargetLocation = target->GetActorLocation();
+		
+		FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
+		
+		FRotator CurrentRotation = GetActorRotation();
+		FRotator SmoothedRotation = FMath::RInterpTo(CurrentRotation, LookAtRotation, DeltaSeconds, 5.0f);
+		SetActorRotation(FRotator(0.f, SmoothedRotation.Yaw, 0.f));
 	}
 }
 
@@ -193,17 +262,39 @@ void ASoulslikeCharacter::Move(const FInputActionValue& Value)
 		return; // dead characters do not accept movement input
 	}
 
-	if (ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>()) {
-		if (ps->GetAbilitySystemComponent()->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Attacking")))) {
-			return; // don't move while attacking
-		}
-	}
-
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
+	if (!MovementVector.IsNearlyZero()) {
+		if (!ASC->HasMatchingGameplayTag(tag_tryingToMove)) {
+			ASC->AddLooseGameplayTag(tag_tryingToMove); // tag for informing whether player is trying to move
+		}
+	}
+
+	if (ASC->HasMatchingGameplayTag(tag_RootMotion)) {
+		return; // don't move while attacking 
+	}
+
+	if (!ASC->HasMatchingGameplayTag(tag_isMoving)) {
+		ASC->AddLooseGameplayTag(tag_isMoving);
+		delegate_CharacterMove.Broadcast();
+	}
+
 	// route the input
 	DoMove(MovementVector.X, MovementVector.Y);
+}
+
+void ASoulslikeCharacter::OnMoveStopped(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Display, TEXT("[SL debug] OnMoveStopped() : player input for movement is stopped"));
+
+	if (ASC->HasMatchingGameplayTag(tag_tryingToMove)) {
+		ASC->RemoveLooseGameplayTag(tag_tryingToMove);
+	}
+
+	if (ASC->HasMatchingGameplayTag(tag_isMoving)) {
+		ASC->RemoveLooseGameplayTag(tag_isMoving);
+	}
 }
 
 void ASoulslikeCharacter::Look(const FInputActionValue& Value)
@@ -215,39 +306,21 @@ void ASoulslikeCharacter::Look(const FInputActionValue& Value)
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
 }
 
-void ASoulslikeCharacter::LightAttack()
-{
-	if (ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>()) {
-		UAbilitySystemComponent* ASC = ps->GetAbilitySystemComponent();
-
-		if (ASC) {
-			FGameplayTag attackTag = FGameplayTag::RequestGameplayTag(FName("PlayerAbility.Attack.Light"));
-			ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(attackTag));
-		}
-	}
-}
-
 UAbilitySystemComponent* ASoulslikeCharacter::GetAbilitySystemComponent() const
 {
-	ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>();
-	return ps ? ps->GetAbilitySystemComponent() : nullptr;
+	return ASC;
 }
 
 void ASoulslikeCharacter::DoMove(float Right, float Forward)
 {
 	if (GetController() != nullptr)
 	{
-		// find out which way is forward
 		const FRotator Rotation = GetController()->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
-		// get forward vector
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-
-		// get right vector 
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-		// add movement 
 		AddMovementInput(ForwardDirection, Forward);
 		AddMovementInput(RightDirection, Right);
 	}
@@ -257,15 +330,9 @@ void ASoulslikeCharacter::DoLook(float Yaw, float Pitch)
 {
 	if (GetController() != nullptr)
 	{
-		// add yaw and pitch input to controller
 		AddControllerYawInput(Yaw);
 		AddControllerPitchInput(Pitch);
 	}
-}
-
-void ASoulslikeCharacter::DoLightAttack()
-{
-	LightAttack();
 }
 
 void ASoulslikeCharacter::SkillOne()
@@ -288,70 +355,27 @@ void ASoulslikeCharacter::LockOnToggle()
 	if (LockOnComponent)
 	{
 		LockOnComponent->ToggleLockOn();
+		GetCharacterMovement()->bOrientRotationToMovement = !GetCharacterMovement()->bOrientRotationToMovement;
 	}
 }
 
 void ASoulslikeCharacter::DoDodge()
 {
-	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	const FGameplayTag DodgeTag = FGameplayTag::RequestGameplayTag(SLCombatTags::Activate_Dodge, /*ErrorIfNotFound*/ false);
+	if (DodgeTag.IsValid())
 	{
-		const FGameplayTag DodgeTag = FGameplayTag::RequestGameplayTag(SLCombatTags::Activate_Dodge, /*ErrorIfNotFound*/ false);
-		if (DodgeTag.IsValid())
-		{
-			ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(DodgeTag));
-		}
+		ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(DodgeTag));
 	}
-}
-
-bool ASoulslikeCharacter::ApplyStaminaCost(float Cost)
-{
-	if (Cost <= 0.f) { return false; }
-
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (!ASC) { return false; }
-
-	FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
-	Ctx.AddSourceObject(this);
-	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(USLGE_StaminaCost::StaticClass(), 1.f, Ctx);
-	if (!SpecHandle.IsValid()) { return false; }
-
-	const FGameplayTag CostTag = FGameplayTag::RequestGameplayTag(SLCombatTags::SetByCaller_StaminaCost, /*ErrorIfNotFound*/ false);
-	if (CostTag.IsValid())
-	{
-		// Pass negative so the additive modifier subtracts from Stamina.
-		SpecHandle.Data->SetSetByCallerMagnitude(CostTag, -Cost);
-	}
-	ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-	return true;
-}
-
-bool ASoulslikeCharacter::HasEnoughStamina(float RequiredAmount) const
-{
-	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
-	{
-		return ASC->GetNumericAttribute(USLCharacterAttributeSet::GetStaminaAttribute()) >= RequiredAmount;
-	}
-	return false;
 }
 
 bool ASoulslikeCharacter::IsDead() const
 {
-	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
-	{
-		const FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Dead, /*ErrorIfNotFound*/ false);
-		return DeadTag.IsValid() && ASC->HasMatchingGameplayTag(DeadTag);
-	}
-	return false;
+	const FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Dead, /*ErrorIfNotFound*/ false);
+	return DeadTag.IsValid() && ASC->HasMatchingGameplayTag(DeadTag);
 }
 
 void ASoulslikeCharacter::DoActivateSkill(ESLSkillSlot Slot)
 {
-	ASoulslikePlayerState* ps = GetPlayerState<ASoulslikePlayerState>();
-	if (!ps) { return; }
-
-	UAbilitySystemComponent* ASC = ps->GetAbilitySystemComponent();
-	if (!ASC) { return; }
-
 	FName TagName;
 	switch (Slot)
 	{

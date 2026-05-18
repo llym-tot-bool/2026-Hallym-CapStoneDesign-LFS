@@ -1,5 +1,4 @@
 #include "Abilities/SLGameplayAbility_Skill.h"
-#include "Abilities/SLGE_SkillCooldown.h"
 #include "Abilities/SLSkillTypes.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayEffect.h"
@@ -8,8 +7,6 @@ USLGameplayAbility_Skill::USLGameplayAbility_Skill()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
-
-	CooldownGEClass = USLGE_SkillCooldown::StaticClass();
 }
 
 const FGameplayTagContainer* USLGameplayAbility_Skill::GetCooldownTags() const

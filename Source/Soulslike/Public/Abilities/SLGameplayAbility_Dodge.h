@@ -35,19 +35,15 @@ public:
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 protected:
-	/** Stamina consumed when the dodge activates. Costs are applied as a negative SetByCaller magnitude. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge", meta = (ClampMin = "0.0"))
 	float StaminaCost = 25.f;
 
-	/** Roll/dodge montage. The ability stays active until this montage finishes. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge")
 	TObjectPtr<UAnimMontage> DodgeMontage;
 
-	/** Optional override for the cost GE class. Defaults to USLGE_StaminaCost. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|GAS")
 	TSubclassOf<UGameplayEffect> StaminaCostGEClass;
 
-	/** Bound to the montage delegate so the ability ends when the roll completes. */
 	UFUNCTION()
 	void OnDodgeMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 };
