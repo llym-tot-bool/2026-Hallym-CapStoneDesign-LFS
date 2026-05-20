@@ -89,7 +89,7 @@ void USLGA_MeleeMultiMontage::ActivateAbility(const FGameplayAbilitySpecHandle H
     hitchecker = USLAT_Meele_hit_checker::Create(
         this,
         socket_weapon_base, socket_weapon_tip, socket_weapon_length,
-        BoxHalfExtents);
+        BoxHalfExtents, HitSound);
     hitchecker->ReadyForActivation();
 
     FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();

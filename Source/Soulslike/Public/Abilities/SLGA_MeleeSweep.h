@@ -22,13 +22,14 @@ public:
     // This allows the GA to create the task easily
     static USLAT_Meele_hit_checker* Create(UGameplayAbility* OwningAbility,
         FName socket_base_name, FName socket_tip_name,
-        float trace_length, FVector boxHalfExtents);
+        float trace_length, FVector boxHalfExtents,
+        USoundBase* InHitSound);
 
     bool IgnoreSelf();
     void SetIsScanning(const bool value);
 
     virtual void TickTask(float DeltaTime) override;
-    void EffectOnHit(AActor* hitActor);
+    void EffectOnHit(AActor* hitActor, const FVector& HitLocation);
 
 private:
     FName socket_base_name;
@@ -37,6 +38,9 @@ private:
     FVector boxHalfExtents;
     TArray<AActor*> actorsToIgnore;
     bool isScanning;
+
+    UPROPERTY()
+    TObjectPtr<USoundBase> HitSound;
 };
 
 UCLASS()
@@ -67,6 +71,12 @@ protected:
     
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack|GAS")
     TSubclassOf<UGameplayEffect> StaminaCostGEClass;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack|Sound")
+    TObjectPtr<USoundBase> HitSound;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack|Sound")
+    TObjectPtr<USoundBase> SwingSound;
 
     ESL_Melee_State state;
     ESL_Melee_TraceState traceState;

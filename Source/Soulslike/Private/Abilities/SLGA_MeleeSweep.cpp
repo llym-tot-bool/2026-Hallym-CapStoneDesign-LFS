@@ -4,13 +4,15 @@
 #include "Abilities/SLGA_MeleeSweep.h"
 #include "SoulslikeCharacter.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Weapons/SLWeaponTypes.h"
 #include "Soulslike.h"
 
 USLAT_Meele_hit_checker* USLAT_Meele_hit_checker::Create(UGameplayAbility* OwningAbility,
     FName socket_start_name, FName socket_end_name,
-    float trace_length, FVector boxHalfExtents)
+    float trace_length, FVector boxHalfExtents,
+    USoundBase* InHitSound)
 {
     USLAT_Meele_hit_checker* hit_checker = NewAbilityTask<USLAT_Meele_hit_checker>(OwningAbility);
     hit_checker->socket_base_name = socket_start_name;
@@ -18,6 +20,7 @@ USLAT_Meele_hit_checker* USLAT_Meele_hit_checker::Create(UGameplayAbility* Ownin
     hit_checker->trace_length = trace_length;
     hit_checker->boxHalfExtents = boxHalfExtents;
     hit_checker->isScanning = false;
+    hit_checker->HitSound = InHitSound;
 
     hit_checker->actorsToIgnore.Empty();
     if (!hit_checker->IgnoreSelf()) return nullptr;
@@ -84,17 +87,22 @@ void USLAT_Meele_hit_checker::TickTask(float DeltaTime)
             if (actorsToIgnore.Contains(hitActor)) continue;
 
             actorsToIgnore.Add(hitActor);
-            EffectOnHit(hitActor);
+            EffectOnHit(hitActor, hitresult.ImpactPoint);
         }
     }
 }
 
-void USLAT_Meele_hit_checker::EffectOnHit(AActor* hitActor)
+void USLAT_Meele_hit_checker::EffectOnHit(AActor* hitActor, const FVector& HitLocation)
 {
     FString myName = this->GetName();
 
     FString actorName = hitActor->GetName();
     UE_LOG(LogTemp, Display, TEXT("[SL debug] %s EffectOnHit() : hit = %s"), *myName, *actorName);
+
+    if (HitSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, HitSound, HitLocation);
+    }
 }
 
 void USLGA_MeleeSweep::InterruptAsCombo()
@@ -173,7 +181,7 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     hitchecker = USLAT_Meele_hit_checker::Create(
         this,
         socket_weapon_base, socket_weapon_tip, socket_weapon_length,
-        BoxHalfExtents);
+        BoxHalfExtents, HitSound);
     hitchecker->ReadyForActivation();
     
     FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
@@ -272,6 +280,9 @@ void USLGA_MeleeSweep::ChangeTraceState(ESL_Melee_TraceState newState)
     case ESL_Melee_TraceState::trace:
         UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate response : trace start"));
         hitchecker->SetIsScanning(true);
+        if (SwingSound) {
+            UGameplayStatics::PlaySoundAtLocation(this, SwingSound, ASC->GetAvatarActor()->K2_GetActorLocation());
+        }
         break;
     default:
         break;

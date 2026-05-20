@@ -41,6 +41,9 @@ protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack|GAS")
     TSubclassOf<UGameplayEffect> StaminaCostGEClass;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack|Sound")
+    TObjectPtr<USoundBase> HitSound;
+
     ESL_Melee_State state;
     ESL_Melee_TraceState traceState;
     USLAT_Meele_hit_checker* hitchecker;
