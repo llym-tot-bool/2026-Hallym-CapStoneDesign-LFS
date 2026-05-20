@@ -10,7 +10,9 @@
 class UAbilitySystemComponent;
 class USLCharacterAttributeSet;
 class UAnimMontage;
+struct FGameplayTag;
 struct FTimerHandle;
+struct FOnAttributeChangeData;
 
 UCLASS()
 class SOULSLIKE_API Aenemy_mobs : public ACharacter, public IAbilitySystemInterface
@@ -25,6 +27,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
@@ -72,14 +75,32 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Stats", meta = (ClampMin = 0.0))
 	float InitialPowerStat = 20.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Stats", meta = (ClampMin = 1.0))
+	float InitialGroggyStat = 100.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation")
 	TObjectPtr<UAnimMontage> BasicAttackMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation")
 	TObjectPtr<UAnimMontage> BasicAttackMontageAlt;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation")
+	TObjectPtr<UAnimMontage> GroggyMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation")
+	TObjectPtr<UAnimMontage> DeathMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation")
+	TObjectPtr<UAnimMontage> HitReactMontage;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation", meta = (ClampMin = 0.0))
 	float BasicAttackHitDelay = 0.25f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Groggy", meta = (ClampMin = 0.0))
+	float GroggyKnockbackDistance = 180.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Groggy", meta = (ClampMin = 0.05))
+	float GroggyKnockbackDuration = 0.2f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Wander")
 	bool bEnablePeriodicMove = false;
@@ -132,8 +153,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AI|Combat")
 	bool IsBasicAttackInProgress() const { return bBasicAttackInProgress; }
 
+	UFUNCTION(BlueprintCallable, Category = "AI|Combat|Animation")
+	bool IsBasicAttackMontagePlaying() const;
+
 	UFUNCTION(BlueprintCallable, Category = "AI|Combat")
 	bool IsGroggy() const { return bIsGroggy; }
+
+	UFUNCTION(BlueprintPure, Category = "AI|State")
+	bool IsDead() const;
 
 	/** Called by attack montage AnimNotify at the exact hit frame. */
 	UFUNCTION(BlueprintCallable, Category = "AI|Combat|Animation")
@@ -152,13 +179,28 @@ public:
 private:
 	float LastBasicAttackTime = -1000.0f;
 	bool bBasicAttackInProgress = false;
+	int32 BasicAttackDamageNotifyCount = 0;
+	bool bIsGroggy = false;
+	bool bDeathMontagePlayed = false;
 	FTimerHandle BasicAttackHitTimer;
+	FTimerHandle GroggyRecoverTimer;
 	TWeakObjectPtr<AActor> PendingAttackTarget;
 
 	float ComputeBasicAttackDamage() const;
 	bool IsTargetTouchingAttackRange(AActor* TargetActor) const;
 	void ResolveBasicAttackHit();
+	void OnBasicAttackNotifyTimeout();
+	void OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount);
+	void OnHealthAttributeChanged(const FOnAttributeChangeData& ChangeData);
+	void RecoverGroggyToMax();
+	void HandleDeathState();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayBasicAttackMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlayGroggyMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlayHitReactMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);
 };

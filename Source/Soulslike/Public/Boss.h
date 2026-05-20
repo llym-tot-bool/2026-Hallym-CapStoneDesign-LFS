@@ -10,7 +10,9 @@
 class UAbilitySystemComponent;
 class USLCharacterAttributeSet;
 class UAnimMontage;
+struct FGameplayTag;
 struct FTimerHandle;
+struct FOnAttributeChangeData;
 
 UCLASS()
 class SOULSLIKE_API ABoss : public ACharacter, public IAbilitySystemInterface
@@ -42,10 +44,10 @@ protected:
 	float ChaseAcceptanceRadius = 150.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Movement", meta = (ClampMin = 0.0))
-	float DefaultMoveSpeed = 180.0f;
+	float DefaultMoveSpeed = 270.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Movement", meta = (ClampMin = 0.0))
-	float ChaseMoveSpeed = 280.0f;
+	float ChaseMoveSpeed = 420.0f;
 
 	// If true, boss rotates to face its movement direction while moving.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Movement")
@@ -80,6 +82,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat|Animation", meta = (ClampMin = 0.0))
 	float BasicAttackHitDelay = 0.25f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat", meta = (ClampMin = 0.0))
+	float MoveBehindTargetDistance = 120.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI", meta = (ClampMin = 0.1))
 	float TargetSearchInterval = 0.35f;
 
@@ -95,17 +100,42 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animation")
 	TObjectPtr<UAnimMontage> IntroMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat|Animation")
+	TObjectPtr<UAnimMontage> BasicAttackMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat|Animation")
+	TObjectPtr<UAnimMontage> BasicAttackMontageAlt;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat|Animation")
+	TObjectPtr<UAnimMontage> BasicAttackMontageAlt2;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animation")
 	TObjectPtr<UAnimMontage> AttackMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animation")
 	TObjectPtr<UAnimMontage> DeathMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat|Animation")
+	TObjectPtr<UAnimMontage> GroggyMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat|Animation")
+	TObjectPtr<UAnimMontage> HitReactMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Combat|Groggy", meta = (ClampMin = 0.0))
+	float GroggyKnockbackDistance = 220.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Combat|Groggy", meta = (ClampMin = 0.05))
+	float GroggyKnockbackDuration = 0.25f;
+
 	FTimerHandle ChaseTimer;
 	FTimerHandle PeriodicMoveTimer;
 	FTimerHandle BasicAttackHitTimer;
+	FTimerHandle GroggyRecoverTimer;
 	float LastBasicAttackTime = -1000.0f;
 	bool bBasicAttackInProgress = false;
+	int32 BasicAttackDamageNotifyCount = 0;
+	bool bIsGroggy = false;
+	bool bDeathMontagePlayed = false;
 	TWeakObjectPtr<AActor> PendingAttackTarget;
 
 	UFUNCTION()
@@ -117,6 +147,11 @@ protected:
 	float ComputeBasicAttackDamage() const;
 	bool IsTargetTouchingAttackRange(AActor* TargetActor) const;
 	void ResolveBasicAttackHit();
+	void OnBasicAttackNotifyTimeout();
+	void OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount);
+	void OnHealthAttributeChanged(const FOnAttributeChangeData& ChangeData);
+	void RecoverGroggyToMax();
+	void HandleDeathState();
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Boss|AI")
@@ -155,6 +190,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Combat")
 	bool IsBasicAttackInProgress() const { return bBasicAttackInProgress; }
 
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Combat|Animation")
+	bool IsBasicAttackMontagePlaying() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Combat")
+	bool IsGroggy() const { return bIsGroggy; }
+
+	/** Called by boss attack montage AnimNotify at the exact hit frame. */
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Combat")
+	void OnBasicAttackDamageNotify();
+
+	/** Called by boss montage AnimNotify to move behind current attack target. */
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Combat")
+	void OnMoveBehindTargetNotify();
+
+	/** Called by boss attack montage AnimNotify to reset play rate to default. */
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Combat|Animation")
+	void OnBasicAttackSpeedResetNotify();
+
 	UFUNCTION(BlueprintCallable, Category = "Boss|AI")
 	void StartChase();
 
@@ -175,6 +228,15 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Boss|Animation")
 	bool PlayDeathMontage(float PlayRate = 1.0f);
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|Animation")
+	bool PlayGroggyMontage(float PlayRate = 1.0f);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlayBasicAttackMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlayHitReactMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);
 
 	UFUNCTION(BlueprintPure, Category = "Boss|Animation")
 	float GetGroundSpeed() const;
