@@ -5,6 +5,7 @@
 #include "Soulslike.h"
 #include "SoulslikeCharacter.h"
 #include "Abilities/SLGA_MeleeMultiMontage.h"
+#include "SL_HitManager.h"
 
 
 
@@ -29,6 +30,8 @@ void USL_OneShotManager::OnCharacterInput()
 		return;
 	}
 }
+
+
 
 void USL_OneShotManager::StartGA()
 {
@@ -62,10 +65,6 @@ void USL_OneShotManager::ObserveGA(UGameplayAbility* targetGA)
 		convertedGA->delegate_Recovery.AddUObject(this, &USL_OneShotManager::OnRecovery);
 		return;
 	}
-	if (USLGA_OnHit* convertedGA = Cast<USLGA_OnHit>(currentGA)) {
-		convertedGA->delegate_Recovery.AddUObject(this, &USL_OneShotManager::OnRecovery);
-		return;
-	}
 
 }
 
@@ -79,11 +78,6 @@ void USL_OneShotManager::ObserveQuit()
 	}
 
 	if (USLGA_MeleeSweep* convertedGA = Cast<USLGA_MeleeSweep>(currentGA)) {
-		convertedGA->delegate_Recovery.RemoveAll(this);
-		return;
-	}
-
-	if (USLGA_OnHit* convertedGA = Cast<USLGA_OnHit>(currentGA)) {
 		convertedGA->delegate_Recovery.RemoveAll(this);
 		return;
 	}

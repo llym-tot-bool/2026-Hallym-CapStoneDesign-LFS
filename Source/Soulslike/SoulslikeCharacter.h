@@ -12,6 +12,7 @@
 #include "SLDA_MeleeCombat.h"
 #include "SL_ComboManager.h"
 #include "SL_OneShotManager.h"
+#include "SL_HitManager.h"
 
 #include "SoulslikeCharacter.generated.h"
 
@@ -26,7 +27,7 @@ class USL_ComboManager;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
-UCLASS(abstract)
+UCLASS(abstract, BlueprintType)
 class ASoulslikeCharacter : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
@@ -167,7 +168,7 @@ public:
 	
 	// on hit manager
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "OnHitManager", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USL_OneShotManager> OnHitManager;
+	TObjectPtr<USL_HitManager> OnHitManager;
 
 	// katana combo managers
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager", meta = (AllowPrivateAccess = "true"))

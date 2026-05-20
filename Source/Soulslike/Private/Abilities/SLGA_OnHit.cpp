@@ -47,6 +47,7 @@ void USLGA_OnHit::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
     // delegate binding
     ASC = GetAbilitySystemComponentFromActorInfo(); ensureOrQuit(ASC);
     SLPS = Cast<ASoulslikePlayerState>(ASC->GetOwner()); ensureOrQuit(SLPS);
+    SLPS->delegate_MeleeSweep_State.AddUObject(this, &USLGA_OnHit::ChangeState);
 
     ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(ActorInfo->AvatarActor); ensureOrQuit(SLChar);
     SLChar->delegate_CharacterMove.AddUObject(this, &USLGA_OnHit::OnCharacteMove);

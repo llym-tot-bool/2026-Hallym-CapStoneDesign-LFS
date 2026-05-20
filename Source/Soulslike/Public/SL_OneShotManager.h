@@ -9,7 +9,6 @@
 #include "Abilities/SLGA_MeleeSweep.h"
 #include "Abilities/SLGA_MeleeMultiMontage.h"
 #include "Abilities/SLGA_MeleeSweep.h"
-#include "Abilities/SLGA_OnHit.h"
 
 
 #include "SL_OneShotManager.generated.h"
