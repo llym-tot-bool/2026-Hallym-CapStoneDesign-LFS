@@ -19,7 +19,7 @@ protected:
 
 	// Enemy class to spawn (BP/C++)
 	UPROPERTY(EditAnywhere, Category = "Spawn")
-	TSubclassOf<AActor> EnemyClass;
+	TSubclassOf<class Aenemy_mobs> EnemyClass;
 
 	// Spawn probability on BeginPlay (0.0 = never, 1.0 = always)
 	UPROPERTY(EditAnywhere, Category = "Spawn", meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))

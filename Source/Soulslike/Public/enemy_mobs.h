@@ -12,6 +12,8 @@ class USLCharacterAttributeSet;
 class UAnimMontage;
 class UWidgetComponent;
 class USLEnemyHPBarWidget;
+class UUserWidget;
+class UProgressBar;
 struct FGameplayTag;
 struct FTimerHandle;
 struct FOnAttributeChangeData;
@@ -41,7 +43,7 @@ protected:
 	TObjectPtr<UWidgetComponent> HealthBarWidgetComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
-	TSubclassOf<USLEnemyHPBarWidget> HealthBarWidgetClass;
+	TSubclassOf<UUserWidget> HealthBarWidgetClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
 	float ChaseAcceptanceRadius = 120.0f;
@@ -195,6 +197,7 @@ private:
 	FTimerHandle GroggyRecoverTimer;
 	TWeakObjectPtr<AActor> PendingAttackTarget;
 	TObjectPtr<USLEnemyHPBarWidget> HealthBarWidgetInstance;
+	TObjectPtr<UProgressBar> HealthBarProgressBar = nullptr;
 
 	float ComputeBasicAttackDamage() const;
 	void RefreshHealthBarUI() const;

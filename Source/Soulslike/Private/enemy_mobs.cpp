@@ -16,6 +16,9 @@
 #include "Components/WidgetComponent.h"
 #include "UI/SLEnemyHPBarWidget.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Blueprint/UserWidget.h"
+#include "Blueprint/WidgetTree.h"
+#include "Components/ProgressBar.h"
 
 namespace
 {
@@ -55,19 +58,36 @@ Aenemy_mobs::Aenemy_mobs()
 	AttributeSet = CreateDefaultSubobject<USLCharacterAttributeSet>(TEXT("AttributeSet"));
 	HealthBarWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidgetComponent"));
 	HealthBarWidgetComponent->SetupAttachment(GetMesh());
-	HealthBarWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
+	HealthBarWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	HealthBarWidgetComponent->SetDrawSize(FVector2D(120.0f, 20.0f));
+	HealthBarWidgetComponent->SetDrawAtDesiredSize(true);
+	HealthBarWidgetComponent->SetPivot(FVector2D(0.5f, 1.0f));
 	HealthBarWidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 220.0f));
+	HealthBarWidgetComponent->SetUsingAbsoluteScale(true);
+	HealthBarWidgetComponent->SetRelativeScale3D(FVector::OneVector);
 	HealthBarWidgetComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	HealthBarWidgetComponent->SetGenerateOverlapEvents(false);
 	HealthBarWidgetComponent->SetTwoSided(true);
+	HealthBarWidgetComponent->SetOnlyOwnerSee(false);
+	HealthBarWidgetComponent->SetOwnerNoSee(false);
+	HealthBarWidgetComponent->SetReceivesDecals(false);
+	HealthBarWidgetComponent->SetCullDistance(0.0f);
 	HealthBarWidgetComponent->SetVisibility(true);
 	HealthBarWidgetComponent->SetHiddenInGame(false);
 
-	static ConstructorHelpers::FClassFinder<USLEnemyHPBarWidget> EnemyHPBarWidgetClassFinder(TEXT("/Game/ENemy/WBP_EnemyHPBar"));
+	static ConstructorHelpers::FClassFinder<UUserWidget> EnemyHPBarWidgetClassFinder(TEXT("/Game/Enemy/WBP_EnemyHPBar"));
 	if (EnemyHPBarWidgetClassFinder.Succeeded())
 	{
 		HealthBarWidgetClass = EnemyHPBarWidgetClassFinder.Class;
+	}
+	else
+	{
+		// Backward-compat fallback for legacy/mistyped content path.
+		static ConstructorHelpers::FClassFinder<UUserWidget> EnemyHPBarWidgetClassFinderLegacy(TEXT("/Game/ENemy/WBP_EnemyHPBar"));
+		if (EnemyHPBarWidgetClassFinderLegacy.Succeeded())
+		{
+			HealthBarWidgetClass = EnemyHPBarWidgetClassFinderLegacy.Class;
+		}
 	}
 
 	AIControllerClass = AEnemyMobsAIController::StaticClass();
@@ -133,16 +153,56 @@ void Aenemy_mobs::BeginPlay()
 		if (MeshComp->DoesSocketExist(TEXT("head")))
 		{
 			HealthBarWidgetComponent->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("head"));
-			HealthBarWidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 18.0f));
+			HealthBarWidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 40.0f));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[EnemyMob] 'head' socket not found. Using mesh relative location for HP bar: %s"), *GetNameSafe(this));
 		}
 
+	}
+
+	if (!HealthBarWidgetClass)
+	{
+		UClass* LoadedClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/Enemy/WBP_EnemyHPBar.WBP_EnemyHPBar_C"));
+		if (!LoadedClass)
+		{
+			LoadedClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/ENemy/WBP_EnemyHPBar.WBP_EnemyHPBar_C"));
+		}
+		if (LoadedClass)
+		{
+			HealthBarWidgetClass = LoadedClass;
+			UE_LOG(LogTemp, Log, TEXT("[EnemyMob] HP bar widget class loaded at runtime: %s"), *GetNameSafe(LoadedClass));
+		}
 	}
 
 	if (HealthBarWidgetComponent && HealthBarWidgetClass)
 	{
 		HealthBarWidgetComponent->SetWidgetClass(HealthBarWidgetClass);
 		HealthBarWidgetComponent->InitWidget();
+		HealthBarWidgetComponent->SetHiddenInGame(false);
+		HealthBarWidgetComponent->SetVisibility(true, true);
+		HealthBarWidgetComponent->SetComponentTickEnabled(true);
 		HealthBarWidgetInstance = Cast<USLEnemyHPBarWidget>(HealthBarWidgetComponent->GetUserWidgetObject());
+		if (!HealthBarWidgetInstance)
+		{
+			if (UUserWidget* RawWidget = HealthBarWidgetComponent->GetUserWidgetObject())
+			{
+				if (UWidgetTree* WidgetTree = RawWidget->WidgetTree)
+				{
+					HealthBarProgressBar = WidgetTree->FindWidget<UProgressBar>(TEXT("PB_HP"));
+					if (!HealthBarProgressBar)
+					{
+						HealthBarProgressBar = WidgetTree->FindWidget<UProgressBar>(TEXT("ProgressBar"));
+					}
+					UE_LOG(LogTemp, Log, TEXT("[EnemyMob] HP widget resolved by WidgetTree: Mob=%s Widget=%s PB_HP=%s"), *GetNameSafe(this), *GetNameSafe(RawWidget), *GetNameSafe(HealthBarProgressBar));
+				}
+			}
+		}
+		if (!HealthBarWidgetInstance)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[EnemyMob] HP bar widget instance creation failed: Mob=%s Class=%s"), *GetNameSafe(this), *GetNameSafe(HealthBarWidgetClass.Get()));
+		}
 	}
 	else
 	{
@@ -154,9 +214,10 @@ void Aenemy_mobs::BeginPlay()
 	UE_LOG(
 		LogTemp,
 		Log,
-		TEXT("[EnemyMob] BeginPlay: Name=%s HasAuthority=%d MontageA=%s MontageB=%s AnimInstance=%s AttackRange=%.1f Cooldown=%.2f"),
+		TEXT("[EnemyMob] BeginPlay: Name=%s HasAuthority=%d HPBarClass=%s MontageA=%s MontageB=%s AnimInstance=%s AttackRange=%.1f Cooldown=%.2f"),
 		*GetNameSafe(this),
 		HasAuthority() ? 1 : 0,
+		*GetNameSafe(HealthBarWidgetClass.Get()),
 		*GetNameSafe(BasicAttackMontage),
 		*GetNameSafe(BasicAttackMontageAlt),
 		*GetNameSafe(GetMesh() ? GetMesh()->GetAnimInstance() : nullptr),
@@ -234,7 +295,7 @@ float Aenemy_mobs::ComputeBasicAttackDamage() const
 
 void Aenemy_mobs::RefreshHealthBarUI() const
 {
-	if (!HealthBarWidgetInstance || !AttributeSet)
+	if (!AttributeSet)
 	{
 		return;
 	}
@@ -242,7 +303,15 @@ void Aenemy_mobs::RefreshHealthBarUI() const
 	const float MaxHealth = AttributeSet->GetMaxHealth();
 	const float CurrentHealth = AttributeSet->GetHealth();
 	const float HealthPercent = MaxHealth > 0.0f ? (CurrentHealth / MaxHealth) : 0.0f;
-	HealthBarWidgetInstance->SetHealthPercent(HealthPercent);
+
+	if (HealthBarWidgetInstance)
+	{
+		HealthBarWidgetInstance->SetHealthPercent(HealthPercent);
+	}
+	else if (HealthBarProgressBar)
+	{
+		HealthBarProgressBar->SetPercent(HealthPercent);
+	}
 }
 
 bool Aenemy_mobs::TryBasicAttack(AActor* TargetActor)

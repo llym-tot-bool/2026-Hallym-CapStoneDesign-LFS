@@ -1,5 +1,6 @@
 #include "EnemySpawner.h"
 #include "Engine/World.h"
+#include "enemy_mobs.h"
 
 namespace
 {
@@ -47,6 +48,7 @@ void AEnemySpawner::TrySpawnEnemyOnce()
 	const float Roll = FMath::FRand();
 	if (Roll > EffectiveSpawnChance)
 	{
+		UE_LOG(LogTemp, Verbose, TEXT("[EnemySpawner] Spawn skipped. Roll=%.3f Chance=%.3f Spawner=%s"), Roll, EffectiveSpawnChance, *GetNameSafe(this));
 		return;
 	}
 
@@ -57,5 +59,6 @@ void AEnemySpawner::TrySpawnEnemyOnce()
 	SpawnParams.SpawnCollisionHandlingOverride =
 		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-	GetWorld()->SpawnActor<AActor>(EnemyClass, SpawnLoc, SpawnRot, SpawnParams);
+	Aenemy_mobs* SpawnedEnemy = GetWorld()->SpawnActor<Aenemy_mobs>(EnemyClass, SpawnLoc, SpawnRot, SpawnParams);
+	UE_LOG(LogTemp, Log, TEXT("[EnemySpawner] Spawned enemy. Spawner=%s Class=%s Result=%s"), *GetNameSafe(this), *GetNameSafe(EnemyClass.Get()), *GetNameSafe(SpawnedEnemy));
 }
