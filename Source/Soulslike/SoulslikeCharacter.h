@@ -106,6 +106,8 @@ protected:
 
 	void Dodge();
 
+	void OnHit();
+
 	void LockOnToggle();
 
 public:
@@ -124,6 +126,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoDodge();
+
+	UFUNCTION(BlueprintCallable, Category = "Combat|OnHit")
+	virtual void DoOnHit();
 
 	UFUNCTION(BlueprintPure, Category = "Combat|Status")
 	bool IsDead() const;
@@ -159,6 +164,11 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> ASC;
 
+	
+	// on hit manager
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "OnHitManager", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USL_OneShotManager> OnHitManager;
+
 	// katana combo managers
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USL_ComboManager> ComboManager_Katana_Base;
@@ -176,7 +186,6 @@ public:
 	TObjectPtr<USL_ComboManager> ComboManager_HS_Base;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USL_OneShotManager> ComboManager_HS_Special;
-
 
 	FSLDLG_CharacterMove delegate_CharacterMove;
 

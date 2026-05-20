@@ -58,6 +58,10 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "MeleeCombat|Weapon_list")
 	TArray<TObjectPtr<USLDA_WeaponStyle>> weaponStyle_list;
+
+	UPROPERTY(EditAnywhere, Category = "OnHit")
+	TSubclassOf<UGameplayAbility> OnHitGA;
+
 };
 
 DECLARE_MULTICAST_DELEGATE(FSLDLG_AN_ComboInput)

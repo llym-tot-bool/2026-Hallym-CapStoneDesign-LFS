@@ -47,20 +47,46 @@ void USL_OneShotManager::StartGA()
 	ObserveGA(GA);
 }
 
-void USL_OneShotManager::ObserveGA(USLGA_MeleeMultiMontage* targetGA)
+void USL_OneShotManager::ObserveGA(UGameplayAbility* targetGA)
 {
 	ensureOrQuit(bIsPlaying);
 
 	currentGA = targetGA;
 
-	targetGA->delegate_Recovery.AddUObject(this, &USL_OneShotManager::OnRecovery);
+	if (USLGA_MeleeMultiMontage* convertedGA = Cast<USLGA_MeleeMultiMontage>(currentGA)) {
+		convertedGA->delegate_Recovery.AddUObject(this, &USL_OneShotManager::OnRecovery);
+		return;
+	}
+
+	if (USLGA_MeleeSweep* convertedGA = Cast<USLGA_MeleeSweep>(currentGA)) {
+		convertedGA->delegate_Recovery.AddUObject(this, &USL_OneShotManager::OnRecovery);
+		return;
+	}
+	if (USLGA_OnHit* convertedGA = Cast<USLGA_OnHit>(currentGA)) {
+		convertedGA->delegate_Recovery.AddUObject(this, &USL_OneShotManager::OnRecovery);
+		return;
+	}
+
 }
 
 void USL_OneShotManager::ObserveQuit()
 {
 	ensureOrQuit(currentGA);
 
-	currentGA->delegate_Recovery.RemoveAll(this);
+	if (USLGA_MeleeMultiMontage* convertedGA = Cast<USLGA_MeleeMultiMontage>(currentGA)) {
+		convertedGA->delegate_Recovery.RemoveAll(this);
+		return;
+	}
+
+	if (USLGA_MeleeSweep* convertedGA = Cast<USLGA_MeleeSweep>(currentGA)) {
+		convertedGA->delegate_Recovery.RemoveAll(this);
+		return;
+	}
+
+	if (USLGA_OnHit* convertedGA = Cast<USLGA_OnHit>(currentGA)) {
+		convertedGA->delegate_Recovery.RemoveAll(this);
+		return;
+	}
 }
 
 void USL_OneShotManager::EndCombo()
