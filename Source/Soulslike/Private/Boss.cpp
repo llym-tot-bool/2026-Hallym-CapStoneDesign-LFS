@@ -596,11 +596,6 @@ void ABoss::OnHealthAttributeChanged(const FOnAttributeChangeData& ChangeData)
 	{
 		return;
 	}
-
-	if (ChangeData.NewValue < ChangeData.OldValue && HitReactMontage)
-	{
-		MulticastPlayHitReactMontage(HitReactMontage, 1.0f);
-	}
 }
 
 void ABoss::RecoverGroggyToMax()
@@ -657,17 +652,4 @@ void ABoss::MulticastPlayBasicAttackMontage_Implementation(UAnimMontage* Montage
 	}
 }
 
-void ABoss::MulticastPlayHitReactMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
-{
-	if (!MontageToPlay || IsDead() || bBasicAttackInProgress || IsBasicAttackMontagePlaying())
-	{
-		return;
-	}
-
-	const float Played = PlayAnimMontage(MontageToPlay, PlayRate);
-	if (Played <= 0.0f)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[Boss] Failed to play hit react montage: Boss=%s Montage=%s"), *GetNameSafe(this), *GetNameSafe(MontageToPlay));
-	}
-}
 

@@ -10,6 +10,8 @@
 class UAbilitySystemComponent;
 class USLCharacterAttributeSet;
 class UAnimMontage;
+class UWidgetComponent;
+class USLEnemyHPBarWidget;
 struct FGameplayTag;
 struct FTimerHandle;
 struct FOnAttributeChangeData;
@@ -34,6 +36,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<USLCharacterAttributeSet> AttributeSet;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+	TObjectPtr<UWidgetComponent> HealthBarWidgetComponent;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<USLEnemyHPBarWidget> HealthBarWidgetClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
 	float ChaseAcceptanceRadius = 120.0f;
@@ -95,6 +103,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation", meta = (ClampMin = 0.0))
 	float BasicAttackHitDelay = 0.25f;
+
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Groggy", meta = (ClampMin = 0.0))
 	float GroggyKnockbackDistance = 180.0f;
@@ -185,8 +194,10 @@ private:
 	FTimerHandle BasicAttackHitTimer;
 	FTimerHandle GroggyRecoverTimer;
 	TWeakObjectPtr<AActor> PendingAttackTarget;
+	TObjectPtr<USLEnemyHPBarWidget> HealthBarWidgetInstance;
 
 	float ComputeBasicAttackDamage() const;
+	void RefreshHealthBarUI() const;
 	bool IsTargetTouchingAttackRange(AActor* TargetActor) const;
 	void ResolveBasicAttackHit();
 	void OnBasicAttackNotifyTimeout();

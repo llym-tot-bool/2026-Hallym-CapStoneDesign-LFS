@@ -112,14 +112,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animation")
 	TObjectPtr<UAnimMontage> AttackMontage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animation")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat|Animation")
 	TObjectPtr<UAnimMontage> DeathMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat|Animation")
 	TObjectPtr<UAnimMontage> GroggyMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat|Animation")
-	TObjectPtr<UAnimMontage> HitReactMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Combat|Groggy", meta = (ClampMin = 0.0))
 	float GroggyKnockbackDistance = 220.0f;
@@ -234,9 +231,6 @@ public:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayBasicAttackMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastPlayHitReactMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);
 
 	UFUNCTION(BlueprintPure, Category = "Boss|Animation")
 	float GetGroundSpeed() const;

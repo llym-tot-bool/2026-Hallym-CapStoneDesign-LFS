@@ -28,6 +28,8 @@ public:
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Poise);
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, MaxPower);
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Power);
+	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, MaxGroggy);
+	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Groggy);
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, MaxLevel);
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Level);
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Damage);
@@ -61,6 +63,11 @@ protected:
 	FGameplayAttributeData MaxPower;
 	UPROPERTY(BlueprintReadOnly, Category="Attribute")
 	FGameplayAttributeData Power;
+
+	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	FGameplayAttributeData MaxGroggy;
+	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	FGameplayAttributeData Groggy;
 	
 	UPROPERTY(BlueprintReadOnly, Category="Attribute")
 	FGameplayAttributeData MaxLevel;

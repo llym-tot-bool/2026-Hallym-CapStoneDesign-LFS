@@ -19,6 +19,7 @@ USLCharacterAttributeSet::USLCharacterAttributeSet() :
 	MaxMana(40.f),
 	MaxPoise(0.f),
 	MaxPower(0.f),
+	MaxGroggy(100.f),
 	MaxLevel(99.f)
 {
 	InitHealth(GetMaxHealth());
@@ -26,6 +27,7 @@ USLCharacterAttributeSet::USLCharacterAttributeSet() :
 	InitMana(GetMaxMana());
 	InitPoise(GetMaxPoise());
 	InitPower(GetMaxPower());
+	InitGroggy(GetMaxGroggy());
 	InitLevel(GetMaxLevel());
 }
 
@@ -49,6 +51,10 @@ void USLCharacterAttributeSet::PreAttributeChange(const FGameplayAttribute& Attr
 		NewValue = FMath::Max(1, NewValue);
 	}
 	else if (Attribute == GetMaxPowerAttribute())
+	{
+		NewValue = FMath::Max(1, NewValue);
+	}
+	else if (Attribute == GetMaxGroggyAttribute())
 	{
 		NewValue = FMath::Max(1, NewValue);
 	}
@@ -77,6 +83,10 @@ void USLCharacterAttributeSet::PreAttributeChange(const FGameplayAttribute& Attr
 	{
 		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxPower());
 	}
+	else if (Attribute == GetGroggyAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxGroggy());
+	}
 	else if (Attribute == GetLevelAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxLevel());
@@ -96,6 +106,10 @@ void USLCharacterAttributeSet::PostGameplayEffectExecute(const struct FGameplayE
 	else if (Data.EvaluatedData.Attribute == GetManaAttribute())
 	{
 		SetMana(FMath::Clamp(GetMana(), 0.f, GetMaxMana()));
+	}
+	else if (Data.EvaluatedData.Attribute == GetGroggyAttribute())
+	{
+		SetGroggy(FMath::Clamp(GetGroggy(), 0.f, GetMaxGroggy()));
 	}
 
 	// Stamina spend → set State.Stamina.Spending and (re)arm a timer to clear it.

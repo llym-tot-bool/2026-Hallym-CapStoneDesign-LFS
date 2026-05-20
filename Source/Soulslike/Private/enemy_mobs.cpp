@@ -13,6 +13,9 @@
 #include "GameFramework/PlayerState.h"
 #include "GameplayEffectTypes.h"
 #include "GameplayTagContainer.h"
+#include "Components/WidgetComponent.h"
+#include "UI/SLEnemyHPBarWidget.h"
+#include "UObject/ConstructorHelpers.h"
 
 namespace
 {
@@ -50,6 +53,22 @@ Aenemy_mobs::Aenemy_mobs()
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 	AttributeSet = CreateDefaultSubobject<USLCharacterAttributeSet>(TEXT("AttributeSet"));
+	HealthBarWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidgetComponent"));
+	HealthBarWidgetComponent->SetupAttachment(GetMesh());
+	HealthBarWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
+	HealthBarWidgetComponent->SetDrawSize(FVector2D(120.0f, 20.0f));
+	HealthBarWidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 220.0f));
+	HealthBarWidgetComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HealthBarWidgetComponent->SetGenerateOverlapEvents(false);
+	HealthBarWidgetComponent->SetTwoSided(true);
+	HealthBarWidgetComponent->SetVisibility(true);
+	HealthBarWidgetComponent->SetHiddenInGame(false);
+
+	static ConstructorHelpers::FClassFinder<USLEnemyHPBarWidget> EnemyHPBarWidgetClassFinder(TEXT("/Game/ENemy/WBP_EnemyHPBar"));
+	if (EnemyHPBarWidgetClassFinder.Succeeded())
+	{
+		HealthBarWidgetClass = EnemyHPBarWidgetClassFinder.Class;
+	}
 
 	AIControllerClass = AEnemyMobsAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
@@ -108,6 +127,29 @@ void Aenemy_mobs::BeginPlay()
 	{
 		StartPeriodicMove();
 	}
+
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		if (MeshComp->DoesSocketExist(TEXT("head")))
+		{
+			HealthBarWidgetComponent->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("head"));
+			HealthBarWidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 18.0f));
+		}
+
+	}
+
+	if (HealthBarWidgetComponent && HealthBarWidgetClass)
+	{
+		HealthBarWidgetComponent->SetWidgetClass(HealthBarWidgetClass);
+		HealthBarWidgetComponent->InitWidget();
+		HealthBarWidgetInstance = Cast<USLEnemyHPBarWidget>(HealthBarWidgetComponent->GetUserWidgetObject());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[EnemyMob] HP bar widget class is not assigned on %s"), *GetNameSafe(this));
+	}
+
+	RefreshHealthBarUI();
 
 	UE_LOG(
 		LogTemp,
@@ -188,6 +230,19 @@ float Aenemy_mobs::ComputeBasicAttackDamage() const
 {
 	const float Power = AttributeSet ? AttributeSet->GetPower() : 0.0f;
 	return BasicAttackBaseDamage + (Power * BasicAttackPowerScale);
+}
+
+void Aenemy_mobs::RefreshHealthBarUI() const
+{
+	if (!HealthBarWidgetInstance || !AttributeSet)
+	{
+		return;
+	}
+
+	const float MaxHealth = AttributeSet->GetMaxHealth();
+	const float CurrentHealth = AttributeSet->GetHealth();
+	const float HealthPercent = MaxHealth > 0.0f ? (CurrentHealth / MaxHealth) : 0.0f;
+	HealthBarWidgetInstance->SetHealthPercent(HealthPercent);
 }
 
 bool Aenemy_mobs::TryBasicAttack(AActor* TargetActor)
@@ -453,6 +508,8 @@ void Aenemy_mobs::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
 
 void Aenemy_mobs::OnHealthAttributeChanged(const FOnAttributeChangeData& ChangeData)
 {
+	RefreshHealthBarUI();
+
 	if (!HasAuthority() || IsDead())
 	{
 		return;
