@@ -79,6 +79,13 @@ void AEnemyMobsAIController::UpdateChaseTarget()
 		return;
 	}
 
+	const bool bAttackMontagePlaying = EnemyPawn ? EnemyPawn->IsBasicAttackMontagePlaying() : BossPawn->IsBasicAttackMontagePlaying();
+	if (bAttackMontagePlaying)
+	{
+		StopMovement();
+		return;
+	}
+
 	const bool bDebugDrawDetection = EnemyPawn ? EnemyPawn->IsDebugDrawDetectionRangeEnabled() : BossPawn->IsDebugDrawDetectionRangeEnabled();
 	if (bDebugDrawDetection)
 	{

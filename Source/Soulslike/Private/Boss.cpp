@@ -72,6 +72,12 @@ void ABoss::BeginPlay()
 
 	if (AbilitySystemComponent)
 	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(USLCharacterAttributeSet::GetHealthAttribute())
+			.AddUObject(this, &ABoss::OnHealthAttributeChanged);
+	}
+
+	if (AbilitySystemComponent)
+	{
 		const FGameplayTag GroggyTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Groggy, false);
 		if (GroggyTag.IsValid())
 		{
@@ -95,6 +101,7 @@ void ABoss::BeginPlay()
 void ABoss::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	HandleDeathState();
 
 	if (!bFaceMovementDirection || IsDead())
 	{
@@ -118,6 +125,7 @@ void ABoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
+		World->GetTimerManager().ClearTimer(GroggyRecoverTimer);
 	}
 
 	StopChase();
@@ -237,7 +245,32 @@ bool ABoss::PlayBossMontage(UAnimMontage* MontageToPlay, float PlayRate)
 
 bool ABoss::PlayDefaultAttackMontage(float PlayRate)
 {
-	return PlayBossMontage(AttackMontage, PlayRate);
+	TArray<UAnimMontage*> AttackMontages;
+	if (BasicAttackMontage)
+	{
+		AttackMontages.Add(BasicAttackMontage);
+	}
+	if (BasicAttackMontageAlt)
+	{
+		AttackMontages.Add(BasicAttackMontageAlt);
+	}
+	if (BasicAttackMontageAlt2)
+	{
+		AttackMontages.Add(BasicAttackMontageAlt2);
+	}
+
+	UAnimMontage* MontageToPlay = nullptr;
+	if (AttackMontages.Num() > 0)
+	{
+		MontageToPlay = AttackMontages[FMath::RandRange(0, AttackMontages.Num() - 1)];
+	}
+	else
+	{
+		// Backward compatibility for existing BP assignments.
+		MontageToPlay = AttackMontage;
+	}
+
+	return PlayBossMontage(MontageToPlay, PlayRate);
 }
 
 bool ABoss::PlayDeathMontage(float PlayRate)
@@ -280,7 +313,7 @@ float ABoss::ComputeBasicAttackDamage() const
 
 bool ABoss::TryBasicAttack(AActor* TargetActor)
 {
-	if (!HasAuthority() || !IsValid(TargetActor) || bBasicAttackInProgress || bIsGroggy || !AttackMontage)
+	if (!HasAuthority() || !IsValid(TargetActor) || bBasicAttackInProgress || bIsGroggy || IsDead())
 	{
 		return false;
 	}
@@ -302,13 +335,45 @@ bool ABoss::TryBasicAttack(AActor* TargetActor)
 		return false;
 	}
 
-	MulticastPlayBasicAttackMontage(AttackMontage, 1.0f);
+	TArray<UAnimMontage*> AttackMontages;
+	if (BasicAttackMontage)
+	{
+		AttackMontages.Add(BasicAttackMontage);
+	}
+	if (BasicAttackMontageAlt)
+	{
+		AttackMontages.Add(BasicAttackMontageAlt);
+	}
+	if (BasicAttackMontageAlt2)
+	{
+		AttackMontages.Add(BasicAttackMontageAlt2);
+	}
+
+	UAnimMontage* MontageToPlay = nullptr;
+	if (AttackMontages.Num() > 0)
+	{
+		MontageToPlay = AttackMontages[FMath::RandRange(0, AttackMontages.Num() - 1)];
+	}
+	else
+	{
+		// Backward compatibility for existing BP assignments.
+		MontageToPlay = AttackMontage;
+	}
+
+	if (!MontageToPlay)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Boss] Attack montage is not assigned: %s"), *GetNameSafe(this));
+		return false;
+	}
 
 	PendingAttackTarget = TargetActor;
 	bBasicAttackInProgress = true;
+	BasicAttackDamageNotifyCount = 0;
 	LastBasicAttackTime = Now;
 
-	float NotifyTimeout = AttackMontage->GetPlayLength() + 0.2f;
+	MulticastPlayBasicAttackMontage(MontageToPlay, 1.0f);
+
+	float NotifyTimeout = MontageToPlay->GetPlayLength() + 0.2f;
 	if (NotifyTimeout <= 0.2f)
 	{
 		NotifyTimeout = 1.0f;
@@ -321,6 +386,29 @@ bool ABoss::TryBasicAttack(AActor* TargetActor)
 bool ABoss::IsTargetInBasicAttackContact(AActor* TargetActor) const
 {
 	return IsTargetTouchingAttackRange(TargetActor);
+}
+
+bool ABoss::IsBasicAttackMontagePlaying() const
+{
+	const UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (!AnimInstance)
+	{
+		return false;
+	}
+
+	if (BasicAttackMontage && AnimInstance->Montage_IsPlaying(BasicAttackMontage))
+	{
+		return true;
+	}
+	if (BasicAttackMontageAlt && AnimInstance->Montage_IsPlaying(BasicAttackMontageAlt))
+	{
+		return true;
+	}
+	if (BasicAttackMontageAlt2 && AnimInstance->Montage_IsPlaying(BasicAttackMontageAlt2))
+	{
+		return true;
+	}
+	return AttackMontage && AnimInstance->Montage_IsPlaying(AttackMontage);
 }
 
 bool ABoss::IsTargetTouchingAttackRange(AActor* TargetActor) const
@@ -341,15 +429,9 @@ void ABoss::ResolveBasicAttackHit()
 		return;
 	}
 
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
-	}
-
-	bBasicAttackInProgress = false;
+	++BasicAttackDamageNotifyCount;
 
 	AActor* TargetActor = PendingAttackTarget.Get();
-	PendingAttackTarget = nullptr;
 
 	if (!IsValid(TargetActor) || !AbilitySystemComponent)
 	{
@@ -386,6 +468,8 @@ void ABoss::ResolveBasicAttackHit()
 	const float FinalDamage = ComputeBasicAttackDamage();
 	SpecHandle.Data->SetSetByCallerMagnitude(DamageTag, FinalDamage);
 	AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+
+	UE_LOG(LogTemp, Log, TEXT("[Boss] Attack success: Attacker=%s Target=%s Damage=%.2f"), *GetNameSafe(this), *GetNameSafe(TargetActor), FinalDamage);
 }
 
 void ABoss::OnBasicAttackNotifyTimeout()
@@ -395,8 +479,12 @@ void ABoss::OnBasicAttackNotifyTimeout()
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[Boss] Attack notify timeout: montage notify missing or montage did not trigger notify. Boss=%s"), *GetNameSafe(this));
+	if (BasicAttackDamageNotifyCount <= 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Boss] Attack notify timeout: montage notify missing or montage did not trigger notify. Boss=%s"), *GetNameSafe(this));
+	}
 	bBasicAttackInProgress = false;
+	BasicAttackDamageNotifyCount = 0;
 	PendingAttackTarget = nullptr;
 }
 
@@ -410,6 +498,49 @@ void ABoss::OnBasicAttackDamageNotify()
 	ResolveBasicAttackHit();
 }
 
+void ABoss::OnMoveBehindTargetNotify()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	AActor* TargetActor = PendingAttackTarget.Get();
+	if (!IsValid(TargetActor))
+	{
+		return;
+	}
+
+	const FVector TargetForward = TargetActor->GetActorForwardVector().GetSafeNormal2D();
+	const FVector BehindOffset = -TargetForward * MoveBehindTargetDistance;
+	FVector NewLocation = TargetActor->GetActorLocation() + BehindOffset;
+	NewLocation.Z = GetActorLocation().Z;
+
+	SetActorLocation(NewLocation, true);
+}
+
+void ABoss::OnBasicAttackSpeedResetNotify()
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = MeshComp->GetAnimInstance();
+	if (!AnimInstance)
+	{
+		return;
+	}
+
+	if (UAnimMontage* ActiveMontage = AnimInstance->GetCurrentActiveMontage())
+	{
+		const float BaseRateScale = ActiveMontage->RateScale;
+		const float PlayRateForOneX = FMath::IsNearlyZero(BaseRateScale) ? 1.0f : (1.0f / BaseRateScale);
+		AnimInstance->Montage_SetPlayRate(ActiveMontage, PlayRateForOneX);
+	}
+}
+
 void ABoss::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
 	bIsGroggy = NewCount > 0;
@@ -421,8 +552,10 @@ void ABoss::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
+		World->GetTimerManager().ClearTimer(GroggyRecoverTimer);
 	}
 	bBasicAttackInProgress = false;
+	BasicAttackDamageNotifyCount = 0;
 	PendingAttackTarget = nullptr;
 
 	if (AAIController* AIController = Cast<AAIController>(GetController()))
@@ -438,7 +571,76 @@ void ABoss::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
 		LaunchCharacter(BackwardDir * KnockbackSpeed, true, false);
 	}
 
-	PlayGroggyMontage(1.0f);
+	float RecoverDelay = 0.1f;
+	if (GroggyMontage)
+	{
+		PlayGroggyMontage(1.0f);
+		RecoverDelay = FMath::Max(0.1f, GroggyMontage->GetPlayLength());
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(GroggyRecoverTimer, this, &ABoss::RecoverGroggyToMax, RecoverDelay, false);
+	}
+}
+
+void ABoss::OnHealthAttributeChanged(const FOnAttributeChangeData& ChangeData)
+{
+	if (!HasAuthority() || IsDead())
+	{
+		return;
+	}
+
+	// Do not interrupt attack timing with hit-react.
+	if (bBasicAttackInProgress || IsBasicAttackMontagePlaying())
+	{
+		return;
+	}
+
+	if (ChangeData.NewValue < ChangeData.OldValue && HitReactMontage)
+	{
+		MulticastPlayHitReactMontage(HitReactMontage, 1.0f);
+	}
+}
+
+void ABoss::RecoverGroggyToMax()
+{
+	if (!AttributeSet)
+	{
+		return;
+	}
+
+	const float MaxGroggy = AttributeSet->GetMaxGroggy();
+	if (MaxGroggy > 0.0f)
+	{
+		AttributeSet->SetGroggy(MaxGroggy);
+	}
+}
+
+void ABoss::HandleDeathState()
+{
+	if (!IsDead() || bDeathMontagePlayed)
+	{
+		return;
+	}
+
+	bDeathMontagePlayed = true;
+	bBasicAttackInProgress = false;
+	BasicAttackDamageNotifyCount = 0;
+	PendingAttackTarget = nullptr;
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
+		World->GetTimerManager().ClearTimer(GroggyRecoverTimer);
+	}
+
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		AIController->StopMovement();
+	}
+
+	PlayDeathMontage(1.0f);
 }
 
 void ABoss::MulticastPlayBasicAttackMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
@@ -452,6 +654,20 @@ void ABoss::MulticastPlayBasicAttackMontage_Implementation(UAnimMontage* Montage
 	if (Played <= 0.0f)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[Boss] Failed to play attack montage: Boss=%s Montage=%s"), *GetNameSafe(this), *GetNameSafe(MontageToPlay));
+	}
+}
+
+void ABoss::MulticastPlayHitReactMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
+{
+	if (!MontageToPlay || IsDead() || bBasicAttackInProgress || IsBasicAttackMontagePlaying())
+	{
+		return;
+	}
+
+	const float Played = PlayAnimMontage(MontageToPlay, PlayRate);
+	if (Played <= 0.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Boss] Failed to play hit react montage: Boss=%s Montage=%s"), *GetNameSafe(this), *GetNameSafe(MontageToPlay));
 	}
 }
 

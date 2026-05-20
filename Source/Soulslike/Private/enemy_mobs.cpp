@@ -42,7 +42,7 @@ namespace
 
 Aenemy_mobs::Aenemy_mobs()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 	SetReplicateMovement(true);
 
@@ -71,6 +71,12 @@ void Aenemy_mobs::BeginPlay()
 	Super::BeginPlay();
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	Tags.AddUnique(FName("Enemy"));
+
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(USLCharacterAttributeSet::GetHealthAttribute())
+			.AddUObject(this, &Aenemy_mobs::OnHealthAttributeChanged);
+	}
 
 	if (AbilitySystemComponent)
 	{
@@ -116,11 +122,18 @@ void Aenemy_mobs::BeginPlay()
 		BasicAttackCooldown);
 }
 
+void Aenemy_mobs::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	HandleDeathState();
+}
+
 void Aenemy_mobs::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
+		World->GetTimerManager().ClearTimer(GroggyRecoverTimer);
 	}
 	StopPeriodicMove();
 	Super::EndPlay(EndPlayReason);
@@ -179,7 +192,7 @@ float Aenemy_mobs::ComputeBasicAttackDamage() const
 
 bool Aenemy_mobs::TryBasicAttack(AActor* TargetActor)
 {
-	if (!HasAuthority() || !IsValid(TargetActor) || !AbilitySystemComponent || bBasicAttackInProgress || bIsGroggy)
+	if (!HasAuthority() || !IsValid(TargetActor) || !AbilitySystemComponent || bBasicAttackInProgress || bIsGroggy || IsDead())
 	{
 		if (HasAuthority() && bBasicAttackInProgress)
 		{
@@ -231,6 +244,7 @@ bool Aenemy_mobs::TryBasicAttack(AActor* TargetActor)
 
 	PendingAttackTarget = TargetActor;
 	bBasicAttackInProgress = true;
+	BasicAttackDamageNotifyCount = 0;
 	LastBasicAttackTime = Now;
 
 	UE_LOG(
@@ -258,6 +272,27 @@ bool Aenemy_mobs::IsTargetInBasicAttackContact(AActor* TargetActor) const
 	return IsTargetTouchingAttackRange(TargetActor);
 }
 
+bool Aenemy_mobs::IsBasicAttackMontagePlaying() const
+{
+	const UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (!AnimInstance)
+	{
+		return false;
+	}
+
+	return (BasicAttackMontage && AnimInstance->Montage_IsPlaying(BasicAttackMontage))
+		|| (BasicAttackMontageAlt && AnimInstance->Montage_IsPlaying(BasicAttackMontageAlt));
+}
+
+bool Aenemy_mobs::IsDead() const
+{
+	if (!AttributeSet)
+	{
+		return false;
+	}
+	return AttributeSet->GetHealth() <= 0.0f;
+}
+
 bool Aenemy_mobs::IsTargetTouchingAttackRange(AActor* TargetActor) const
 {
 	if (!IsValid(TargetActor))
@@ -276,15 +311,9 @@ void Aenemy_mobs::ResolveBasicAttackHit()
 		return;
 	}
 
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
-	}
-
-	bBasicAttackInProgress = false;
+	++BasicAttackDamageNotifyCount;
 
 	AActor* TargetActor = PendingAttackTarget.Get();
-	PendingAttackTarget = nullptr;
 
 	if (!IsValid(TargetActor) || !AbilitySystemComponent)
 	{
@@ -363,8 +392,12 @@ void Aenemy_mobs::OnBasicAttackNotifyTimeout()
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[EnemyMob] Attack notify timeout: montage notify missing or montage did not trigger notify. Attacker=%s"), *GetNameSafe(this));
+	if (BasicAttackDamageNotifyCount <= 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[EnemyMob] Attack notify timeout: montage notify missing or montage did not trigger notify. Attacker=%s"), *GetNameSafe(this));
+	}
 	bBasicAttackInProgress = false;
+	BasicAttackDamageNotifyCount = 0;
 	PendingAttackTarget = nullptr;
 }
 
@@ -379,8 +412,10 @@ void Aenemy_mobs::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
+		World->GetTimerManager().ClearTimer(GroggyRecoverTimer);
 	}
 	bBasicAttackInProgress = false;
+	BasicAttackDamageNotifyCount = 0;
 	PendingAttackTarget = nullptr;
 
 	if (AAIController* AIController = Cast<AAIController>(GetController()))
@@ -402,7 +437,80 @@ void Aenemy_mobs::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
 		MulticastPlayGroggyMontage(GroggyMontage, 1.0f);
 	}
 
+	float RecoverDelay = 0.1f;
+	if (GroggyMontage)
+	{
+		RecoverDelay = FMath::Max(0.1f, GroggyMontage->GetPlayLength());
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(GroggyRecoverTimer, this, &Aenemy_mobs::RecoverGroggyToMax, RecoverDelay, false);
+	}
+
 	UE_LOG(LogTemp, Log, TEXT("[EnemyMob] Entered groggy state: %s"), *GetNameSafe(this));
+}
+
+void Aenemy_mobs::OnHealthAttributeChanged(const FOnAttributeChangeData& ChangeData)
+{
+	if (!HasAuthority() || IsDead())
+	{
+		return;
+	}
+
+	// Do not interrupt attack timing with hit-react.
+	if (bBasicAttackInProgress || IsBasicAttackMontagePlaying())
+	{
+		return;
+	}
+
+	if (ChangeData.NewValue < ChangeData.OldValue && HitReactMontage)
+	{
+		MulticastPlayHitReactMontage(HitReactMontage, 1.0f);
+	}
+}
+
+void Aenemy_mobs::RecoverGroggyToMax()
+{
+	if (!AttributeSet)
+	{
+		return;
+	}
+
+	const float MaxGroggy = AttributeSet->GetMaxGroggy();
+	if (MaxGroggy > 0.0f)
+	{
+		AttributeSet->SetGroggy(MaxGroggy);
+	}
+}
+
+void Aenemy_mobs::HandleDeathState()
+{
+	if (!IsDead() || bDeathMontagePlayed)
+	{
+		return;
+	}
+
+	bDeathMontagePlayed = true;
+	bBasicAttackInProgress = false;
+	BasicAttackDamageNotifyCount = 0;
+	PendingAttackTarget = nullptr;
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
+		World->GetTimerManager().ClearTimer(GroggyRecoverTimer);
+	}
+
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		AIController->StopMovement();
+	}
+
+	if (DeathMontage)
+	{
+		PlayAnimMontage(DeathMontage, 1.0f);
+	}
 }
 
 void Aenemy_mobs::MulticastPlayBasicAttackMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
@@ -436,5 +544,19 @@ void Aenemy_mobs::MulticastPlayGroggyMontage_Implementation(UAnimMontage* Montag
 	if (Played <= 0.0f)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[EnemyMob] Failed to play groggy montage: Mob=%s Montage=%s"), *GetNameSafe(this), *GetNameSafe(MontageToPlay));
+	}
+}
+
+void Aenemy_mobs::MulticastPlayHitReactMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
+{
+	if (!MontageToPlay || IsDead() || bBasicAttackInProgress || IsBasicAttackMontagePlaying())
+	{
+		return;
+	}
+
+	const float Played = PlayAnimMontage(MontageToPlay, PlayRate);
+	if (Played <= 0.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[EnemyMob] Failed to play hit react montage: Mob=%s Montage=%s"), *GetNameSafe(this), *GetNameSafe(MontageToPlay));
 	}
 }
