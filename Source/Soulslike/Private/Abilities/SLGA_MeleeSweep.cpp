@@ -9,12 +9,13 @@
 #include "Weapons/SLWeaponTypes.h"
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Soulslike.h"
 
 USLAT_Meele_hit_checker* USLAT_Meele_hit_checker::Create(UGameplayAbility* OwningAbility,
     FName socket_start_name, FName socket_end_name,
     float trace_length, FVector boxHalfExtents,
-    USoundBase* InHitSound)
+    USoundBase* InHitSound, UNiagaraSystem* vfx_onhit)
 {
     USLAT_Meele_hit_checker* hit_checker = NewAbilityTask<USLAT_Meele_hit_checker>(OwningAbility);
     hit_checker->socket_base_name = socket_start_name;
@@ -23,6 +24,7 @@ USLAT_Meele_hit_checker* USLAT_Meele_hit_checker::Create(UGameplayAbility* Ownin
     hit_checker->boxHalfExtents = boxHalfExtents;
     hit_checker->isScanning = false;
     hit_checker->HitSound = InHitSound;
+    hit_checker->VFX_onhit = vfx_onhit;
 
     hit_checker->actorsToIgnore.Empty();
     if (!hit_checker->IgnoreSelf()) return nullptr;
@@ -55,6 +57,11 @@ void USLAT_Meele_hit_checker::ChangeTraceSpec(FName new_base_name, FName new_tip
 void USLAT_Meele_hit_checker::ChangeHitSound(USoundBase* new_sound)
 {
     HitSound = new_sound;
+}
+
+void USLAT_Meele_hit_checker::ChangeVFX(UNiagaraSystem* new_vfx)
+{
+    VFX_onhit = new_vfx;
 }
 
 void USLAT_Meele_hit_checker::FlushIgnoreList()
@@ -128,6 +135,20 @@ void USLAT_Meele_hit_checker::EffectOnHit(AActor* hitActor, UAbilitySystemCompon
     if (HitSound)
     {
         UGameplayStatics::PlaySoundAtLocation(this, HitSound, HitLocation);
+    }
+
+    if (VFX_onhit) {
+        UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+            GetWorld(),
+            VFX_onhit,
+            HitLocation,
+            FRotator(0, 0, 0),
+            FVector(1.0f), // Scale
+            true,          // Auto Destroy
+            true,          // Auto Activate
+            ENCPoolMethod::None,
+            true           // Pre-Cull Check
+        );
     }
 }
 
@@ -207,7 +228,7 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     hitchecker = USLAT_Meele_hit_checker::Create(
         this,
         socket_weapon_base, socket_weapon_tip, socket_weapon_length,
-        BoxHalfExtents, HitSound);
+        BoxHalfExtents, HitSound, VFX_onhit);
     hitchecker->ReadyForActivation();
     
     FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();

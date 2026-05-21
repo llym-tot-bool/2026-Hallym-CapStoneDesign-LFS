@@ -90,7 +90,7 @@ void USLGA_MeleeMultiMontage::ActivateAbility(const FGameplayAbilitySpecHandle H
     hitchecker = USLAT_Meele_hit_checker::Create(
         this,
         FName("None"), FName("None"), 0.0f,
-        FVector(0, 0, 0), nullptr);
+        FVector(0, 0, 0), nullptr, nullptr);
     hitchecker->ReadyForActivation();
 
     FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
@@ -161,6 +161,7 @@ void USLGA_MeleeMultiMontage::PlayFirstMontage()
     );
     hitchecker->FlushIgnoreList();
     hitchecker->ChangeHitSound(MontageAction_list[currentMontageIdx].HitSound);
+    hitchecker->ChangeVFX(MontageAction_list[currentMontageIdx].VFX_onhit);
     currentMontageTask->ReadyForActivation();
 }
 

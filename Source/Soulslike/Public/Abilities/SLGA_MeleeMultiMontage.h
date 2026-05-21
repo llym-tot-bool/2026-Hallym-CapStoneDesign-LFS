@@ -30,6 +30,9 @@ struct FSL_MontageAction {
 
     UPROPERTY(EditAnywhere, Category = "HitSound")
     TObjectPtr<USoundBase> HitSound;
+
+    UPROPERTY(EditAnywhere, Category = "VFX")
+    TObjectPtr<UNiagaraSystem> VFX_onhit;
 };
 
 UCLASS()

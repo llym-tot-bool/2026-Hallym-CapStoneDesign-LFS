@@ -7,6 +7,7 @@
 #include "Abilities/Tasks/AbilityTask.h"
 #include "SLDA_MeleeCombat.h"
 #include "SoulslikePlayerState.h"
+#include "NiagaraSystem.h"
 
 #include "SLGA_MeleeSweep.generated.h"
 
@@ -23,13 +24,14 @@ public:
     static USLAT_Meele_hit_checker* Create(UGameplayAbility* OwningAbility,
         FName socket_base_name, FName socket_tip_name,
         float trace_length, FVector boxHalfExtents,
-        USoundBase* InHitSound);
+        USoundBase* InHitSound, UNiagaraSystem* vfx_onhit);
 
     bool IgnoreSelf();
     void SetIsScanning(const bool value);
 
     void ChangeTraceSpec(FName new_base_name, FName new_tip_name, float new_trace_length, FVector new_boxHalfExtents);
     void ChangeHitSound(USoundBase* new_sound);
+    void ChangeVFX(UNiagaraSystem* new_vfx);
     void FlushIgnoreList();
 
     virtual void TickTask(float DeltaTime) override;
@@ -43,8 +45,9 @@ private:
     TArray<AActor*> actorsToIgnore;
     bool isScanning;
 
-    UPROPERTY()
     TObjectPtr<USoundBase> HitSound;
+
+    TObjectPtr<UNiagaraSystem> VFX_onhit;
 };
 
 UCLASS()
@@ -81,6 +84,9 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack|Sound")
     TObjectPtr<USoundBase> SwingSound;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack|Effects")
+    TObjectPtr<UNiagaraSystem> VFX_onhit;
 
     ESL_Melee_State state;
     ESL_Melee_TraceState traceState;
