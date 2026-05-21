@@ -28,8 +28,10 @@ public:
     bool IgnoreSelf();
     void SetIsScanning(const bool value);
 
+    void ChangeSpec(FName new_base_name, FName new_tip_name, float new_trace_length, FVector new_boxHalfExtents);
+
     virtual void TickTask(float DeltaTime) override;
-    void EffectOnHit(AActor* hitActor, const FVector& HitLocation);
+    void EffectOnHit(AActor* hitActor, UAbilitySystemComponent* hitASC, const FVector& HitLocation);
 
 private:
     FName socket_base_name;

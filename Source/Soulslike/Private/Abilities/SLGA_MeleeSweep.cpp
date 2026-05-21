@@ -7,6 +7,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Weapons/SLWeaponTypes.h"
+#include "AbilitySystemInterface.h"
+#include "AbilitySystemComponent.h"
 #include "Soulslike.h"
 
 USLAT_Meele_hit_checker* USLAT_Meele_hit_checker::Create(UGameplayAbility* OwningAbility,
@@ -40,6 +42,14 @@ bool USLAT_Meele_hit_checker::IgnoreSelf()
 void USLAT_Meele_hit_checker::SetIsScanning(const bool value)
 {
     isScanning = value;
+}
+
+void USLAT_Meele_hit_checker::ChangeSpec(FName new_base_name, FName new_tip_name, float new_trace_length, FVector new_boxHalfExtents)
+{
+    socket_base_name = new_base_name;
+    socket_tip_name = new_tip_name;
+    trace_length = new_trace_length;
+    boxHalfExtents = new_boxHalfExtents;
 }
 
 void USLAT_Meele_hit_checker::TickTask(float DeltaTime)
@@ -84,15 +94,19 @@ void USLAT_Meele_hit_checker::TickTask(float DeltaTime)
         for (const FHitResult& hitresult : OutHits) {
             AActor* hitActor = hitresult.GetActor();
             if (!hitActor) continue;
+            IAbilitySystemInterface* Interface = Cast<IAbilitySystemInterface>(hitActor);
+            if (!Interface) continue;
+            UAbilitySystemComponent* hitASC = Interface->GetAbilitySystemComponent();
+            if (!hitASC) continue;
             if (actorsToIgnore.Contains(hitActor)) continue;
 
             actorsToIgnore.Add(hitActor);
-            EffectOnHit(hitActor, hitresult.ImpactPoint);
+            EffectOnHit(hitActor, hitASC, hitresult.ImpactPoint);
         }
     }
 }
 
-void USLAT_Meele_hit_checker::EffectOnHit(AActor* hitActor, const FVector& HitLocation)
+void USLAT_Meele_hit_checker::EffectOnHit(AActor* hitActor, UAbilitySystemComponent* hitASC, const FVector& HitLocation)
 {
     FString myName = this->GetName();
 

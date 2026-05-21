@@ -12,6 +12,26 @@
 
 #include "SLGA_MeleeMultiMontage.generated.h"
 
+USTRUCT()
+struct FSL_MontageAction {
+    GENERATED_BODY();
+
+
+    UPROPERTY(EditAnywhere, Category = "Collision")
+    FName socket_base_name;
+    UPROPERTY(EditAnywhere, Category = "Collision")
+    FName socket_tip_name;
+    UPROPERTY(EditAnywhere, Category = "Collision")
+    float trace_length;
+    UPROPERTY(EditAnywhere, Category = "Collision")
+    FVector boxHalfExtents;
+    UPROPERTY(EditAnywhere, Category = "Collision")
+    TObjectPtr<UAnimMontage> montage;
+
+    UPROPERTY(EditAnywhere, Category = "HitSound")
+    TObjectPtr<USoundBase> HitSound;
+};
+
 UCLASS()
 class SOULSLIKE_API USLGA_MeleeMultiMontage : public UGameplayAbility
 {
@@ -53,7 +73,7 @@ protected:
     TObjectPtr<UAnimInstance> AnimInst;
 
     UPROPERTY(EditAnywhere, Category = Montage)
-    TArray<TObjectPtr<UAnimMontage>> Montage_list;
+    TArray<FSL_MontageAction> MontageAction_list;
     
     int currentMontageIdx;
     int lastMontageIdx;
