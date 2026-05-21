@@ -28,7 +28,9 @@ public:
     bool IgnoreSelf();
     void SetIsScanning(const bool value);
 
-    void ChangeSpec(FName new_base_name, FName new_tip_name, float new_trace_length, FVector new_boxHalfExtents);
+    void ChangeTraceSpec(FName new_base_name, FName new_tip_name, float new_trace_length, FVector new_boxHalfExtents);
+    void ChangeHitSound(USoundBase* new_sound);
+    void FlushIgnoreList();
 
     virtual void TickTask(float DeltaTime) override;
     void EffectOnHit(AActor* hitActor, UAbilitySystemComponent* hitASC, const FVector& HitLocation);

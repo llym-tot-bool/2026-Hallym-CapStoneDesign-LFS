@@ -44,12 +44,24 @@ void USLAT_Meele_hit_checker::SetIsScanning(const bool value)
     isScanning = value;
 }
 
-void USLAT_Meele_hit_checker::ChangeSpec(FName new_base_name, FName new_tip_name, float new_trace_length, FVector new_boxHalfExtents)
+void USLAT_Meele_hit_checker::ChangeTraceSpec(FName new_base_name, FName new_tip_name, float new_trace_length, FVector new_boxHalfExtents)
 {
     socket_base_name = new_base_name;
     socket_tip_name = new_tip_name;
     trace_length = new_trace_length;
     boxHalfExtents = new_boxHalfExtents;
+}
+
+void USLAT_Meele_hit_checker::ChangeHitSound(USoundBase* new_sound)
+{
+    HitSound = new_sound;
+}
+
+void USLAT_Meele_hit_checker::FlushIgnoreList()
+{
+    actorsToIgnore.Empty();
+    bool ret = IgnoreSelf();
+    ensureOrQuit(ret);
 }
 
 void USLAT_Meele_hit_checker::TickTask(float DeltaTime)

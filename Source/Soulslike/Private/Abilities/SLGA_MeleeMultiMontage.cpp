@@ -6,6 +6,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Weapons/SLWeaponTypes.h"
+#include "Kismet/GameplayStatics.h"
 #include "Soulslike.h"
 
 
@@ -88,8 +89,8 @@ void USLGA_MeleeMultiMontage::ActivateAbility(const FGameplayAbilitySpecHandle H
 
     hitchecker = USLAT_Meele_hit_checker::Create(
         this,
-        socket_weapon_base, socket_weapon_tip, socket_weapon_length,
-        BoxHalfExtents, HitSound);
+        FName("None"), FName("None"), 0.0f,
+        FVector(0, 0, 0), nullptr);
     hitchecker->ReadyForActivation();
 
     FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
@@ -152,6 +153,14 @@ void USLGA_MeleeMultiMontage::PlayFirstMontage()
 
     // Bind to delegates (OnCompleted, OnInterrupted, etc.)
     ObserveMontage();
+    hitchecker->ChangeTraceSpec(
+        MontageAction_list[currentMontageIdx].socket_base_name,
+        MontageAction_list[currentMontageIdx].socket_tip_name,
+        MontageAction_list[currentMontageIdx].trace_length,
+        MontageAction_list[currentMontageIdx].boxHalfExtents
+    );
+    hitchecker->FlushIgnoreList();
+    hitchecker->ChangeHitSound(MontageAction_list[currentMontageIdx].HitSound);
     currentMontageTask->ReadyForActivation();
 }
 
@@ -178,12 +187,14 @@ void USLGA_MeleeMultiMontage::PlayNextMontage()
 
     ObserveMontage();
     currentMontageTask->ReadyForActivation();
-    hitchecker->ChangeSpec(
+    hitchecker->ChangeTraceSpec(
         MontageAction_list[currentMontageIdx].socket_base_name,
         MontageAction_list[currentMontageIdx].socket_tip_name,
         MontageAction_list[currentMontageIdx].trace_length,
         MontageAction_list[currentMontageIdx].boxHalfExtents
     );
+    hitchecker->FlushIgnoreList();
+    hitchecker->ChangeHitSound(MontageAction_list[currentMontageIdx].HitSound);
 }
 
 void USLGA_MeleeMultiMontage::ObserveMontage()
@@ -240,6 +251,7 @@ void USLGA_MeleeMultiMontage::ChangeTraceState(ESL_Melee_TraceState newState)
         break;
     case ESL_Melee_TraceState::trace:
         UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate response : trace start"));
+        UGameplayStatics::PlaySoundAtLocation(this, SwingSound, ASC->GetAvatarActor()->K2_GetActorLocation());
         hitchecker->SetIsScanning(true);
         break;
     default:

@@ -43,26 +43,14 @@ protected:
     UPROPERTY(EditAnywhere, Category = "PlayerMovementRestriction")
     FGameplayTag tag_IsMoving;
 
-    UPROPERTY(EditAnywhere, Category = "Collision")
-    FVector BoxHalfExtents = FVector(15.f, 15.f, 15.f);
-
-    UPROPERTY(EditAnywhere, Category = "Collision")
-    FName socket_weapon_base = "Socket_weapon_base";
-
-    UPROPERTY(EditAnywhere, Category = "Collision")
-    FName socket_weapon_tip = "Socket_weapon_tip";
-
-    UPROPERTY(EditAnywhere, Category = "Collision")
-    float socket_weapon_length = 50.0f;
+    UPROPERTY(EditAnywhere, Category = "SwingSound")
+    TObjectPtr<USoundBase> SwingSound;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack", meta = (ClampMin = "0.0"))
     float StaminaCost = 25.f;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack|GAS")
     TSubclassOf<UGameplayEffect> StaminaCostGEClass;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack|Sound")
-    TObjectPtr<USoundBase> HitSound;
 
     ESL_Melee_State state;
     ESL_Melee_TraceState traceState;
