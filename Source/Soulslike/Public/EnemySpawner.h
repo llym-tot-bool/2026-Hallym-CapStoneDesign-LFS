@@ -34,5 +34,6 @@ protected:
 	float MaxSpawnChance = 1.0f;
 
 private:
-	void TrySpawnEnemyOnce();
+	UFUNCTION(BlueprintCallable)
+	void TrySpawnEnemyOnce(int level);
 };

@@ -25,25 +25,61 @@ class UGameplayEffect;
 UCLASS(Abstract, Blueprintable)
 class SOULSLIKE_API USLGameplayAbility_Dodge : public UGameplayAbility
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	USLGameplayAbility_Dodge();
+    USLGameplayAbility_Dodge();
 
-	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const override;
-	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
-	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+    virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const override;
+    virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+    virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge", meta = (ClampMin = "0.0"))
-	float StaminaCost = 25.f;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge", meta = (ClampMin = "0.0"))
+    float StaminaCost = 25.f;
+    
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Montages", meta = (ClampMin = "0.1"))
+    float DodgeSpeedMultiplier = 1.0f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge")
-	TObjectPtr<UAnimMontage> DodgeMontage;
+    // Fallback or Free-roam forward roll
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Montages")
+    TObjectPtr<UAnimMontage> DefaultDodgeMontage;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|GAS")
-	TSubclassOf<UGameplayEffect> StaminaCostGEClass;
+    // --- 8-Directional Lock-on Montages ---
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Montages|LockOn")
+    TObjectPtr<UAnimMontage> DodgeForward;
 
-	UFUNCTION()
-	void OnDodgeMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Montages|LockOn")
+    TObjectPtr<UAnimMontage> DodgeBackward;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Montages|LockOn")
+    TObjectPtr<UAnimMontage> DodgeLeft;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Montages|LockOn")
+    TObjectPtr<UAnimMontage> DodgeRight;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Montages|LockOn")
+    TObjectPtr<UAnimMontage> DodgeForwardLeft;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Montages|LockOn")
+    TObjectPtr<UAnimMontage> DodgeForwardRight;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Montages|LockOn")
+    TObjectPtr<UAnimMontage> DodgeBackwardLeft;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Montages|LockOn")
+    TObjectPtr<UAnimMontage> DodgeBackwardRight;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|GAS")
+    TSubclassOf<UGameplayEffect> StaminaCostGEClass;
+    
+    UPROPERTY()
+    TObjectPtr<UAnimMontage> ActiveDodgeMontage;
+    
+    UFUNCTION()
+    void OnDodgeMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+private:
+    // Helper to calculate and return the correct montage based on input
+    UAnimMontage* SelectDodgeMontage(const ACharacter* Character) const;
 };

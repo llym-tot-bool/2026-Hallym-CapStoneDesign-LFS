@@ -2,13 +2,6 @@
 #include "Engine/World.h"
 #include "enemy_mobs.h"
 
-namespace
-{
-	const UWorld* LastProcessedWorld = nullptr;
-	float SpawnChanceBonusFromMapLoads = 0.0f;
-	bool bHasSeenFirstWorld = false;
-}
-
 AEnemySpawner::AEnemySpawner()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -17,34 +10,16 @@ AEnemySpawner::AEnemySpawner()
 void AEnemySpawner::BeginPlay()
 {
 	Super::BeginPlay();
-
-	const UWorld* CurrentWorld = GetWorld();
-	if (CurrentWorld && LastProcessedWorld != CurrentWorld)
-	{
-		if (bHasSeenFirstWorld)
-		{
-			const AEnemySpawner* DefaultSpawner = GetDefault<AEnemySpawner>();
-			SpawnChanceBonusFromMapLoads += DefaultSpawner ? DefaultSpawner->SpawnChanceIncreasePerMapLoad : 0.0f;
-		}
-		else
-		{
-			bHasSeenFirstWorld = true;
-		}
-
-		LastProcessedWorld = CurrentWorld;
-	}
-
-	TrySpawnEnemyOnce();
 }
 
-void AEnemySpawner::TrySpawnEnemyOnce()
+void AEnemySpawner::TrySpawnEnemyOnce(int level)
 {
 	if (!EnemyClass || !GetWorld())
 	{
 		return;
 	}
 
-	const float EffectiveSpawnChance = FMath::Clamp(SpawnChance + SpawnChanceBonusFromMapLoads, 0.0f, MaxSpawnChance);
+	const float EffectiveSpawnChance = FMath::Clamp(SpawnChance + SpawnChanceIncreasePerMapLoad * level, 0.0f, MaxSpawnChance);
 	const float Roll = FMath::FRand();
 	if (Roll > EffectiveSpawnChance)
 	{

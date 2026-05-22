@@ -62,10 +62,10 @@ protected:
 	float ChaseDetectionHalfAngleDeg = 45.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Perception|Debug")
-	bool bDebugDrawDetectionRange = true;
+	bool bDebugDrawDetectionRange = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat|Debug")
-	bool bDebugDrawAttackRange = true;
+	bool bDebugDrawAttackRange = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat", meta = (ClampMin = 0.0))
 	float BasicAttackRange = 130.0f;
