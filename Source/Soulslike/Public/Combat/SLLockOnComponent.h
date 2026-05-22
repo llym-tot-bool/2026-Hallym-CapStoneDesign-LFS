@@ -31,9 +31,9 @@ class SOULSLIKE_API USLLockOnComponent : public UActorComponent
 public:
 	USLLockOnComponent();
 
-	/** Toggle the lock on / off. If off, finds the best target in front and locks. */
+	/** Toggle the lock on / off. If off, finds the best target in front and locks. Returns true if state changed. */
 	UFUNCTION(BlueprintCallable, Category = "Lock On")
-	void ToggleLockOn();
+	bool ToggleLockOn();
 
 	/** Force-clear the current lock. */
 	UFUNCTION(BlueprintCallable, Category = "Lock On")

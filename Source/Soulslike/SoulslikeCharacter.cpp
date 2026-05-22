@@ -354,8 +354,10 @@ void ASoulslikeCharacter::LockOnToggle()
 {
 	if (LockOnComponent)
 	{
-		LockOnComponent->ToggleLockOn();
-		GetCharacterMovement()->bOrientRotationToMovement = !GetCharacterMovement()->bOrientRotationToMovement;
+		if (LockOnComponent->ToggleLockOn())
+		{
+			GetCharacterMovement()->bOrientRotationToMovement = !LockOnComponent->IsLocked();
+		}
 	}
 }
 

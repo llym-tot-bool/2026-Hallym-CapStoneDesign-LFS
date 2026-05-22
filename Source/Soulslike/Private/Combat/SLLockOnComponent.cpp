@@ -30,18 +30,21 @@ void USLLockOnComponent::BeginPlay()
 	}
 }
 
-void USLLockOnComponent::ToggleLockOn()
+bool USLLockOnComponent::ToggleLockOn()
 {
 	if (IsLocked())
 	{
 		ClearLock();
-		return;
+		return true;
 	}
 
 	if (AActor* Best = FindBestTargetInCone())
 	{
 		SetTarget(Best);
+		return true;
 	}
+
+	return false;
 }
 
 void USLLockOnComponent::ClearLock()
