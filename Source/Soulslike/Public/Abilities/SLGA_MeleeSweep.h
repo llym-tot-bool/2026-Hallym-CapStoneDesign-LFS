@@ -24,7 +24,8 @@ public:
     static USLAT_Meele_hit_checker* Create(UGameplayAbility* OwningAbility,
         FName socket_base_name, FName socket_tip_name,
         float trace_length, FVector boxHalfExtents,
-        USoundBase* InHitSound, UNiagaraSystem* vfx_onhit);
+        USoundBase* InHitSound, UNiagaraSystem* vfx_onhit, 
+        TSubclassOf<UGameplayEffect> OnHitGE, float BaseDamageValue);
 
     bool IgnoreSelf();
     void SetIsScanning(const bool value);
@@ -32,6 +33,7 @@ public:
     void ChangeTraceSpec(FName new_base_name, FName new_tip_name, float new_trace_length, FVector new_boxHalfExtents);
     void ChangeHitSound(USoundBase* new_sound);
     void ChangeVFX(UNiagaraSystem* new_vfx);
+    void ChangeGE(TSubclassOf<UGameplayEffect> new_OnHitGE, float new_baseDamage);
     void FlushIgnoreList();
 
     virtual void TickTask(float DeltaTime) override;
@@ -46,8 +48,9 @@ private:
     bool isScanning;
 
     TObjectPtr<USoundBase> HitSound;
-
     TObjectPtr<UNiagaraSystem> VFX_onhit;
+    TSubclassOf<UGameplayEffect> OnHitGE;
+    float BaseDamageValue = 0;
 };
 
 UCLASS()
@@ -82,11 +85,14 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack|Sound")
     TObjectPtr<USoundBase> HitSound;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack|Sound")
-    TObjectPtr<USoundBase> SwingSound;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack|Effects")
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack|VFX")
     TObjectPtr<UNiagaraSystem> VFX_onhit;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack|GameplayEffect")
+    TSubclassOf<UGameplayEffect> OnHitGE;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack|GameplayEffect")
+    float BaseDamageValue = 0;
 
     ESL_Melee_State state;
     ESL_Melee_TraceState traceState;

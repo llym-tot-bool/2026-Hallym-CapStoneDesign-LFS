@@ -10,12 +10,14 @@
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Weapons/SLWeaponTypes.h"
 #include "Soulslike.h"
 
 USLAT_Meele_hit_checker* USLAT_Meele_hit_checker::Create(UGameplayAbility* OwningAbility,
     FName socket_start_name, FName socket_end_name,
     float trace_length, FVector boxHalfExtents,
-    USoundBase* InHitSound, UNiagaraSystem* vfx_onhit)
+    USoundBase* InHitSound, UNiagaraSystem* vfx_onhit, 
+    TSubclassOf<UGameplayEffect> OnHitGE, float BaseDamageValue)
 {
     USLAT_Meele_hit_checker* hit_checker = NewAbilityTask<USLAT_Meele_hit_checker>(OwningAbility);
     hit_checker->socket_base_name = socket_start_name;
@@ -25,6 +27,8 @@ USLAT_Meele_hit_checker* USLAT_Meele_hit_checker::Create(UGameplayAbility* Ownin
     hit_checker->isScanning = false;
     hit_checker->HitSound = InHitSound;
     hit_checker->VFX_onhit = vfx_onhit;
+    hit_checker->OnHitGE = OnHitGE;
+    hit_checker->BaseDamageValue = BaseDamageValue;
 
     hit_checker->actorsToIgnore.Empty();
     if (!hit_checker->IgnoreSelf()) return nullptr;
@@ -62,6 +66,12 @@ void USLAT_Meele_hit_checker::ChangeHitSound(USoundBase* new_sound)
 void USLAT_Meele_hit_checker::ChangeVFX(UNiagaraSystem* new_vfx)
 {
     VFX_onhit = new_vfx;
+}
+
+void USLAT_Meele_hit_checker::ChangeGE(TSubclassOf<UGameplayEffect> new_OnHitGE, float new_baseDamage)
+{
+    OnHitGE = new_OnHitGE;
+    BaseDamageValue = new_baseDamage;
 }
 
 void USLAT_Meele_hit_checker::FlushIgnoreList()
@@ -150,6 +160,25 @@ void USLAT_Meele_hit_checker::EffectOnHit(AActor* hitActor, UAbilitySystemCompon
             true           // Pre-Cull Check
         );
     }
+
+    if (OnHitGE) {
+        FGameplayEffectContextHandle EffectContext = hitASC->MakeEffectContext();
+        EffectContext.AddInstigator(GetAvatarActor(), GetAvatarActor());
+
+        FGameplayEffectSpecHandle SpecHandle = hitASC->MakeOutgoingSpec(OnHitGE, 1.0f, EffectContext);
+
+        if (SpecHandle.IsValid())
+        {
+            FGameplayTag DamageTag = FGameplayTag::RequestGameplayTag(SLCombatTags::SetByCaller_DamageBase);
+
+            SpecHandle.Data.Get()->SetSetByCallerMagnitude(DamageTag, BaseDamageValue);
+
+            hitASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+        }
+        else {
+            SLDEBUG("hitchecker : effect context is not valid");
+        }
+    }
 }
 
 void USLGA_MeleeSweep::InterruptAsCombo()
@@ -228,7 +257,7 @@ void USLGA_MeleeSweep::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
     hitchecker = USLAT_Meele_hit_checker::Create(
         this,
         socket_weapon_base, socket_weapon_tip, socket_weapon_length,
-        BoxHalfExtents, HitSound, VFX_onhit);
+        BoxHalfExtents, HitSound, VFX_onhit, OnHitGE, BaseDamageValue);
     hitchecker->ReadyForActivation();
     
     FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
@@ -327,9 +356,6 @@ void USLGA_MeleeSweep::ChangeTraceState(ESL_Melee_TraceState newState)
     case ESL_Melee_TraceState::trace:
         UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate response : trace start"));
         hitchecker->SetIsScanning(true);
-        if (SwingSound) {
-            UGameplayStatics::PlaySoundAtLocation(this, SwingSound, ASC->GetAvatarActor()->K2_GetActorLocation());
-        }
         break;
     default:
         break;

@@ -90,7 +90,7 @@ void USLGA_MeleeMultiMontage::ActivateAbility(const FGameplayAbilitySpecHandle H
     hitchecker = USLAT_Meele_hit_checker::Create(
         this,
         FName("None"), FName("None"), 0.0f,
-        FVector(0, 0, 0), nullptr, nullptr);
+        FVector(0, 0, 0), nullptr, nullptr, nullptr, 0);
     hitchecker->ReadyForActivation();
 
     FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
@@ -162,6 +162,7 @@ void USLGA_MeleeMultiMontage::PlayFirstMontage()
     hitchecker->FlushIgnoreList();
     hitchecker->ChangeHitSound(MontageAction_list[currentMontageIdx].HitSound);
     hitchecker->ChangeVFX(MontageAction_list[currentMontageIdx].VFX_onhit);
+    hitchecker->ChangeGE(MontageAction_list[currentMontageIdx].OnHitGE, MontageAction_list[currentMontageIdx].BaseDamageValue);
     currentMontageTask->ReadyForActivation();
 }
 
@@ -187,15 +188,17 @@ void USLGA_MeleeMultiMontage::PlayNextMontage()
     );
 
     ObserveMontage();
-    currentMontageTask->ReadyForActivation();
+    hitchecker->FlushIgnoreList();
     hitchecker->ChangeTraceSpec(
         MontageAction_list[currentMontageIdx].socket_base_name,
         MontageAction_list[currentMontageIdx].socket_tip_name,
         MontageAction_list[currentMontageIdx].trace_length,
         MontageAction_list[currentMontageIdx].boxHalfExtents
     );
-    hitchecker->FlushIgnoreList();
     hitchecker->ChangeHitSound(MontageAction_list[currentMontageIdx].HitSound);
+    hitchecker->ChangeVFX(MontageAction_list[currentMontageIdx].VFX_onhit);
+    hitchecker->ChangeGE(MontageAction_list[currentMontageIdx].OnHitGE, MontageAction_list[currentMontageIdx].BaseDamageValue);
+    currentMontageTask->ReadyForActivation();
 }
 
 void USLGA_MeleeMultiMontage::ObserveMontage()
@@ -252,7 +255,6 @@ void USLGA_MeleeMultiMontage::ChangeTraceState(ESL_Melee_TraceState newState)
         break;
     case ESL_Melee_TraceState::trace:
         UE_LOG(LogTemp, Display, TEXT("[SL debug] delegate response : trace start"));
-        UGameplayStatics::PlaySoundAtLocation(this, SwingSound, ASC->GetAvatarActor()->K2_GetActorLocation());
         hitchecker->SetIsScanning(true);
         break;
     default:

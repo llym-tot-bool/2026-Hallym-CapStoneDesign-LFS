@@ -33,6 +33,12 @@ struct FSL_MontageAction {
 
     UPROPERTY(EditAnywhere, Category = "VFX")
     TObjectPtr<UNiagaraSystem> VFX_onhit;
+
+    UPROPERTY(EditAnywhere, Category = "GameplayEffect")
+    TSubclassOf<UGameplayEffect> OnHitGE;
+
+    UPROPERTY(EditAnywhere, Category = "GameplayEffect")
+    float BaseDamageValue = 0;
 };
 
 UCLASS()
@@ -45,9 +51,6 @@ protected:
     FGameplayTag tag_RootMotion;
     UPROPERTY(EditAnywhere, Category = "PlayerMovementRestriction")
     FGameplayTag tag_IsMoving;
-
-    UPROPERTY(EditAnywhere, Category = "SwingSound")
-    TObjectPtr<USoundBase> SwingSound;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack", meta = (ClampMin = "0.0"))
     float StaminaCost = 25.f;
