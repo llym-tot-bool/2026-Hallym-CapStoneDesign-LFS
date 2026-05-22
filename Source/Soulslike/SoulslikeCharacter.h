@@ -12,6 +12,7 @@
 #include "SLDA_MeleeCombat.h"
 #include "SL_ComboManager.h"
 #include "SL_OneShotManager.h"
+#include "SL_HitManager.h"
 
 #include "SoulslikeCharacter.generated.h"
 
@@ -26,7 +27,7 @@ class USL_ComboManager;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
-UCLASS(abstract)
+UCLASS(abstract, BlueprintType)
 class ASoulslikeCharacter : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
@@ -106,6 +107,8 @@ protected:
 
 	void Dodge();
 
+	void OnHit();
+
 	void LockOnToggle();
 
 public:
@@ -124,6 +127,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoDodge();
+
+	UFUNCTION(BlueprintCallable, Category = "Combat|OnHit")
+	virtual void DoOnHit();
 
 	UFUNCTION(BlueprintPure, Category = "Combat|Status")
 	bool IsDead() const;
@@ -159,6 +165,11 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> ASC;
 
+	
+	// on hit manager
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "OnHitManager", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USL_HitManager> OnHitManager;
+
 	// katana combo managers
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USL_ComboManager> ComboManager_Katana_Base;
@@ -176,7 +187,6 @@ public:
 	TObjectPtr<USL_ComboManager> ComboManager_HS_Base;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USL_OneShotManager> ComboManager_HS_Special;
-
 
 	FSLDLG_CharacterMove delegate_CharacterMove;
 

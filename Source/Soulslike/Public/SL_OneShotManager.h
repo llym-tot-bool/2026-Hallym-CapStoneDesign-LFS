@@ -8,6 +8,7 @@
 #include "SoulslikePlayerState.h"
 #include "Abilities/SLGA_MeleeSweep.h"
 #include "Abilities/SLGA_MeleeMultiMontage.h"
+#include "Abilities/SLGA_MeleeSweep.h"
 
 
 #include "SL_OneShotManager.generated.h"
@@ -31,7 +32,7 @@ protected:
 	bool bIsPlaying = false;
 	ESL_Melee_State state;
 
-	TObjectPtr<USLGA_MeleeMultiMontage> currentGA = nullptr;
+	TObjectPtr<UGameplayAbility> currentGA = nullptr;
 
 protected:
 	// Called when the game starts
@@ -42,7 +43,7 @@ public:
 
 protected:
 	void StartGA();
-	void ObserveGA(USLGA_MeleeMultiMontage* targetGA);
+	void ObserveGA(UGameplayAbility* targetGA);
 	void ObserveQuit();
 	void EndCombo();
 

@@ -12,6 +12,35 @@
 
 #include "SLGA_MeleeMultiMontage.generated.h"
 
+USTRUCT()
+struct FSL_MontageAction {
+    GENERATED_BODY();
+
+
+    UPROPERTY(EditAnywhere, Category = "Collision")
+    FName socket_base_name;
+    UPROPERTY(EditAnywhere, Category = "Collision")
+    FName socket_tip_name;
+    UPROPERTY(EditAnywhere, Category = "Collision")
+    float trace_length;
+    UPROPERTY(EditAnywhere, Category = "Collision")
+    FVector boxHalfExtents;
+    UPROPERTY(EditAnywhere, Category = "Collision")
+    TObjectPtr<UAnimMontage> montage;
+
+    UPROPERTY(EditAnywhere, Category = "HitSound")
+    TObjectPtr<USoundBase> HitSound;
+
+    UPROPERTY(EditAnywhere, Category = "VFX")
+    TObjectPtr<UNiagaraSystem> VFX_onhit;
+
+    UPROPERTY(EditAnywhere, Category = "GameplayEffect")
+    TSubclassOf<UGameplayEffect> OnHitGE;
+
+    UPROPERTY(EditAnywhere, Category = "GameplayEffect")
+    float BaseDamageValue = 0;
+};
+
 UCLASS()
 class SOULSLIKE_API USLGA_MeleeMultiMontage : public UGameplayAbility
 {
@@ -22,18 +51,6 @@ protected:
     FGameplayTag tag_RootMotion;
     UPROPERTY(EditAnywhere, Category = "PlayerMovementRestriction")
     FGameplayTag tag_IsMoving;
-
-    UPROPERTY(EditAnywhere, Category = "Collision")
-    FVector BoxHalfExtents = FVector(15.f, 15.f, 15.f);
-
-    UPROPERTY(EditAnywhere, Category = "Collision")
-    FName socket_weapon_base = "Socket_weapon_base";
-
-    UPROPERTY(EditAnywhere, Category = "Collision")
-    FName socket_weapon_tip = "Socket_weapon_tip";
-
-    UPROPERTY(EditAnywhere, Category = "Collision")
-    float socket_weapon_length = 50.0f;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack", meta = (ClampMin = "0.0"))
     float StaminaCost = 25.f;
@@ -50,7 +67,7 @@ protected:
     TObjectPtr<UAnimInstance> AnimInst;
 
     UPROPERTY(EditAnywhere, Category = Montage)
-    TArray<TObjectPtr<UAnimMontage>> Montage_list;
+    TArray<FSL_MontageAction> MontageAction_list;
     
     int currentMontageIdx;
     int lastMontageIdx;

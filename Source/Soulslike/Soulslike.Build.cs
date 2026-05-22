@@ -23,7 +23,8 @@ public class Soulslike : ModuleRules
 			"GameplayStateTreeModule",
 			"UMG",
 			"Slate",
-            "UnrealEd"
+            "UnrealEd",
+            "Niagara"
         });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

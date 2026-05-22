@@ -6,6 +6,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Weapons/SLWeaponTypes.h"
+#include "Kismet/GameplayStatics.h"
 #include "Soulslike.h"
 
 
@@ -68,11 +69,11 @@ void USLGA_MeleeMultiMontage::ActivateAbility(const FGameplayAbilitySpecHandle H
     traceState = ESL_Melee_TraceState::none;
     setRootMotion();
 
-    lastMontageIdx = Montage_list.Num() - 1; ensureOrQuit(lastMontageIdx >= 0);
+    lastMontageIdx = MontageAction_list.Num() - 1; ensureOrQuit(lastMontageIdx >= 0);
     currentMontageIdx = 0;
 
-    for (TObjectPtr<UAnimMontage> eachMontage : Montage_list) {
-        ensureOrQuit(eachMontage);
+    for (FSL_MontageAction eachMontageAction : MontageAction_list) {
+        ensureOrQuit(eachMontageAction.montage);
     }
 
     // delegate binding
@@ -88,8 +89,8 @@ void USLGA_MeleeMultiMontage::ActivateAbility(const FGameplayAbilitySpecHandle H
 
     hitchecker = USLAT_Meele_hit_checker::Create(
         this,
-        socket_weapon_base, socket_weapon_tip, socket_weapon_length,
-        BoxHalfExtents);
+        FName("None"), FName("None"), 0.0f,
+        FVector(0, 0, 0), nullptr, nullptr, nullptr, 0);
     hitchecker->ReadyForActivation();
 
     FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
@@ -144,7 +145,7 @@ void USLGA_MeleeMultiMontage::PlayFirstMontage()
     currentMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
         this,
         NAME_None,      // Task Instance Name
-        Montage_list[currentMontageIdx],      // The Montage asset
+        MontageAction_list[currentMontageIdx].montage,      // The Montage asset
         1.f,            // Rate
         NAME_None,      // Start Section
         true            // bStopWhenAbilityEnds
@@ -152,6 +153,16 @@ void USLGA_MeleeMultiMontage::PlayFirstMontage()
 
     // Bind to delegates (OnCompleted, OnInterrupted, etc.)
     ObserveMontage();
+    hitchecker->ChangeTraceSpec(
+        MontageAction_list[currentMontageIdx].socket_base_name,
+        MontageAction_list[currentMontageIdx].socket_tip_name,
+        MontageAction_list[currentMontageIdx].trace_length,
+        MontageAction_list[currentMontageIdx].boxHalfExtents
+    );
+    hitchecker->FlushIgnoreList();
+    hitchecker->ChangeHitSound(MontageAction_list[currentMontageIdx].HitSound);
+    hitchecker->ChangeVFX(MontageAction_list[currentMontageIdx].VFX_onhit);
+    hitchecker->ChangeGE(MontageAction_list[currentMontageIdx].OnHitGE, MontageAction_list[currentMontageIdx].BaseDamageValue);
     currentMontageTask->ReadyForActivation();
 }
 
@@ -170,13 +181,23 @@ void USLGA_MeleeMultiMontage::PlayNextMontage()
     currentMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
         this,
         NAME_None,      // Task Instance Name
-        Montage_list[currentMontageIdx],      // The Montage asset
+        MontageAction_list[currentMontageIdx].montage,      // The Montage asset
         1.f,            // Rate
         NAME_None,      // Start Section
         true            // bStopWhenAbilityEnds
     );
 
     ObserveMontage();
+    hitchecker->FlushIgnoreList();
+    hitchecker->ChangeTraceSpec(
+        MontageAction_list[currentMontageIdx].socket_base_name,
+        MontageAction_list[currentMontageIdx].socket_tip_name,
+        MontageAction_list[currentMontageIdx].trace_length,
+        MontageAction_list[currentMontageIdx].boxHalfExtents
+    );
+    hitchecker->ChangeHitSound(MontageAction_list[currentMontageIdx].HitSound);
+    hitchecker->ChangeVFX(MontageAction_list[currentMontageIdx].VFX_onhit);
+    hitchecker->ChangeGE(MontageAction_list[currentMontageIdx].OnHitGE, MontageAction_list[currentMontageIdx].BaseDamageValue);
     currentMontageTask->ReadyForActivation();
 }
 

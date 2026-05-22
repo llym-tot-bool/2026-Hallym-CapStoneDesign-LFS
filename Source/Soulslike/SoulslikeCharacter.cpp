@@ -67,6 +67,7 @@ ASoulslikeCharacter::ASoulslikeCharacter()
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
+	OnHitManager = CreateDefaultSubobject<USL_HitManager>(TEXT("OnHitManager"));
 
 	ComboManager_Katana_Base = CreateDefaultSubobject<USL_ComboManager>(TEXT("ComboManager_Katana_Base"));
 	ComboManager_Katana_Special = CreateDefaultSubobject<USL_OneShotManager>(TEXT("ComboManager_Katana_Special"));
@@ -350,6 +351,11 @@ void ASoulslikeCharacter::Dodge()
 	DoDodge();
 }
 
+void ASoulslikeCharacter::OnHit()
+{
+	OnHitManager->OnHit();
+}
+
 void ASoulslikeCharacter::LockOnToggle()
 {
 	if (LockOnComponent)
@@ -368,6 +374,11 @@ void ASoulslikeCharacter::DoDodge()
 	{
 		ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(DodgeTag));
 	}
+}
+
+void ASoulslikeCharacter::DoOnHit()
+{
+	OnHit();
 }
 
 bool ASoulslikeCharacter::IsDead() const
