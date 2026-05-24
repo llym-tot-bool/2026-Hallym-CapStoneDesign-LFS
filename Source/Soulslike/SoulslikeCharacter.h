@@ -13,6 +13,8 @@
 #include "SL_ComboManager.h"
 #include "SL_OneShotManager.h"
 #include "SL_HitManager.h"
+#include "SL_CharDeathManager.h"
+#include "Abilities/GameplayAbilityTypes.h"
 
 #include "SoulslikeCharacter.generated.h"
 
@@ -109,6 +111,9 @@ protected:
 
 	void OnHit();
 
+	void OnDeathEvent(const FGameplayEventData* Payload);
+	void OnDeath();
+
 	void LockOnToggle();
 
 public:
@@ -133,6 +138,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Combat|Status")
 	bool IsDead() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Combat|Event")
+	void DoDeath();
 	
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void EquipWeapon(TSubclassOf<ASLWeaponBase> WeaponClass);
@@ -169,6 +177,10 @@ public:
 	// on hit manager
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "OnHitManager", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USL_HitManager> OnHitManager;
+
+	// on death manager
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "OnDeathManager", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USL_CharDeathManager> OnDeathManager;
 
 	// katana combo managers
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ComboManager", meta = (AllowPrivateAccess = "true"))

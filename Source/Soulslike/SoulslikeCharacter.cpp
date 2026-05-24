@@ -68,6 +68,7 @@ ASoulslikeCharacter::ASoulslikeCharacter()
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
 	OnHitManager = CreateDefaultSubobject<USL_HitManager>(TEXT("OnHitManager"));
+	OnDeathManager = CreateDefaultSubobject<USL_CharDeathManager>(TEXT("OnDeathManager"));
 
 	ComboManager_Katana_Base = CreateDefaultSubobject<USL_ComboManager>(TEXT("ComboManager_Katana_Base"));
 	ComboManager_Katana_Special = CreateDefaultSubobject<USL_OneShotManager>(TEXT("ComboManager_Katana_Special"));
@@ -213,6 +214,10 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 		{
 			EquipWeapon(StartingWeapon);
 		}
+
+		const FGameplayTag DeathEventTag = FGameplayTag::RequestGameplayTag(SLCombatTags::Event_Death, false);
+
+		ASC->GenericGameplayEventCallbacks.FindOrAdd(DeathEventTag).AddUObject(this, &ASoulslikeCharacter::OnDeathEvent);
 	}
 }
 
@@ -353,7 +358,24 @@ void ASoulslikeCharacter::Dodge()
 
 void ASoulslikeCharacter::OnHit()
 {
+	if (IsDead()) return;
+
 	OnHitManager->OnHit();
+}
+
+void ASoulslikeCharacter::OnDeathEvent(const FGameplayEventData* Payload)
+{
+	OnDeath();
+}
+
+
+void ASoulslikeCharacter::OnDeath()
+{
+	// debug test
+	SLDEBUG("character died");
+	OnDeathManager->OnDeath();
+
+	// death animation restart ui menue open
 }
 
 void ASoulslikeCharacter::LockOnToggle()
@@ -385,6 +407,11 @@ bool ASoulslikeCharacter::IsDead() const
 {
 	const FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Dead, /*ErrorIfNotFound*/ false);
 	return DeadTag.IsValid() && ASC->HasMatchingGameplayTag(DeadTag);
+}
+
+void ASoulslikeCharacter::DoDeath()
+{
+	OnDeath();
 }
 
 void ASoulslikeCharacter::DoActivateSkill(ESLSkillSlot Slot)

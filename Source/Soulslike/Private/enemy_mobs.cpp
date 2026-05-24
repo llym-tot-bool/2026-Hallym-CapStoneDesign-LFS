@@ -19,6 +19,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/ProgressBar.h"
+#include "SoulslikeCharacter.h"
 
 namespace
 {
@@ -471,6 +472,10 @@ void Aenemy_mobs::ResolveBasicAttackHit()
 		{
 			SpecHandle.Data->SetSetByCallerMagnitude(DamageTag, FinalDamage);
 			AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+
+			if (ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(TargetActor)) {
+				SLChar->DoOnHit();
+			}
 		}
 	}
 
