@@ -23,6 +23,7 @@ public class Soulslike : ModuleRules
 			"GameplayStateTreeModule",
 			"UMG",
 			"Slate",
+			"SlateCore",
             "UnrealEd",
             "Niagara"
         });

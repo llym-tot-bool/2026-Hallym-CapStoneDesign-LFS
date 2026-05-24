@@ -45,6 +45,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UUserWidget> HealthBarWidgetClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI", meta = (ClampMin = 0.0))
+	float HealthBarHeightOffset = 55.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
+	bool bShowHealthBarOnlyWhenDiscovered = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI", meta = (ClampMin = 0.0))
+	float HealthBarDiscoverDistance = 1800.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
 	float ChaseAcceptanceRadius = 120.0f;
 
@@ -74,7 +83,7 @@ protected:
 	float BasicAttackRange = 90.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat", meta = (ClampMin = 0.1))
-	float BasicAttackCooldown = 1.2f;
+	float BasicAttackCooldown = 2.5f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat", meta = (ClampMin = 0.0))
 	float BasicAttackBaseDamage = 12.0f;
@@ -102,6 +111,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation")
 	TObjectPtr<UAnimMontage> HitReactMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|State", meta = (ClampMin = 0.1))
+	float DeathDespawnDelay = 3.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation", meta = (ClampMin = 0.0))
 	float BasicAttackHitDelay = 0.25f;
@@ -194,6 +206,7 @@ private:
 	bool bIsGroggy = false;
 	bool bDeathMontagePlayed = false;
 	FTimerHandle BasicAttackHitTimer;
+	FTimerHandle DeathDespawnTimer;
 	FTimerHandle GroggyRecoverTimer;
 	TWeakObjectPtr<AActor> PendingAttackTarget;
 	TObjectPtr<USLEnemyHPBarWidget> HealthBarWidgetInstance;
@@ -201,6 +214,8 @@ private:
 
 	float ComputeBasicAttackDamage() const;
 	void RefreshHealthBarUI() const;
+	void UpdateHealthBarTransform();
+	void UpdateHealthBarVisibilityByDiscovery();
 	bool IsTargetTouchingAttackRange(AActor* TargetActor) const;
 	void ResolveBasicAttackHit();
 	void OnBasicAttackNotifyTimeout();
@@ -208,6 +223,7 @@ private:
 	void OnHealthAttributeChanged(const FOnAttributeChangeData& ChangeData);
 	void RecoverGroggyToMax();
 	void HandleDeathState();
+	void OnDeathDespawnTimerElapsed();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayBasicAttackMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);

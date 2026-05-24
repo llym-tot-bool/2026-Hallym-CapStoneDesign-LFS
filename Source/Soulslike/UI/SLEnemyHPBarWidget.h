@@ -6,7 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "SLEnemyHPBarWidget.generated.h"
 
-class UProgressBar;
+class SProgressBar;
 
 UCLASS()
 class SOULSLIKE_API USLEnemyHPBarWidget : public UUserWidget
@@ -14,12 +14,13 @@ class SOULSLIKE_API USLEnemyHPBarWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	virtual void NativeConstruct() override;
+	virtual TSharedRef<SWidget> RebuildWidget() override;
+	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 
 	UFUNCTION(BlueprintCallable, Category="Enemy|UI")
 	void SetHealthPercent(float InPercent);
 
 private:
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UProgressBar> PB_HP;
+	float CachedHealthPercent = 1.0f;
+	TSharedPtr<SProgressBar> SlateHealthBar;
 };

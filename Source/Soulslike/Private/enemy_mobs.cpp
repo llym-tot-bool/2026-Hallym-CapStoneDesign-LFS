@@ -10,12 +10,14 @@
 #include "Animation/AnimInstance.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
+#include "Components/CapsuleComponent.h"
+#include "Camera/PlayerCameraManager.h"
 #include "GameFramework/PlayerState.h"
 #include "GameplayEffectTypes.h"
 #include "GameplayTagContainer.h"
 #include "Components/WidgetComponent.h"
 #include "UI/SLEnemyHPBarWidget.h"
-#include "UObject/ConstructorHelpers.h"
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/ProgressBar.h"
@@ -54,13 +56,13 @@ Aenemy_mobs::Aenemy_mobs()
 
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
-	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Full);
 	AttributeSet = CreateDefaultSubobject<USLCharacterAttributeSet>(TEXT("AttributeSet"));
 	HealthBarWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidgetComponent"));
-	HealthBarWidgetComponent->SetupAttachment(GetMesh());
+	HealthBarWidgetComponent->SetupAttachment(RootComponent);
 	HealthBarWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	HealthBarWidgetComponent->SetDrawSize(FVector2D(120.0f, 20.0f));
-	HealthBarWidgetComponent->SetDrawAtDesiredSize(true);
+	HealthBarWidgetComponent->SetDrawAtDesiredSize(false);
 	HealthBarWidgetComponent->SetPivot(FVector2D(0.5f, 1.0f));
 	HealthBarWidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 220.0f));
 	HealthBarWidgetComponent->SetUsingAbsoluteScale(true);
@@ -68,27 +70,15 @@ Aenemy_mobs::Aenemy_mobs()
 	HealthBarWidgetComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	HealthBarWidgetComponent->SetGenerateOverlapEvents(false);
 	HealthBarWidgetComponent->SetTwoSided(true);
+	HealthBarWidgetComponent->SetBlendMode(EWidgetBlendMode::Opaque);
 	HealthBarWidgetComponent->SetOnlyOwnerSee(false);
 	HealthBarWidgetComponent->SetOwnerNoSee(false);
 	HealthBarWidgetComponent->SetReceivesDecals(false);
 	HealthBarWidgetComponent->SetCullDistance(0.0f);
+	HealthBarWidgetComponent->SetTintColorAndOpacity(FLinearColor::White);
 	HealthBarWidgetComponent->SetVisibility(true);
 	HealthBarWidgetComponent->SetHiddenInGame(false);
-
-	static ConstructorHelpers::FClassFinder<UUserWidget> EnemyHPBarWidgetClassFinder(TEXT("/Game/Enemy/WBP_EnemyHPBar"));
-	if (EnemyHPBarWidgetClassFinder.Succeeded())
-	{
-		HealthBarWidgetClass = EnemyHPBarWidgetClassFinder.Class;
-	}
-	else
-	{
-		// Backward-compat fallback for legacy/mistyped content path.
-		static ConstructorHelpers::FClassFinder<UUserWidget> EnemyHPBarWidgetClassFinderLegacy(TEXT("/Game/ENemy/WBP_EnemyHPBar"));
-		if (EnemyHPBarWidgetClassFinderLegacy.Succeeded())
-		{
-			HealthBarWidgetClass = EnemyHPBarWidgetClassFinderLegacy.Class;
-		}
-	}
+	HealthBarWidgetClass = USLEnemyHPBarWidget::StaticClass();
 
 	AIControllerClass = AEnemyMobsAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
@@ -148,42 +138,31 @@ void Aenemy_mobs::BeginPlay()
 		StartPeriodicMove();
 	}
 
-	if (USkeletalMeshComponent* MeshComp = GetMesh())
-	{
-		if (MeshComp->DoesSocketExist(TEXT("head")))
-		{
-			HealthBarWidgetComponent->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("head"));
-			HealthBarWidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 40.0f));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[EnemyMob] 'head' socket not found. Using mesh relative location for HP bar: %s"), *GetNameSafe(this));
-		}
-
-	}
-
-	if (!HealthBarWidgetClass)
-	{
-		UClass* LoadedClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/Enemy/WBP_EnemyHPBar.WBP_EnemyHPBar_C"));
-		if (!LoadedClass)
-		{
-			LoadedClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/ENemy/WBP_EnemyHPBar.WBP_EnemyHPBar_C"));
-		}
-		if (LoadedClass)
-		{
-			HealthBarWidgetClass = LoadedClass;
-			UE_LOG(LogTemp, Log, TEXT("[EnemyMob] HP bar widget class loaded at runtime: %s"), *GetNameSafe(LoadedClass));
-		}
-	}
+	UpdateHealthBarTransform();
+	UpdateHealthBarVisibilityByDiscovery();
 
 	if (HealthBarWidgetComponent && HealthBarWidgetClass)
 	{
-		HealthBarWidgetComponent->SetWidgetClass(HealthBarWidgetClass);
-		HealthBarWidgetComponent->InitWidget();
+		if (!HealthBarWidgetComponent->GetWidget())
+		{
+			if (UUserWidget* CreatedWidget = CreateWidget<UUserWidget>(GetWorld(), HealthBarWidgetClass))
+			{
+				HealthBarWidgetComponent->SetWidget(CreatedWidget);
+			}
+			else
+			{
+				HealthBarWidgetComponent->SetWidgetClass(HealthBarWidgetClass);
+				HealthBarWidgetComponent->InitWidget();
+			}
+		}
 		HealthBarWidgetComponent->SetHiddenInGame(false);
 		HealthBarWidgetComponent->SetVisibility(true, true);
 		HealthBarWidgetComponent->SetComponentTickEnabled(true);
 		HealthBarWidgetInstance = Cast<USLEnemyHPBarWidget>(HealthBarWidgetComponent->GetUserWidgetObject());
+		if (!HealthBarWidgetInstance && HealthBarWidgetComponent->GetWidget())
+		{
+			HealthBarWidgetInstance = Cast<USLEnemyHPBarWidget>(HealthBarWidgetComponent->GetWidget());
+		}
 		if (!HealthBarWidgetInstance)
 		{
 			if (UUserWidget* RawWidget = HealthBarWidgetComponent->GetUserWidgetObject())
@@ -229,6 +208,8 @@ void Aenemy_mobs::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	HandleDeathState();
+	UpdateHealthBarTransform();
+	UpdateHealthBarVisibilityByDiscovery();
 }
 
 void Aenemy_mobs::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -236,6 +217,7 @@ void Aenemy_mobs::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
+		World->GetTimerManager().ClearTimer(DeathDespawnTimer);
 		World->GetTimerManager().ClearTimer(GroggyRecoverTimer);
 	}
 	StopPeriodicMove();
@@ -314,6 +296,116 @@ void Aenemy_mobs::RefreshHealthBarUI() const
 	}
 }
 
+void Aenemy_mobs::UpdateHealthBarTransform()
+{
+	if (!HealthBarWidgetComponent)
+	{
+		return;
+	}
+
+	FVector BaseLocation = GetActorLocation();
+	if (const USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		const FName HeadSocketName = TEXT("head");
+		const FName HeadSocketNameAlt = TEXT("Head");
+		if (MeshComp->DoesSocketExist(HeadSocketName))
+		{
+			BaseLocation = MeshComp->GetSocketLocation(HeadSocketName);
+		}
+		else if (MeshComp->DoesSocketExist(HeadSocketNameAlt))
+		{
+			BaseLocation = MeshComp->GetSocketLocation(HeadSocketNameAlt);
+		}
+	}
+
+	const FVector TargetLocation = BaseLocation + FVector(0.0f, 0.0f, HealthBarHeightOffset);
+	HealthBarWidgetComponent->SetWorldLocation(TargetLocation);
+}
+
+void Aenemy_mobs::UpdateHealthBarVisibilityByDiscovery()
+{
+	if (!HealthBarWidgetComponent)
+	{
+		return;
+	}
+
+	if (IsDead() || bDeathMontagePlayed)
+	{
+		HealthBarWidgetComponent->SetHiddenInGame(true);
+		HealthBarWidgetComponent->SetVisibility(false, true);
+		return;
+	}
+
+	if (!bShowHealthBarOnlyWhenDiscovered)
+	{
+		HealthBarWidgetComponent->SetHiddenInGame(false);
+		HealthBarWidgetComponent->SetVisibility(true, true);
+		return;
+	}
+
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const APlayerController* PC = World->GetFirstPlayerController();
+	const APawn* PlayerPawn = PC ? PC->GetPawn() : nullptr;
+	if (!PlayerPawn)
+	{
+		HealthBarWidgetComponent->SetHiddenInGame(true);
+		HealthBarWidgetComponent->SetVisibility(false, true);
+		return;
+	}
+
+	const FVector ToEnemy = GetActorLocation() - PlayerPawn->GetActorLocation();
+	const float DistSq2D = FVector(ToEnemy.X, ToEnemy.Y, 0.0f).SizeSquared();
+	const float MaxDistSq = FMath::Square(HealthBarDiscoverDistance);
+	if (DistSq2D > MaxDistSq)
+	{
+		HealthBarWidgetComponent->SetHiddenInGame(true);
+		HealthBarWidgetComponent->SetVisibility(false, true);
+		return;
+	}
+
+	FVector ViewLocation = PlayerPawn->GetActorLocation();
+	if (PC->PlayerCameraManager)
+	{
+		ViewLocation = PC->PlayerCameraManager->GetCameraLocation();
+	}
+
+	FVector EnemyViewPoint = GetActorLocation() + FVector(0.0f, 0.0f, 80.0f);
+	if (const USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		const FName HeadSocketName = TEXT("head");
+		const FName HeadSocketNameAlt = TEXT("Head");
+		if (MeshComp->DoesSocketExist(HeadSocketName))
+		{
+			EnemyViewPoint = MeshComp->GetSocketLocation(HeadSocketName);
+		}
+		else if (MeshComp->DoesSocketExist(HeadSocketNameAlt))
+		{
+			EnemyViewPoint = MeshComp->GetSocketLocation(HeadSocketNameAlt);
+		}
+	}
+
+	FHitResult Hit;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(EnemyHpBarVisibilityTrace), false, PlayerPawn);
+	Params.AddIgnoredActor(this);
+
+	const bool bHitSomething = World->LineTraceSingleByChannel(
+		Hit,
+		ViewLocation,
+		EnemyViewPoint,
+		ECC_Visibility,
+		Params);
+
+	const bool bDiscovered = !bHitSomething;
+
+	HealthBarWidgetComponent->SetHiddenInGame(!bDiscovered);
+	HealthBarWidgetComponent->SetVisibility(bDiscovered, true);
+}
+
 bool Aenemy_mobs::TryBasicAttack(AActor* TargetActor)
 {
 	if (!HasAuthority() || !IsValid(TargetActor) || !AbilitySystemComponent || bBasicAttackInProgress || bIsGroggy || IsDead())
@@ -369,7 +461,6 @@ bool Aenemy_mobs::TryBasicAttack(AActor* TargetActor)
 	PendingAttackTarget = TargetActor;
 	bBasicAttackInProgress = true;
 	BasicAttackDamageNotifyCount = 0;
-	LastBasicAttackTime = Now;
 
 	UE_LOG(
 		LogTemp,
@@ -523,6 +614,15 @@ void Aenemy_mobs::OnBasicAttackNotifyTimeout()
 	bBasicAttackInProgress = false;
 	BasicAttackDamageNotifyCount = 0;
 	PendingAttackTarget = nullptr;
+	if (const UWorld* World = GetWorld())
+	{
+		LastBasicAttackTime = World->GetTimeSeconds();
+	}
+	if (const UWorld* World = GetWorld())
+	{
+		// Cooldown starts when the current attack sequence ends, so post-attack delay is guaranteed.
+		LastBasicAttackTime = World->GetTimeSeconds();
+	}
 }
 
 void Aenemy_mobs::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
@@ -621,22 +721,62 @@ void Aenemy_mobs::HandleDeathState()
 	bBasicAttackInProgress = false;
 	BasicAttackDamageNotifyCount = 0;
 	PendingAttackTarget = nullptr;
+	if (const UWorld* World = GetWorld())
+	{
+		LastBasicAttackTime = World->GetTimeSeconds();
+	}
 
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
+		World->GetTimerManager().ClearTimer(DeathDespawnTimer);
 		World->GetTimerManager().ClearTimer(GroggyRecoverTimer);
 	}
 
 	if (AAIController* AIController = Cast<AAIController>(GetController()))
 	{
 		AIController->StopMovement();
+		AIController->SetActorTickEnabled(false);
+		AIController->UnPossess();
+	}
+
+	bEnablePlayerChase = false;
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->DisableMovement();
+		MoveComp->StopMovementImmediately();
+	}
+
+	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
+	{
+		CapsuleComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	if (HealthBarWidgetComponent)
+	{
+		HealthBarWidgetComponent->SetHiddenInGame(true);
+		HealthBarWidgetComponent->SetVisibility(false, true);
 	}
 
 	if (DeathMontage)
 	{
 		PlayAnimMontage(DeathMontage, 1.0f);
 	}
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(DeathDespawnTimer, this, &Aenemy_mobs::OnDeathDespawnTimerElapsed, DeathDespawnDelay, false);
+	}
+}
+
+void Aenemy_mobs::OnDeathDespawnTimerElapsed()
+{
+	Destroy();
 }
 
 void Aenemy_mobs::MulticastPlayBasicAttackMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
