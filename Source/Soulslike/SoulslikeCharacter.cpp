@@ -68,6 +68,7 @@ ASoulslikeCharacter::ASoulslikeCharacter()
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
 	OnHitManager = CreateDefaultSubobject<USL_HitManager>(TEXT("OnHitManager"));
+	OnDeathManager = CreateDefaultSubobject<USL_CharDeathManager>(TEXT("OnDeathManager"));
 
 	ComboManager_Katana_Base = CreateDefaultSubobject<USL_ComboManager>(TEXT("ComboManager_Katana_Base"));
 	ComboManager_Katana_Special = CreateDefaultSubobject<USL_OneShotManager>(TEXT("ComboManager_Katana_Special"));
@@ -146,10 +147,6 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
 						ComboManager_HS_Special.Get(), &USL_OneShotManager::OnCharacterInput);
 				}
-
-				UE_LOG(LogTemp, Display,
-					TEXT("[SL debug] SetupPlayerInputComponent() : weapon combo IA binding for tag = %s completed"),
-					*eachCombo->tag_combo.ToString());
 			}
 		}
 		if (JumpAction) {
@@ -190,6 +187,9 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 
 	if (HasAuthority())
 	{
+		// death ability
+		ASC->GiveAbility(FGameplayAbilitySpec(OnDeathManager->onDeathGA_class, 1));
+
 		for (auto Ability : StartingAbilities)
 		{
 			if (Ability)
@@ -213,6 +213,10 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 		{
 			EquipWeapon(StartingWeapon);
 		}
+
+		const FGameplayTag DeathEventTag = FGameplayTag::RequestGameplayTag(SLCombatTags::Event_Death, false);
+
+		ASC->GenericGameplayEventCallbacks.FindOrAdd(DeathEventTag).AddUObject(this, &ASoulslikeCharacter::OnDeathEvent);
 	}
 }
 
@@ -353,7 +357,35 @@ void ASoulslikeCharacter::Dodge()
 
 void ASoulslikeCharacter::OnHit()
 {
+	if (IsDead()) return;
+
 	OnHitManager->OnHit();
+}
+
+void ASoulslikeCharacter::OnDeathEvent(const FGameplayEventData* Payload)
+{
+	OnDeath();
+}
+
+
+void ASoulslikeCharacter::OnDeath()
+{
+	// debug test
+	SLDEBUG("character died");
+	ChangeIMC(tag_NoneWeapon);
+	OnDeathManager->OnDeath();
+
+	// death animation restart ui menue open
+}
+
+void ASoulslikeCharacter::ChangeIMC(FGameplayTag weapon_tag)
+{
+	if (ASoulslikePlayerController* controller = Cast<ASoulslikePlayerController>(GetController())) {
+		controller->ChangeMeleeControlStyle(weapon_tag);
+	}
+	else {
+		SLDEBUG("tried to change IMC in chararcter's side. but no controller is connected");
+	}
 }
 
 void ASoulslikeCharacter::LockOnToggle()
@@ -385,6 +417,11 @@ bool ASoulslikeCharacter::IsDead() const
 {
 	const FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Dead, /*ErrorIfNotFound*/ false);
 	return DeadTag.IsValid() && ASC->HasMatchingGameplayTag(DeadTag);
+}
+
+void ASoulslikeCharacter::DoDeath()
+{
+	OnDeath();
 }
 
 void ASoulslikeCharacter::DoActivateSkill(ESLSkillSlot Slot)

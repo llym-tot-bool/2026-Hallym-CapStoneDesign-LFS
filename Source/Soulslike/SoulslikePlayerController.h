@@ -36,6 +36,7 @@ protected:
 
 	virtual void SetupInputComponent() override;
 
+public:
 	UFUNCTION(BlueprintCallable)
 	void ChangeMeleeControlStyle(FGameplayTag weapon_tag);
 

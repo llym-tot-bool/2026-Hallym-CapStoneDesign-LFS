@@ -8,6 +8,7 @@
 #include "TimerManager.h"
 #include "Weapons/SLWeaponTypes.h"
 #include "Net/UnrealNetwork.h"
+#include "Soulslike.h"
 
 namespace
 {
@@ -233,6 +234,7 @@ void USLCharacterAttributeSet::PostGameplayEffectExecute(const struct FGameplayE
 
 				if (AActor* Avatar = Data.Target.GetAvatarActor())
 				{
+					SLDEBUG("send death event to actor = %s", *Avatar->GetName());
 					UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Avatar, DeathEvent, Payload);
 				}
 			}
