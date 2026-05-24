@@ -17,6 +17,8 @@ class SOULSLIKE_API USLCharacterAttributeSet : public UAttributeSet
 	
 public:
 	USLCharacterAttributeSet();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, MaxHealth);
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Health);
@@ -39,43 +41,74 @@ public:
 	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
 	
 protected:
-	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_MaxHealth, Category="Attribute")
 	FGameplayAttributeData MaxHealth;
-	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_Health, Category="Attribute")
 	FGameplayAttributeData Health;
 	
-	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_MaxStamina, Category="Attribute")
 	FGameplayAttributeData MaxStamina;
-	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_Stamina, Category="Attribute")
 	FGameplayAttributeData Stamina;
 	
-	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_MaxMana, Category="Attribute")
 	FGameplayAttributeData MaxMana;
-	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_Mana, Category="Attribute")
 	FGameplayAttributeData Mana;
 	
-	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_MaxPoise, Category="Attribute")
 	FGameplayAttributeData MaxPoise;
-	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_Poise, Category="Attribute")
 	FGameplayAttributeData Poise;
 	
-	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_MaxPower, Category="Attribute")
 	FGameplayAttributeData MaxPower;
-	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_Power, Category="Attribute")
 	FGameplayAttributeData Power;
 
-	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_MaxGroggy, Category="Attribute")
 	FGameplayAttributeData MaxGroggy;
-	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_Groggy, Category="Attribute")
 	FGameplayAttributeData Groggy;
 	
-	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_MaxLevel, Category="Attribute")
 	FGameplayAttributeData MaxLevel;
-	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_Level, Category="Attribute")
 	FGameplayAttributeData Level;
 	
-	UPROPERTY(BlueprintReadOnly, Category="Attribute")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_Damage, Category="Attribute")
 	FGameplayAttributeData Damage;
+
+	UFUNCTION()
+	void OnRep_MaxHealth(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_Health(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_MaxStamina(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_Stamina(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_MaxMana(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_Mana(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_MaxPoise(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_Poise(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_MaxPower(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_Power(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_MaxGroggy(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_Groggy(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_MaxLevel(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_Level(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_Damage(const FGameplayAttributeData& OldValue);
 
 private:
 	/** Timer used to clear State.Stamina.Spending after the player stops spending stamina. */

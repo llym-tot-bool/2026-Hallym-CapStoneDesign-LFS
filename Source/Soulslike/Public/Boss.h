@@ -23,6 +23,9 @@ public:
 	ABoss();
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
+	UFUNCTION(BlueprintPure, Category="Boss|UI")
+	FText GetBossDisplayName() const { return BossDisplayName; }
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -100,6 +103,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animation")
 	TObjectPtr<UAnimMontage> IntroMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|UI")
+	FText BossDisplayName = FText::FromString(TEXT("Ghost of Ash"));
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat|Animation")
 	TObjectPtr<UAnimMontage> BasicAttackMontage;
 
@@ -124,10 +130,24 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Combat|Groggy", meta = (ClampMin = 0.05))
 	float GroggyKnockbackDuration = 0.25f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Combat|Stats", meta = (ClampMin = 1.0))
+	float InitialHealthStat = 300.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Combat|Stats", meta = (ClampMin = 1.0))
+	float InitialGroggyStat = 100.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|State", meta = (ClampMin = 0.1))
+	float DeathDespawnDelay = 3.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat|Animation")
+	TObjectPtr<UAnimMontage> HitReactMontage;
+
 	FTimerHandle ChaseTimer;
 	FTimerHandle PeriodicMoveTimer;
 	FTimerHandle BasicAttackHitTimer;
 	FTimerHandle GroggyRecoverTimer;
+	FTimerHandle DeathDespawnTimer;
+	FTimerHandle DeathPoseFreezeTimer;
 	float LastBasicAttackTime = -1000.0f;
 	bool bBasicAttackInProgress = false;
 	int32 BasicAttackDamageNotifyCount = 0;
@@ -149,6 +169,8 @@ protected:
 	void OnHealthAttributeChanged(const FOnAttributeChangeData& ChangeData);
 	void RecoverGroggyToMax();
 	void HandleDeathState();
+	void OnDeathDespawnTimerElapsed();
+	void FreezeDeathPose();
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Boss|AI")
@@ -231,6 +253,12 @@ public:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayBasicAttackMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlayGroggyMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlayHitReactMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);
 
 	UFUNCTION(BlueprintPure, Category = "Boss|Animation")
 	float GetGroundSpeed() const;

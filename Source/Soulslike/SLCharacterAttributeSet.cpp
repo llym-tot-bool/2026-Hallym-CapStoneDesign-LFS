@@ -7,6 +7,7 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Weapons/SLWeaponTypes.h"
+#include "Net/UnrealNetwork.h"
 
 namespace
 {
@@ -29,6 +30,27 @@ USLCharacterAttributeSet::USLCharacterAttributeSet() :
 	InitPower(GetMaxPower());
 	InitGroggy(GetMaxGroggy());
 	InitLevel(GetMaxLevel());
+}
+
+void USLCharacterAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, Health, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, Stamina, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, MaxMana, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, Mana, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, MaxPoise, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, Poise, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, MaxPower, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, Power, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, MaxGroggy, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, Groggy, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, MaxLevel, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, Level, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, Damage, COND_None, REPNOTIFY_Always);
 }
 
 void USLCharacterAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
@@ -217,3 +239,19 @@ void USLCharacterAttributeSet::PostGameplayEffectExecute(const struct FGameplayE
 		}
 	}
 }
+
+void USLCharacterAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, MaxHealth, OldValue); }
+void USLCharacterAttributeSet::OnRep_Health(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, Health, OldValue); }
+void USLCharacterAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, MaxStamina, OldValue); }
+void USLCharacterAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, Stamina, OldValue); }
+void USLCharacterAttributeSet::OnRep_MaxMana(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, MaxMana, OldValue); }
+void USLCharacterAttributeSet::OnRep_Mana(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, Mana, OldValue); }
+void USLCharacterAttributeSet::OnRep_MaxPoise(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, MaxPoise, OldValue); }
+void USLCharacterAttributeSet::OnRep_Poise(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, Poise, OldValue); }
+void USLCharacterAttributeSet::OnRep_MaxPower(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, MaxPower, OldValue); }
+void USLCharacterAttributeSet::OnRep_Power(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, Power, OldValue); }
+void USLCharacterAttributeSet::OnRep_MaxGroggy(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, MaxGroggy, OldValue); }
+void USLCharacterAttributeSet::OnRep_Groggy(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, Groggy, OldValue); }
+void USLCharacterAttributeSet::OnRep_MaxLevel(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, MaxLevel, OldValue); }
+void USLCharacterAttributeSet::OnRep_Level(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, Level, OldValue); }
+void USLCharacterAttributeSet::OnRep_Damage(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, Damage, OldValue); }

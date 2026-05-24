@@ -17,6 +17,7 @@
 #include "GameplayTagContainer.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerState.h"
+#include "Components/CapsuleComponent.h"
 
 namespace
 {
@@ -50,7 +51,7 @@ ABoss::ABoss()
 
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
-	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Full);
 	AttributeSet = CreateDefaultSubobject<USLCharacterAttributeSet>(TEXT("AttributeSet"));
 
 	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
@@ -85,6 +86,14 @@ void ABoss::BeginPlay()
 				.AddUObject(this, &ABoss::OnGroggyTagChanged);
 			bIsGroggy = AbilitySystemComponent->HasMatchingGameplayTag(GroggyTag);
 		}
+	}
+
+	if (AttributeSet)
+	{
+		AttributeSet->SetMaxHealth(FMath::Max(1.0f, InitialHealthStat));
+		AttributeSet->SetHealth(AttributeSet->GetMaxHealth());
+		AttributeSet->SetMaxGroggy(FMath::Max(1.0f, InitialGroggyStat));
+		AttributeSet->SetGroggy(AttributeSet->GetMaxGroggy());
 	}
 
 	if (bEnablePeriodicMove)
@@ -126,6 +135,8 @@ void ABoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	{
 		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
 		World->GetTimerManager().ClearTimer(GroggyRecoverTimer);
+		World->GetTimerManager().ClearTimer(DeathDespawnTimer);
+		World->GetTimerManager().ClearTimer(DeathPoseFreezeTimer);
 	}
 
 	StopChase();
@@ -512,11 +523,27 @@ void ABoss::OnMoveBehindTargetNotify()
 	}
 
 	const FVector TargetForward = TargetActor->GetActorForwardVector().GetSafeNormal2D();
-	const FVector BehindOffset = -TargetForward * MoveBehindTargetDistance;
+	float BossRadius = 0.0f;
+	float BossHalfHeight = 0.0f;
+	GetCapsuleComponent()->GetScaledCapsuleSize(BossRadius, BossHalfHeight);
+
+	float TargetRadius = 0.0f;
+	float TargetHalfHeight = 0.0f;
+	if (const ACharacter* TargetCharacter = Cast<ACharacter>(TargetActor))
+	{
+		if (const UCapsuleComponent* TargetCapsule = TargetCharacter->GetCapsuleComponent())
+		{
+			TargetCapsule->GetScaledCapsuleSize(TargetRadius, TargetHalfHeight);
+		}
+	}
+
+	const float TotalBehindDistance = FMath::Max(MoveBehindTargetDistance, BossRadius + TargetRadius + 10.0f);
+	const FVector BehindOffset = -TargetForward * TotalBehindDistance;
 	FVector NewLocation = TargetActor->GetActorLocation() + BehindOffset;
 	NewLocation.Z = GetActorLocation().Z;
 
-	SetActorLocation(NewLocation, true);
+	SetActorLocation(NewLocation, false, nullptr, ETeleportType::TeleportPhysics);
+	SetActorRotation((TargetActor->GetActorLocation() - NewLocation).Rotation());
 }
 
 void ABoss::OnBasicAttackSpeedResetNotify()
@@ -583,7 +610,7 @@ void ABoss::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
 	float RecoverDelay = 0.1f;
 	if (GroggyMontage)
 	{
-		PlayGroggyMontage(1.0f);
+		MulticastPlayGroggyMontage(GroggyMontage, 1.0f);
 		RecoverDelay = FMath::Max(0.1f, GroggyMontage->GetPlayLength());
 	}
 
@@ -595,7 +622,7 @@ void ABoss::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
 
 void ABoss::OnHealthAttributeChanged(const FOnAttributeChangeData& ChangeData)
 {
-	if (!HasAuthority() || IsDead())
+	if (!HasAuthority() || IsDead() || bIsGroggy)
 	{
 		return;
 	}
@@ -604,6 +631,11 @@ void ABoss::OnHealthAttributeChanged(const FOnAttributeChangeData& ChangeData)
 	if (bBasicAttackInProgress || IsBasicAttackMontagePlaying())
 	{
 		return;
+	}
+
+	if (ChangeData.NewValue < ChangeData.OldValue && HitReactMontage)
+	{
+		MulticastPlayHitReactMontage(HitReactMontage, 1.0f);
 	}
 }
 
@@ -643,14 +675,58 @@ void ABoss::HandleDeathState()
 	{
 		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
 		World->GetTimerManager().ClearTimer(GroggyRecoverTimer);
+		World->GetTimerManager().ClearTimer(DeathDespawnTimer);
 	}
 
 	if (AAIController* AIController = Cast<AAIController>(GetController()))
 	{
 		AIController->StopMovement();
+		AIController->SetActorTickEnabled(false);
+		AIController->UnPossess();
+	}
+
+	bEnablePlayerChase = false;
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->DisableMovement();
+		MoveComp->StopMovementImmediately();
+	}
+
+	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
+	{
+		CapsuleComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
 	PlayDeathMontage(1.0f);
+
+	if (UWorld* World = GetWorld())
+	{
+		float FreezeDelay = 0.05f;
+		if (DeathMontage)
+		{
+			FreezeDelay = FMath::Max(0.05f, DeathMontage->GetPlayLength() - 0.02f);
+		}
+		World->GetTimerManager().SetTimer(DeathPoseFreezeTimer, this, &ABoss::FreezeDeathPose, FreezeDelay, false);
+		World->GetTimerManager().SetTimer(DeathDespawnTimer, this, &ABoss::OnDeathDespawnTimerElapsed, DeathDespawnDelay, false);
+	}
+}
+
+void ABoss::OnDeathDespawnTimerElapsed()
+{
+	Destroy();
+}
+
+void ABoss::FreezeDeathPose()
+{
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->bPauseAnims = true;
+	}
 }
 
 void ABoss::MulticastPlayBasicAttackMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
@@ -664,6 +740,34 @@ void ABoss::MulticastPlayBasicAttackMontage_Implementation(UAnimMontage* Montage
 	if (Played <= 0.0f)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[Boss] Failed to play attack montage: Boss=%s Montage=%s"), *GetNameSafe(this), *GetNameSafe(MontageToPlay));
+	}
+}
+
+void ABoss::MulticastPlayGroggyMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
+{
+	if (!MontageToPlay)
+	{
+		return;
+	}
+
+	const float Played = PlayAnimMontage(MontageToPlay, PlayRate);
+	if (Played <= 0.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Boss] Failed to play groggy montage: Boss=%s Montage=%s"), *GetNameSafe(this), *GetNameSafe(MontageToPlay));
+	}
+}
+
+void ABoss::MulticastPlayHitReactMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
+{
+	if (!MontageToPlay || IsDead() || bIsGroggy || bBasicAttackInProgress || IsBasicAttackMontagePlaying())
+	{
+		return;
+	}
+
+	const float Played = PlayAnimMontage(MontageToPlay, PlayRate);
+	if (Played <= 0.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Boss] Failed to play hit react montage: Boss=%s Montage=%s"), *GetNameSafe(this), *GetNameSafe(MontageToPlay));
 	}
 }
 
