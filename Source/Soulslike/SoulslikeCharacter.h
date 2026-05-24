@@ -81,6 +81,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "SL Tag")
 	FGameplayTag tag_RootMotion;
 
+	UPROPERTY(EditAnywhere, Category = "SL Tag")
+	FGameplayTag tag_NoneWeapon;
+
 	UPROPERTY(EditAnywhere, Category = "SL Data Asset")
 	TObjectPtr<USLDA_MeleeCombat> SLDA_MeleeCombat;
 
@@ -113,6 +116,8 @@ protected:
 
 	void OnDeathEvent(const FGameplayEventData* Payload);
 	void OnDeath();
+
+	void ChangeIMC(FGameplayTag weapon_tag);
 
 	void LockOnToggle();
 

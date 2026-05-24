@@ -147,10 +147,6 @@ void ASoulslikeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 					EIC->BindAction(eachCombo->IA_combo, ETriggerEvent::Started,
 						ComboManager_HS_Special.Get(), &USL_OneShotManager::OnCharacterInput);
 				}
-
-				UE_LOG(LogTemp, Display,
-					TEXT("[SL debug] SetupPlayerInputComponent() : weapon combo IA binding for tag = %s completed"),
-					*eachCombo->tag_combo.ToString());
 			}
 		}
 		if (JumpAction) {
@@ -191,6 +187,9 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 
 	if (HasAuthority())
 	{
+		// death ability
+		ASC->GiveAbility(FGameplayAbilitySpec(OnDeathManager->onDeathGA_class, 1));
+
 		for (auto Ability : StartingAbilities)
 		{
 			if (Ability)
@@ -373,9 +372,20 @@ void ASoulslikeCharacter::OnDeath()
 {
 	// debug test
 	SLDEBUG("character died");
+	ChangeIMC(tag_NoneWeapon);
 	OnDeathManager->OnDeath();
 
 	// death animation restart ui menue open
+}
+
+void ASoulslikeCharacter::ChangeIMC(FGameplayTag weapon_tag)
+{
+	if (ASoulslikePlayerController* controller = Cast<ASoulslikePlayerController>(GetController())) {
+		controller->ChangeMeleeControlStyle(weapon_tag);
+	}
+	else {
+		SLDEBUG("tried to change IMC in chararcter's side. but no controller is connected");
+	}
 }
 
 void ASoulslikeCharacter::LockOnToggle()
