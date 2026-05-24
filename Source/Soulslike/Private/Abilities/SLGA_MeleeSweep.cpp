@@ -170,8 +170,10 @@ void USLAT_Meele_hit_checker::EffectOnHit(AActor* hitActor, UAbilitySystemCompon
         if (SpecHandle.IsValid())
         {
             FGameplayTag DamageTag = FGameplayTag::RequestGameplayTag(SLCombatTags::SetByCaller_DamageBase);
+            FGameplayTag PoiseTag = FGameplayTag::RequestGameplayTag(SLCombatTags::SetByCaller_PoiseDamage);
 
             SpecHandle.Data.Get()->SetSetByCallerMagnitude(DamageTag, BaseDamageValue);
+            SpecHandle.Data.Get()->SetSetByCallerMagnitude(PoiseTag, 10.0f);
 
             hitASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
         }

@@ -155,6 +155,8 @@ void USLCharacterAttributeSet::PostGameplayEffectExecute(const struct FGameplayE
 
 		UAbilitySystemComponent* TargetASC = &Data.Target;
 		const FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Dead, /*ErrorIfNotFound*/ false);
+		const FGameplayTag GroggyTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Groggy, /*ErrorIfNotFound*/ false);
+		const FGameplayTag PoiseDamageTag = FGameplayTag::RequestGameplayTag(SLCombatTags::SetByCaller_PoiseDamage, /*ErrorIfNotFound*/ false);
 
 		// Already dead — ignore further damage so we don't fire the death event twice.
 		if (TargetASC && DeadTag.IsValid() && TargetASC->HasMatchingGameplayTag(DeadTag))
@@ -164,6 +166,22 @@ void USLCharacterAttributeSet::PostGameplayEffectExecute(const struct FGameplayE
 
 		const float NewHealth = FMath::Clamp(GetHealth() - Incoming, 0.f, GetMaxHealth());
 		SetHealth(NewHealth);
+
+		// Consume optional poise damage as groggy damage.
+		if (TargetASC && PoiseDamageTag.IsValid())
+		{
+			const float IncomingPoiseDamage = Data.EffectSpec.GetSetByCallerMagnitude(PoiseDamageTag, false, 0.0f);
+			if (IncomingPoiseDamage > 0.0f && GetMaxGroggy() > 0.0f)
+			{
+				const float NewGroggy = FMath::Clamp(GetGroggy() - IncomingPoiseDamage, 0.0f, GetMaxGroggy());
+				SetGroggy(NewGroggy);
+
+				if (NewGroggy <= 0.0f && GroggyTag.IsValid() && !TargetASC->HasMatchingGameplayTag(GroggyTag))
+				{
+					TargetASC->AddLooseGameplayTag(GroggyTag);
+				}
+			}
+		}
 
 		// Lethal hit: mark dead + broadcast a death gameplay event so anim / AI /
 		// game mode listeners can react. We add State.Dead as a loose tag so it

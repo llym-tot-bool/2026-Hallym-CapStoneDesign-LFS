@@ -74,6 +74,13 @@ void AEnemyMobsAIController::UpdateChaseTarget()
 	if ((EnemyPawn && EnemyPawn->IsGroggy()) || (BossPawn && BossPawn->IsGroggy()))
 	{
 		StopMovement();
+		if (ControlledCharacter)
+		{
+			if (UCharacterMovementComponent* MoveComp = ControlledCharacter->GetCharacterMovement())
+			{
+				MoveComp->StopMovementImmediately();
+			}
+		}
 		ApplyMoveSpeed(EnemyPawn ? EnemyPawn->GetDefaultMoveSpeed() : BossPawn->GetDefaultMoveSpeed());
 		CachedTargetActor = nullptr;
 		return;

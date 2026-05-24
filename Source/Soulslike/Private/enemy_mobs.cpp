@@ -124,11 +124,11 @@ void Aenemy_mobs::BeginPlay()
 		AttributeSet->SetPower(InitialPowerStat);
 	}
 
-	if (AttributeSet && AttributeSet->GetMaxGroggy() <= 1.0f)
+	if (AttributeSet)
 	{
 		AttributeSet->SetMaxGroggy(InitialGroggyStat);
 	}
-	if (AttributeSet && AttributeSet->GetGroggy() <= 0.0f)
+	if (AttributeSet)
 	{
 		AttributeSet->SetGroggy(AttributeSet->GetMaxGroggy());
 	}
@@ -647,6 +647,15 @@ void Aenemy_mobs::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
 		AIController->StopMovement();
 	}
 
+	// Ensure groggy montage is not interrupted by already playing montages.
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
+		{
+			AnimInstance->Montage_Stop(0.1f);
+		}
+	}
+
 	// Knock the enemy backward a fixed distance when groggy is triggered.
 	if (GroggyKnockbackDistance > 0.0f)
 	{
@@ -679,7 +688,7 @@ void Aenemy_mobs::OnHealthAttributeChanged(const FOnAttributeChangeData& ChangeD
 {
 	RefreshHealthBarUI();
 
-	if (!HasAuthority() || IsDead())
+	if (!HasAuthority() || IsDead() || bIsGroggy)
 	{
 		return;
 	}
@@ -698,7 +707,7 @@ void Aenemy_mobs::OnHealthAttributeChanged(const FOnAttributeChangeData& ChangeD
 
 void Aenemy_mobs::RecoverGroggyToMax()
 {
-	if (!AttributeSet)
+	if (!AttributeSet || !AbilitySystemComponent)
 	{
 		return;
 	}
@@ -707,6 +716,12 @@ void Aenemy_mobs::RecoverGroggyToMax()
 	if (MaxGroggy > 0.0f)
 	{
 		AttributeSet->SetGroggy(MaxGroggy);
+	}
+
+	const FGameplayTag GroggyTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Groggy, false);
+	if (GroggyTag.IsValid())
+	{
+		AbilitySystemComponent->RemoveLooseGameplayTag(GroggyTag);
 	}
 }
 
@@ -781,7 +796,7 @@ void Aenemy_mobs::OnDeathDespawnTimerElapsed()
 
 void Aenemy_mobs::MulticastPlayBasicAttackMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
 {
-	if (!MontageToPlay)
+	if (!MontageToPlay || bIsGroggy)
 	{
 		return;
 	}
@@ -815,7 +830,7 @@ void Aenemy_mobs::MulticastPlayGroggyMontage_Implementation(UAnimMontage* Montag
 
 void Aenemy_mobs::MulticastPlayHitReactMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
 {
-	if (!MontageToPlay || IsDead() || bBasicAttackInProgress || IsBasicAttackMontagePlaying())
+	if (!MontageToPlay || IsDead() || bIsGroggy || bBasicAttackInProgress || IsBasicAttackMontagePlaying())
 	{
 		return;
 	}

@@ -563,6 +563,15 @@ void ABoss::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
 		AIController->StopMovement();
 	}
 
+	// Ensure groggy montage is not interrupted by already playing montages.
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
+		{
+			AnimInstance->Montage_Stop(0.1f);
+		}
+	}
+
 	if (GroggyKnockbackDistance > 0.0f)
 	{
 		const float Duration = FMath::Max(0.05f, GroggyKnockbackDuration);
@@ -600,7 +609,7 @@ void ABoss::OnHealthAttributeChanged(const FOnAttributeChangeData& ChangeData)
 
 void ABoss::RecoverGroggyToMax()
 {
-	if (!AttributeSet)
+	if (!AttributeSet || !AbilitySystemComponent)
 	{
 		return;
 	}
@@ -609,6 +618,12 @@ void ABoss::RecoverGroggyToMax()
 	if (MaxGroggy > 0.0f)
 	{
 		AttributeSet->SetGroggy(MaxGroggy);
+	}
+
+	const FGameplayTag GroggyTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_Groggy, false);
+	if (GroggyTag.IsValid())
+	{
+		AbilitySystemComponent->RemoveLooseGameplayTag(GroggyTag);
 	}
 }
 
@@ -640,7 +655,7 @@ void ABoss::HandleDeathState()
 
 void ABoss::MulticastPlayBasicAttackMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
 {
-	if (!MontageToPlay)
+	if (!MontageToPlay || bIsGroggy)
 	{
 		return;
 	}

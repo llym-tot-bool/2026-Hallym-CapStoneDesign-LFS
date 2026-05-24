@@ -95,7 +95,7 @@ protected:
 	float InitialPowerStat = 20.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Stats", meta = (ClampMin = 1.0))
-	float InitialGroggyStat = 100.0f;
+	float InitialGroggyStat = 50.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Combat|Animation")
 	TObjectPtr<UAnimMontage> BasicAttackMontage;
