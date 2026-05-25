@@ -370,12 +370,13 @@ void ASoulslikeCharacter::OnDeathEvent(const FGameplayEventData* Payload)
 
 void ASoulslikeCharacter::OnDeath()
 {
-	// debug test
 	SLDEBUG("character died");
 	ChangeIMC(tag_NoneWeapon);
 	OnDeathManager->OnDeath();
-
-	// death animation restart ui menue open
+	ASoulslikePlayerController* PC = Cast<ASoulslikePlayerController>(GetController());
+	if (PC) {
+		PC->OnPlayerDeath();
+	}
 }
 
 void ASoulslikeCharacter::ChangeIMC(FGameplayTag weapon_tag)

@@ -103,3 +103,8 @@ void ASoulslikePlayerController::ChangeMeleeControlStyle(FGameplayTag weapon_tag
 		}
 	}
 }
+
+void ASoulslikePlayerController::OnPlayerDeath_Implementation()
+{
+	// stays empty because this function will be overrided in blueprint
+}
