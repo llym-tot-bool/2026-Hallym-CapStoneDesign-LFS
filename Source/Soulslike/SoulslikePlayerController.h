@@ -7,6 +7,7 @@
 #include "SoulslikePlayerState.h"
 #include "EnhancedInputComponent.h"
 #include "SLDA_MeleeCombat.h"
+#include "GameFramework/PlayerController.h"
 
 #include "SoulslikePlayerController.generated.h"
 
@@ -39,5 +40,8 @@ protected:
 public:
 	UFUNCTION(BlueprintCallable)
 	void ChangeMeleeControlStyle(FGameplayTag weapon_tag);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Game Flow")
+	void OnPlayerDeath();
 
 };

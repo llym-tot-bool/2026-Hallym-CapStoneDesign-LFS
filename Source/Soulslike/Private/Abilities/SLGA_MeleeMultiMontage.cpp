@@ -113,9 +113,11 @@ void USLGA_MeleeMultiMontage::EndAbility(const FGameplayAbilitySpecHandle Handle
     const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, 
     bool bReplicateEndAbility, bool bWasCancelled)
 {
-    ensureOrQuit(hitchecker);
-    hitchecker->EndTask();
-    hitchecker = nullptr;
+    if (hitchecker) {
+        hitchecker->EndTask();
+        hitchecker = nullptr;
+    }
+
 
     ensureOrQuit(SLPS);
     // remove delegate biindings
