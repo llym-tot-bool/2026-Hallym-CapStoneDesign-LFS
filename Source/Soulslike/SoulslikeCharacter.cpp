@@ -220,6 +220,16 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 	}
 }
 
+void ASoulslikeCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	if (LockOnComponent)
+	{
+		LockOnComponent->OnLockTargetChanged.AddDynamic(this, &ASoulslikeCharacter::HandleLockTargetChanged);
+	}
+}
+
 void ASoulslikeCharacter::EquipWeapon(TSubclassOf<ASLWeaponBase> WeaponClass)
 {
 	if (!WeaponClass) return;
@@ -393,10 +403,15 @@ void ASoulslikeCharacter::LockOnToggle()
 {
 	if (LockOnComponent)
 	{
-		if (LockOnComponent->ToggleLockOn())
-		{
-			GetCharacterMovement()->bOrientRotationToMovement = !LockOnComponent->IsLocked();
-		}
+		LockOnComponent->ToggleLockOn();
+	}
+}
+
+void ASoulslikeCharacter::HandleLockTargetChanged(AActor* NewTarget)
+{
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->bOrientRotationToMovement = (NewTarget == nullptr);
 	}
 }
 

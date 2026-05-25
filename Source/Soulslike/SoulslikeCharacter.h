@@ -98,7 +98,10 @@ protected:
 
 	virtual void PossessedBy(AController* NewController) override;
 	
+	virtual void BeginPlay() override;
+	
 	virtual void Tick(float DeltaSeconds) override;
+	
 
 protected:
 
@@ -123,6 +126,9 @@ protected:
 
 public:
 
+	UFUNCTION()
+	void HandleLockTargetChanged(AActor* NewTarget);
+	
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
