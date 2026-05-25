@@ -486,11 +486,6 @@ void ABoss::ResolveBasicAttackHit()
 	SpecHandle.Data->SetSetByCallerMagnitude(DamageTag, FinalDamage);
 	AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 
-	if (ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(TargetActor))
-	{
-		SLChar->DoOnHit();
-	}
-
 	UE_LOG(LogTemp, Log, TEXT("[Boss] Attack success: Attacker=%s Target=%s Damage=%.2f"), *GetNameSafe(this), *GetNameSafe(TargetActor), FinalDamage);
 }
 
