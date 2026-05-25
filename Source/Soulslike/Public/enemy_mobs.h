@@ -207,6 +207,7 @@ private:
 	bool bDeathMontagePlayed = false;
 	FTimerHandle BasicAttackHitTimer;
 	FTimerHandle DeathDespawnTimer;
+	FTimerHandle DeathPoseFreezeTimer;
 	FTimerHandle GroggyRecoverTimer;
 	TWeakObjectPtr<AActor> PendingAttackTarget;
 	TObjectPtr<USLEnemyHPBarWidget> HealthBarWidgetInstance;
@@ -224,6 +225,7 @@ private:
 	void RecoverGroggyToMax();
 	void HandleDeathState();
 	void OnDeathDespawnTimerElapsed();
+	void FreezeDeathPose();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayBasicAttackMontage(UAnimMontage* MontageToPlay, float PlayRate = 1.0f);
