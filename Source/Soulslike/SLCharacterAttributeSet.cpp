@@ -241,6 +241,12 @@ void USLCharacterAttributeSet::PostGameplayEffectExecute(const struct FGameplayE
 							/*bLoop*/ false);
 					}
 				}
+
+				if (TargetASC) {
+					if (ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(TargetASC->GetAvatarActor())) {
+						SLChar->DoOnHit();
+					}
+				}
 			}
 		}
 
@@ -260,11 +266,7 @@ void USLCharacterAttributeSet::PostGameplayEffectExecute(const struct FGameplayE
 			}
 		}
 
-		if (TargetASC) {
-			if (ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(TargetASC->GetAvatarActor())) {
-				SLChar->DoOnHit();
-			}
-		}
+
 
 		// Lethal hit: mark dead + broadcast a death gameplay event so anim / AI /
 		// game mode listeners can react. We add State.Dead as a loose tag so it
