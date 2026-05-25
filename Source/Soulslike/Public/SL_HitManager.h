@@ -17,8 +17,11 @@ class SOULSLIKE_API USL_HitManager : public UActorComponent
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, Category = "SL|OnHit")
+	UPROPERTY(EditAnywhere, Category = "SL")
 	TSubclassOf<USLGA_OnHit> onhitGA_class;
+
+	UPROPERTY(EditAnywhere, Category = "SL")
+	TObjectPtr<USoundBase> HitSound;
 
 protected:
 	TObjectPtr<UAbilitySystemComponent> ASC;
