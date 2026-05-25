@@ -22,6 +22,18 @@ USLGE_WeaponDamage::USLGE_WeaponDamage()
 
 	Modifiers.Add(DamageMod);
 
+	// Modifier: Damage += Source.Attack
+	FGameplayModifierInfo AttackMod;
+	AttackMod.Attribute = USLCharacterAttributeSet::GetDamageAttribute();
+	AttackMod.ModifierOp = EGameplayModOp::Additive;
+	
+	FAttributeBasedFloat AttackMagnitude;
+	AttackMagnitude.AttributeToCapture = USLCharacterAttributeSet::GetAttackAttribute();
+	AttackMagnitude.AttributeSource = EGameplayEffectAttributeCaptureSource::Source;
+	AttackMod.ModifierMagnitude = FGameplayEffectModifierMagnitude(AttackMagnitude);
+
+	Modifiers.Add(AttackMod);
+
 	// Fire the project's hit GameplayCue every time this GE applies. BP cue
 	// handlers attached to GameplayCue.Combat.Hit own the visuals / audio.
 	const FGameplayTag HitCueTag = FGameplayTag::RequestGameplayTag(SLCombatTags::Cue_Hit, /*ErrorIfNotFound*/ false);

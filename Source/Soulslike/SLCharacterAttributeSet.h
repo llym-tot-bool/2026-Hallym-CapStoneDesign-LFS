@@ -35,6 +35,9 @@ public:
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, MaxLevel);
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Level);
 	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Damage);
+	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, Attack);
+	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, HealthRegen);
+	ATTRIBUTE_ACCESSORS_BASIC(ThisClass, StaminaRegen);
 	
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 	
@@ -79,6 +82,15 @@ protected:
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_Damage, Category="Attribute")
 	FGameplayAttributeData Damage;
 
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_Attack, Category="Attribute")
+	FGameplayAttributeData Attack;
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_HealthRegen, Category="Attribute")
+	FGameplayAttributeData HealthRegen;
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_StaminaRegen, Category="Attribute")
+	FGameplayAttributeData StaminaRegen;
+
 	UFUNCTION()
 	void OnRep_MaxHealth(const FGameplayAttributeData& OldValue);
 	UFUNCTION()
@@ -109,8 +121,16 @@ protected:
 	void OnRep_Level(const FGameplayAttributeData& OldValue);
 	UFUNCTION()
 	void OnRep_Damage(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_Attack(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_HealthRegen(const FGameplayAttributeData& OldValue);
+	UFUNCTION()
+	void OnRep_StaminaRegen(const FGameplayAttributeData& OldValue);
 
 private:
 	/** Timer used to clear State.Stamina.Spending after the player stops spending stamina. */
 	FTimerHandle StaminaSpendingClearTimer;
+	/** Timer used to clear State.RecentlyDamaged after taking damage. */
+	FTimerHandle RecentlyDamagedClearTimer;
 };

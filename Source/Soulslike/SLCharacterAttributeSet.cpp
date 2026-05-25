@@ -14,6 +14,7 @@
 namespace
 {
 	constexpr float StaminaRegenResumeDelay = 1.2f;
+	constexpr float RecentlyDamagedResumeDelay = 3.0f;
 }
 
 USLCharacterAttributeSet::USLCharacterAttributeSet() :
@@ -23,7 +24,10 @@ USLCharacterAttributeSet::USLCharacterAttributeSet() :
 	MaxPoise(0.f),
 	MaxPower(0.f),
 	MaxGroggy(100.f),
-	MaxLevel(99.f)
+	MaxLevel(99.f),
+	Attack(10.f),
+	HealthRegen(1.f),
+	StaminaRegen(5.f)
 {
 	InitHealth(GetMaxHealth());
 	InitStamina(GetMaxStamina());
@@ -32,6 +36,9 @@ USLCharacterAttributeSet::USLCharacterAttributeSet() :
 	InitPower(GetMaxPower());
 	InitGroggy(GetMaxGroggy());
 	InitLevel(GetMaxLevel());
+	InitAttack(GetAttack());
+	InitHealthRegen(GetHealthRegen());
+	InitStaminaRegen(GetStaminaRegen());
 }
 
 void USLCharacterAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -53,6 +60,9 @@ void USLCharacterAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, MaxLevel, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, Level, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, Damage, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, Attack, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, HealthRegen, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(USLCharacterAttributeSet, StaminaRegen, COND_None, REPNOTIFY_Always);
 }
 
 void USLCharacterAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
@@ -114,6 +124,18 @@ void USLCharacterAttributeSet::PreAttributeChange(const FGameplayAttribute& Attr
 	else if (Attribute == GetLevelAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxLevel());
+	}
+	else if (Attribute == GetAttackAttribute())
+	{
+		NewValue = FMath::Max(0.f, NewValue);
+	}
+	else if (Attribute == GetHealthRegenAttribute())
+	{
+		NewValue = FMath::Max(0.f, NewValue);
+	}
+	else if (Attribute == GetStaminaRegenAttribute())
+	{
+		NewValue = FMath::Max(0.f, NewValue);
 	}
 }
 
@@ -191,6 +213,37 @@ void USLCharacterAttributeSet::PostGameplayEffectExecute(const struct FGameplayE
 		const float NewHealth = FMath::Clamp(GetHealth() - Incoming, 0.f, GetMaxHealth());
 		SetHealth(NewHealth);
 
+		// Damage taken → set State.RecentlyDamaged and (re)arm a timer to clear it.
+		// USLGE_HealthRegen ignores ticks while the tag is present.
+		if (Incoming > 0.f)
+		{
+			const FGameplayTag DamagedTag = FGameplayTag::RequestGameplayTag(SLCombatTags::State_RecentlyDamaged, /*ErrorIfNotFound*/ false);
+			if (TargetASC && DamagedTag.IsValid())
+			{
+				TargetASC->SetLooseGameplayTagCount(DamagedTag, 1);
+
+				if (AActor* Owner = TargetASC->GetOwnerActor())
+				{
+					if (UWorld* World = Owner->GetWorld())
+					{
+						TWeakObjectPtr<UAbilitySystemComponent> WeakASC(TargetASC);
+						World->GetTimerManager().ClearTimer(RecentlyDamagedClearTimer);
+						World->GetTimerManager().SetTimer(
+							RecentlyDamagedClearTimer,
+							[WeakASC, DamagedTag]()
+							{
+								if (UAbilitySystemComponent* ASC = WeakASC.Get())
+								{
+									ASC->SetLooseGameplayTagCount(DamagedTag, 0);
+								}
+							},
+							RecentlyDamagedResumeDelay,
+							/*bLoop*/ false);
+					}
+				}
+			}
+		}
+
 		// Consume optional poise damage as groggy damage.
 		if (TargetASC && PoiseDamageTag.IsValid())
 		{
@@ -264,3 +317,6 @@ void USLCharacterAttributeSet::OnRep_Groggy(const FGameplayAttributeData& OldVal
 void USLCharacterAttributeSet::OnRep_MaxLevel(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, MaxLevel, OldValue); }
 void USLCharacterAttributeSet::OnRep_Level(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, Level, OldValue); }
 void USLCharacterAttributeSet::OnRep_Damage(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, Damage, OldValue); }
+void USLCharacterAttributeSet::OnRep_Attack(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, Attack, OldValue); }
+void USLCharacterAttributeSet::OnRep_HealthRegen(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, HealthRegen, OldValue); }
+void USLCharacterAttributeSet::OnRep_StaminaRegen(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(USLCharacterAttributeSet, StaminaRegen, OldValue); }
