@@ -9,6 +9,7 @@
 #include "Weapons/SLWeaponTypes.h"
 #include "Net/UnrealNetwork.h"
 #include "Soulslike.h"
+#include "SoulslikeCharacter.h"
 
 namespace
 {
@@ -204,6 +205,11 @@ void USLCharacterAttributeSet::PostGameplayEffectExecute(const struct FGameplayE
 					TargetASC->AddLooseGameplayTag(GroggyTag);
 				}
 			}
+		}
+
+		if (TargetASC) {
+			ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(TargetASC->GetAvatarActor());
+			SLChar->DoOnHit();
 		}
 
 		// Lethal hit: mark dead + broadcast a death gameplay event so anim / AI /

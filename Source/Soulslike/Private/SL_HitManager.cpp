@@ -4,6 +4,8 @@
 #include "SL_HitManager.h"
 #include "Soulslike.h"
 #include "SoulslikeCharacter.h"
+#include "Kismet/GameplayStatics.h"
+
 
 // Called when the game starts
 void USL_HitManager::BeginPlay()
@@ -19,6 +21,10 @@ void USL_HitManager::BeginPlay()
 
 void USL_HitManager::OnHit()
 {
+	if (HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(SLChar, HitSound, SLChar->K2_GetActorLocation());
+	}
 	StartGA();
 }
 
