@@ -229,6 +229,7 @@ private:
 	void RecoverGroggyToMax();
 	void HandleDeathState();
 	void OnDeathDespawnTimerElapsed();
+	void OnDeathMontageBlendOutStarted(UAnimMontage* Montage, bool bInterrupted);
 	void FreezeDeathPose();
 
 	UFUNCTION(NetMulticast, Reliable)

@@ -789,6 +789,19 @@ void Aenemy_mobs::HandleDeathState()
 	{
 		if (DeathMontage)
 		{
+			// Prevent returning to locomotion/idle when death montage ends.
+			DeathMontage->bEnableAutoBlendOut = false;
+
+			if (USkeletalMeshComponent* MeshComp = GetMesh())
+			{
+				if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
+				{
+					FOnMontageBlendingOutStarted BlendOutDelegate;
+					BlendOutDelegate.BindUObject(this, &Aenemy_mobs::OnDeathMontageBlendOutStarted);
+					AnimInstance->Montage_SetBlendingOutDelegate(BlendOutDelegate, DeathMontage);
+				}
+			}
+
 			PlayAnimMontage(DeathMontage, 1.0f);
 			const float FreezeDelay = FMath::Max(0.05f, DeathMontage->GetPlayLength() - 0.02f);
 			World->GetTimerManager().SetTimer(DeathPoseFreezeTimer, this, &Aenemy_mobs::FreezeDeathPose, FreezeDelay, false);
@@ -808,11 +821,23 @@ void Aenemy_mobs::OnDeathDespawnTimerElapsed()
 	Destroy();
 }
 
+void Aenemy_mobs::OnDeathMontageBlendOutStarted(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (!bDeathMontagePlayed || Montage != DeathMontage)
+	{
+		return;
+	}
+
+	FreezeDeathPose();
+}
+
 void Aenemy_mobs::FreezeDeathPose()
 {
 	if (USkeletalMeshComponent* MeshComp = GetMesh())
 	{
 		MeshComp->bPauseAnims = true;
+		MeshComp->bNoSkeletonUpdate = true;
+		MeshComp->SetComponentTickEnabled(false);
 	}
 }
 

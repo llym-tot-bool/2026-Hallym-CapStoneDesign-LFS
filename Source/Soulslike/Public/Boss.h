@@ -45,6 +45,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI")
 	bool bEnablePlayerChase = true;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI", meta = (ClampMin = 0.0))
+	float ChaseStartDelay = 4.5f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI", meta = (ClampMin = 100.0))
 	float MaxChaseDistance = 2500.0f;
 
