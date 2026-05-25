@@ -102,6 +102,24 @@ void ABoss::BeginPlay()
 		StartPeriodicMove();
 	}
 
+	if (HasAuthority())
+	{
+		// Delay initial chase after spawn (e.g. intro phase).
+		bEnablePlayerChase = false;
+
+		if (UWorld* World = GetWorld())
+		{
+			if (ChaseStartDelay <= 0.0f)
+			{
+				StartChase();
+			}
+			else
+			{
+				World->GetTimerManager().SetTimer(ChaseTimer, this, &ABoss::StartChase, ChaseStartDelay, false);
+			}
+		}
+	}
+
 	if (IntroMontage)
 	{
 		PlayBossMontage(IntroMontage);
@@ -139,6 +157,7 @@ void ABoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (UWorld* World = GetWorld())
 	{
+		World->GetTimerManager().ClearTimer(ChaseTimer);
 		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
 		World->GetTimerManager().ClearTimer(GroggyRecoverTimer);
 		World->GetTimerManager().ClearTimer(DeathDespawnTimer);
