@@ -564,10 +564,6 @@ void Aenemy_mobs::ResolveBasicAttackHit()
 		{
 			SpecHandle.Data->SetSetByCallerMagnitude(DamageTag, FinalDamage);
 			AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-
-			if (ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(TargetActor)) {
-				SLChar->DoOnHit();
-			}
 		}
 	}
 

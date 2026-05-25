@@ -87,6 +87,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "SL Data Asset")
 	TObjectPtr<USLDA_MeleeCombat> SLDA_MeleeCombat;
 
+
+
 public:
 	ASoulslikeCharacter();
 
