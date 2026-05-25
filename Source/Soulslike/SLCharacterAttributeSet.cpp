@@ -208,8 +208,9 @@ void USLCharacterAttributeSet::PostGameplayEffectExecute(const struct FGameplayE
 		}
 
 		if (TargetASC) {
-			ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(TargetASC->GetAvatarActor());
-			SLChar->DoOnHit();
+			if (ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(TargetASC->GetAvatarActor())) {
+				SLChar->DoOnHit();
+			}
 		}
 
 		// Lethal hit: mark dead + broadcast a death gameplay event so anim / AI /
