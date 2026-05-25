@@ -28,8 +28,8 @@ USLGE_WeaponDamage::USLGE_WeaponDamage()
 	AttackMod.ModifierOp = EGameplayModOp::Additive;
 	
 	FAttributeBasedFloat AttackMagnitude;
-	AttackMagnitude.AttributeToCapture = USLCharacterAttributeSet::GetAttackAttribute();
-	AttackMagnitude.AttributeSource = EGameplayEffectAttributeCaptureSource::Source;
+	AttackMagnitude.BackingAttribute.AttributeToCapture = USLCharacterAttributeSet::GetAttackAttribute();
+	AttackMagnitude.BackingAttribute.AttributeSource = EGameplayEffectAttributeCaptureSource::Source;
 	AttackMod.ModifierMagnitude = FGameplayEffectModifierMagnitude(AttackMagnitude);
 
 	Modifiers.Add(AttackMod);

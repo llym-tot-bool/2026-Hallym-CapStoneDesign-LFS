@@ -13,8 +13,8 @@
 
 namespace
 {
-	constexpr float StaminaRegenResumeDelay = 1.2f;
-	constexpr float RecentlyDamagedResumeDelay = 3.0f;
+	constexpr float StaminaRegenResumeDelay = 1.8f;
+	constexpr float RecentlyDamagedResumeDelay = 10.0f;
 }
 
 USLCharacterAttributeSet::USLCharacterAttributeSet() :
@@ -25,9 +25,9 @@ USLCharacterAttributeSet::USLCharacterAttributeSet() :
 	MaxPower(0.f),
 	MaxGroggy(100.f),
 	MaxLevel(99.f),
-	Attack(10.f),
-	HealthRegen(1.f),
-	StaminaRegen(5.f)
+	Attack(0),
+	HealthRegen(0.1f),
+	StaminaRegen(0.5f)
 {
 	InitHealth(GetMaxHealth());
 	InitStamina(GetMaxStamina());
