@@ -18,6 +18,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerState.h"
 #include "Components/CapsuleComponent.h"
+#include "SoulslikeCharacter.h"
 
 namespace
 {
@@ -111,6 +112,11 @@ void ABoss::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	HandleDeathState();
+
+	if (bDeathMontagePlayed && DeathSinkSpeed > 0.0f)
+	{
+		AddActorWorldOffset(FVector(0.0f, 0.0f, -DeathSinkSpeed * DeltaSeconds), false);
+	}
 
 	if (!bFaceMovementDirection || IsDead())
 	{
@@ -480,6 +486,11 @@ void ABoss::ResolveBasicAttackHit()
 	SpecHandle.Data->SetSetByCallerMagnitude(DamageTag, FinalDamage);
 	AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 
+	if (ASoulslikeCharacter* SLChar = Cast<ASoulslikeCharacter>(TargetActor))
+	{
+		SLChar->DoOnHit();
+	}
+
 	UE_LOG(LogTemp, Log, TEXT("[Boss] Attack success: Attacker=%s Target=%s Damage=%.2f"), *GetNameSafe(this), *GetNameSafe(TargetActor), FinalDamage);
 }
 
@@ -622,6 +633,11 @@ void ABoss::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
 
 void ABoss::OnHealthAttributeChanged(const FOnAttributeChangeData& ChangeData)
 {
+	if (HasAuthority() && ChangeData.NewValue < ChangeData.OldValue && !IsDead())
+	{
+		bDamageAggroTriggered = true;
+	}
+
 	if (!HasAuthority() || IsDead() || bIsGroggy)
 	{
 		return;
@@ -667,6 +683,7 @@ void ABoss::HandleDeathState()
 	}
 
 	bDeathMontagePlayed = true;
+	OnBossDeath.Broadcast(this);
 	bBasicAttackInProgress = false;
 	BasicAttackDamageNotifyCount = 0;
 	PendingAttackTarget = nullptr;
@@ -706,6 +723,19 @@ void ABoss::HandleDeathState()
 	{
 		if (DeathMontage)
 		{
+			// Prevent falling back to locomotion/idle at montage end.
+			DeathMontage->bEnableAutoBlendOut = false;
+
+			if (USkeletalMeshComponent* MeshComp = GetMesh())
+			{
+				if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
+				{
+					FOnMontageBlendingOutStarted BlendOutDelegate;
+					BlendOutDelegate.BindUObject(this, &ABoss::OnDeathMontageBlendOutStarted);
+					AnimInstance->Montage_SetBlendingOutDelegate(BlendOutDelegate, DeathMontage);
+				}
+			}
+
 			PlayDeathMontage(1.0f);
 			float FreezeDelay = FMath::Max(0.05f, DeathMontage->GetPlayLength() - 0.02f);
 			World->GetTimerManager().SetTimer(DeathPoseFreezeTimer, this, &ABoss::FreezeDeathPose, FreezeDelay, false);
@@ -725,11 +755,23 @@ void ABoss::OnDeathDespawnTimerElapsed()
 	Destroy();
 }
 
+void ABoss::OnDeathMontageBlendOutStarted(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (!bDeathMontagePlayed || Montage != DeathMontage)
+	{
+		return;
+	}
+
+	FreezeDeathPose();
+}
+
 void ABoss::FreezeDeathPose()
 {
 	if (USkeletalMeshComponent* MeshComp = GetMesh())
 	{
 		MeshComp->bPauseAnims = true;
+		MeshComp->bNoSkeletonUpdate = true;
+		MeshComp->SetComponentTickEnabled(false);
 	}
 }
 
@@ -774,5 +816,3 @@ void ABoss::MulticastPlayHitReactMontage_Implementation(UAnimMontage* MontageToP
 		UE_LOG(LogTemp, Warning, TEXT("[Boss] Failed to play hit react montage: Boss=%s Montage=%s"), *GetNameSafe(this), *GetNameSafe(MontageToPlay));
 	}
 }
-
-

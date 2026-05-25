@@ -14,6 +14,8 @@ struct FGameplayTag;
 struct FTimerHandle;
 struct FOnAttributeChangeData;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBossDeathSignature, ABoss*, DeadBoss);
+
 UCLASS()
 class SOULSLIKE_API ABoss : public ACharacter, public IAbilitySystemInterface
 {
@@ -25,6 +27,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Boss|UI")
 	FText GetBossDisplayName() const { return BossDisplayName; }
+
+	UPROPERTY(BlueprintAssignable, Category = "Boss|Event")
+	FBossDeathSignature OnBossDeath;
 
 protected:
 	virtual void BeginPlay() override;
@@ -143,6 +148,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|State", meta = (ClampMin = 0.1))
 	float DeathDespawnDelay = 3.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|State", meta = (ClampMin = 0.0))
+	float DeathSinkSpeed = 80.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat|Animation")
 	TObjectPtr<UAnimMontage> HitReactMontage;
 
@@ -157,6 +165,7 @@ protected:
 	int32 BasicAttackDamageNotifyCount = 0;
 	bool bIsGroggy = false;
 	bool bDeathMontagePlayed = false;
+	bool bDamageAggroTriggered = false;
 	TWeakObjectPtr<AActor> PendingAttackTarget;
 
 	UFUNCTION()
@@ -174,6 +183,7 @@ protected:
 	void RecoverGroggyToMax();
 	void HandleDeathState();
 	void OnDeathDespawnTimerElapsed();
+	void OnDeathMontageBlendOutStarted(UAnimMontage* Montage, bool bInterrupted);
 	void FreezeDeathPose();
 
 public:
@@ -182,6 +192,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Boss|AI")
 	bool IsPlayerChaseEnabled() const { return bEnablePlayerChase; }
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Perception")
+	bool HasTakenDamageAggro() const { return bDamageAggroTriggered; }
 
 	UFUNCTION(BlueprintCallable, Category = "Boss|AI|Movement")
 	float GetDefaultMoveSpeed() const { return DefaultMoveSpeed; }

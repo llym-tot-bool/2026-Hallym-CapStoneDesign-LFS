@@ -141,8 +141,11 @@ void AEnemyMobsAIController::UpdateChaseTarget()
 			return;
 		}
 
-		// Boss should detect target from all directions once inside chase distance.
-		if (EnemyPawn)
+		// Once damaged, both enemy and boss can force-aggro without front-cone restriction.
+		const bool bDamageAggro = EnemyPawn ? EnemyPawn->HasTakenDamageAggro() : (BossPawn ? BossPawn->HasTakenDamageAggro() : false);
+
+		// Enemy front-cone gate applies only before damage aggro.
+		if (EnemyPawn && !bDamageAggro)
 		{
 			const FVector ToTarget2D = (TargetActor->GetActorLocation() - PawnLocation).GetSafeNormal2D();
 			const FVector Forward2D = GetPawn()->GetActorForwardVector().GetSafeNormal2D();

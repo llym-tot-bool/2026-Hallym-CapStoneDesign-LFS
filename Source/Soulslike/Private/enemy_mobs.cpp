@@ -692,6 +692,11 @@ void Aenemy_mobs::OnGroggyTagChanged(const FGameplayTag Tag, int32 NewCount)
 
 void Aenemy_mobs::OnHealthAttributeChanged(const FOnAttributeChangeData& ChangeData)
 {
+	if (HasAuthority() && ChangeData.NewValue < ChangeData.OldValue && !IsDead())
+	{
+		bDamageAggroTriggered = true;
+	}
+
 	RefreshHealthBarUI();
 
 	if (!HasAuthority() || IsDead() || bIsGroggy)

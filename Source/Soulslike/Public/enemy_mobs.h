@@ -146,6 +146,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	bool IsPlayerChaseEnabled() const { return bEnablePlayerChase; }
 
+	UFUNCTION(BlueprintCallable, Category = "AI|Perception")
+	bool HasTakenDamageAggro() const { return bDamageAggroTriggered; }
+
 	UFUNCTION(BlueprintCallable, Category = "AI|Movement")
 	float GetDefaultMoveSpeed() const { return DefaultMoveSpeed; }
 
@@ -205,6 +208,7 @@ private:
 	int32 BasicAttackDamageNotifyCount = 0;
 	bool bIsGroggy = false;
 	bool bDeathMontagePlayed = false;
+	bool bDamageAggroTriggered = false;
 	FTimerHandle BasicAttackHitTimer;
 	FTimerHandle DeathDespawnTimer;
 	FTimerHandle DeathPoseFreezeTimer;
