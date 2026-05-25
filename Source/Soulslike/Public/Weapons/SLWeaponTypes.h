@@ -50,6 +50,9 @@ namespace SLCombatTags
 	static const FName State_Dead = TEXT("State.Dead");
 	static const FName State_Groggy = TEXT("State.Groggy");
 
+	// Set when damage is taken. Pauses USLGE_HealthRegen until cleared by timer.
+	static const FName State_RecentlyDamaged = TEXT("State.RecentlyDamaged");
+
 	// Loose tag set whenever Stamina is consumed. USLGE_StaminaRegen lists this
 	// in its OngoingTagRequirements.IgnoreTags so periodic regen ticks pause
 	// while the tag is present. The attribute set clears the tag via timer

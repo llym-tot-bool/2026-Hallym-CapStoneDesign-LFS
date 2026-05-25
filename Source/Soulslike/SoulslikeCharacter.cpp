@@ -23,6 +23,8 @@
 #include "GameplayEffect.h"
 #include "SoulslikePlayerController.h"
 #include "Soulslike.h"
+#include "Abilities/SLGE_HealthRegen.h"
+#include "Abilities/SLGE_StaminaRegen.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -213,6 +215,13 @@ void ASoulslikeCharacter::PossessedBy(AController* NewController)
 		{
 			EquipWeapon(StartingWeapon);
 		}
+
+		// Apply infinite regeneration effects
+		FGameplayEffectContextHandle RegenCtx = ASC->MakeEffectContext();
+		RegenCtx.AddSourceObject(this);
+
+		ASC->ApplyGameplayEffectSpecToSelf(*ASC->MakeOutgoingSpec(USLGE_HealthRegen::StaticClass(), 1.0f, RegenCtx).Data.Get());
+		ASC->ApplyGameplayEffectSpecToSelf(*ASC->MakeOutgoingSpec(USLGE_StaminaRegen::StaticClass(), 1.0f, RegenCtx).Data.Get());
 
 		const FGameplayTag DeathEventTag = FGameplayTag::RequestGameplayTag(SLCombatTags::Event_Death, false);
 
