@@ -76,6 +76,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat", meta = (ClampMin = 0.1))
 	float BasicAttackCooldown = 1.6f;
 
+	// Extra delay after attack montage ends before next attack can start.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat", meta = (ClampMin = 0.0))
+	float BasicAttackPostMontageDelay = 2.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Combat", meta = (ClampMin = 0.0))
 	float BasicAttackBaseDamage = 20.0f;
 

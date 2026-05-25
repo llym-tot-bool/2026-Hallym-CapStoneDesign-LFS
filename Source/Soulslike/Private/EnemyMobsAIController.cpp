@@ -141,18 +141,22 @@ void AEnemyMobsAIController::UpdateChaseTarget()
 			return;
 		}
 
-		const FVector ToTarget2D = (TargetActor->GetActorLocation() - PawnLocation).GetSafeNormal2D();
-		const FVector Forward2D = GetPawn()->GetActorForwardVector().GetSafeNormal2D();
-		const float ConeHalfAngleDeg = EnemyPawn ? EnemyPawn->GetChaseDetectionHalfAngleDeg() : BossPawn->GetChaseDetectionHalfAngleDeg();
-		const float CosThreshold = FMath::Cos(FMath::DegreesToRadians(ConeHalfAngleDeg));
-		const float DotToTarget = FVector::DotProduct(Forward2D, ToTarget2D);
-
-		if (DotToTarget < CosThreshold)
+		// Boss should detect target from all directions once inside chase distance.
+		if (EnemyPawn)
 		{
-			StopMovement();
-			CachedTargetActor = nullptr;
-			ApplyMoveSpeed(EnemyPawn ? EnemyPawn->GetDefaultMoveSpeed() : BossPawn->GetDefaultMoveSpeed());
-			return;
+			const FVector ToTarget2D = (TargetActor->GetActorLocation() - PawnLocation).GetSafeNormal2D();
+			const FVector Forward2D = GetPawn()->GetActorForwardVector().GetSafeNormal2D();
+			const float ConeHalfAngleDeg = EnemyPawn->GetChaseDetectionHalfAngleDeg();
+			const float CosThreshold = FMath::Cos(FMath::DegreesToRadians(ConeHalfAngleDeg));
+			const float DotToTarget = FVector::DotProduct(Forward2D, ToTarget2D);
+
+			if (DotToTarget < CosThreshold)
+			{
+				StopMovement();
+				CachedTargetActor = nullptr;
+				ApplyMoveSpeed(EnemyPawn->GetDefaultMoveSpeed());
+				return;
+			}
 		}
 	}
 

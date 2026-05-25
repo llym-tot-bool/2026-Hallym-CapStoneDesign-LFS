@@ -384,8 +384,8 @@ bool ABoss::TryBasicAttack(AActor* TargetActor)
 
 	MulticastPlayBasicAttackMontage(MontageToPlay, 1.0f);
 
-	float NotifyTimeout = MontageToPlay->GetPlayLength() + 0.2f;
-	if (NotifyTimeout <= 0.2f)
+	float NotifyTimeout = MontageToPlay->GetPlayLength() + FMath::Max(0.0f, BasicAttackPostMontageDelay);
+	if (NotifyTimeout <= 0.0f)
 	{
 		NotifyTimeout = 1.0f;
 	}
@@ -702,16 +702,20 @@ void ABoss::HandleDeathState()
 		MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
-	PlayDeathMontage(1.0f);
-
 	if (UWorld* World = GetWorld())
 	{
-		float FreezeDelay = 0.05f;
 		if (DeathMontage)
 		{
-			FreezeDelay = FMath::Max(0.05f, DeathMontage->GetPlayLength() - 0.02f);
+			PlayDeathMontage(1.0f);
+			float FreezeDelay = FMath::Max(0.05f, DeathMontage->GetPlayLength() - 0.02f);
+			World->GetTimerManager().SetTimer(DeathPoseFreezeTimer, this, &ABoss::FreezeDeathPose, FreezeDelay, false);
 		}
-		World->GetTimerManager().SetTimer(DeathPoseFreezeTimer, this, &ABoss::FreezeDeathPose, FreezeDelay, false);
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[Boss] DeathMontage is not assigned on %s. Freezing current pose immediately."), *GetNameSafe(this));
+			FreezeDeathPose();
+		}
+
 		World->GetTimerManager().SetTimer(DeathDespawnTimer, this, &ABoss::OnDeathDespawnTimerElapsed, DeathDespawnDelay, false);
 	}
 }

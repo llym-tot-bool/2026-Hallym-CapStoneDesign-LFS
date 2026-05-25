@@ -219,6 +219,7 @@ void Aenemy_mobs::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	{
 		World->GetTimerManager().ClearTimer(BasicAttackHitTimer);
 		World->GetTimerManager().ClearTimer(DeathDespawnTimer);
+		World->GetTimerManager().ClearTimer(DeathPoseFreezeTimer);
 		World->GetTimerManager().ClearTimer(GroggyRecoverTimer);
 	}
 	StopPeriodicMove();
@@ -783,13 +784,20 @@ void Aenemy_mobs::HandleDeathState()
 		HealthBarWidgetComponent->SetVisibility(false, true);
 	}
 
-	if (DeathMontage)
-	{
-		PlayAnimMontage(DeathMontage, 1.0f);
-	}
-
 	if (UWorld* World = GetWorld())
 	{
+		if (DeathMontage)
+		{
+			PlayAnimMontage(DeathMontage, 1.0f);
+			const float FreezeDelay = FMath::Max(0.05f, DeathMontage->GetPlayLength() - 0.02f);
+			World->GetTimerManager().SetTimer(DeathPoseFreezeTimer, this, &Aenemy_mobs::FreezeDeathPose, FreezeDelay, false);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[EnemyMob] DeathMontage is not assigned on %s. Freezing current pose immediately."), *GetNameSafe(this));
+			FreezeDeathPose();
+		}
+
 		World->GetTimerManager().SetTimer(DeathDespawnTimer, this, &Aenemy_mobs::OnDeathDespawnTimerElapsed, DeathDespawnDelay, false);
 	}
 }
@@ -797,6 +805,14 @@ void Aenemy_mobs::HandleDeathState()
 void Aenemy_mobs::OnDeathDespawnTimerElapsed()
 {
 	Destroy();
+}
+
+void Aenemy_mobs::FreezeDeathPose()
+{
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->bPauseAnims = true;
+	}
 }
 
 void Aenemy_mobs::MulticastPlayBasicAttackMontage_Implementation(UAnimMontage* MontageToPlay, float PlayRate)
