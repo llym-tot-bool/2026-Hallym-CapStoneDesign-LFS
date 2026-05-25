@@ -17,6 +17,8 @@ void USL_HitManager::BeginPlay()
 	ASC = SLChar->GetAbilitySystemComponent();
 	ensureOrQuit(ASC);
 	ensureOrQuit(onhitGA_class);
+
+	bIsPlaying = false;
 }
 
 void USL_HitManager::OnHit()
@@ -30,7 +32,6 @@ void USL_HitManager::OnHit()
 
 void USL_HitManager::StartGA()
 {
-	ensureOrQuit(!bIsPlaying);
 
 	bool result = ASC->TryActivateAbilityByClass(onhitGA_class);
 	if (!result) { SLDEBUG("fail to activate HitGA"); return; }
