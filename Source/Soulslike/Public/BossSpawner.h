@@ -42,7 +42,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spawner")
 	bool bDestroyAfterSpawn = false;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Spawner")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
 	bool bHasSpawnedBoss = false;
 
 	bool IsPawnDetectedInFront(const APawn* Pawn) const;
