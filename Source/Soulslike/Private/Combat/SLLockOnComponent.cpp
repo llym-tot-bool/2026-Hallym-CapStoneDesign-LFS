@@ -101,7 +101,10 @@ void USLLockOnComponent::SwitchTarget(float Direction)
 
 bool USLLockOnComponent::IsValidCandidate(AActor* Candidate) const
 {
-	if (!Candidate || Candidate == GetOwner()) { return false; }
+	if (!Candidate || Candidate == GetOwner() || Candidate->IsActorBeingDestroyed()) { return false; }
+
+	// Line of sight check: don't lock on through walls.
+	if (!HasLineOfSight(Candidate)) { return false; }
 
 	// Drop dead or dying targets. Resolves ASC via direct interface or via
 	// PlayerState (player characters host their ASC there).
@@ -127,6 +130,48 @@ bool USLLockOnComponent::IsValidCandidate(AActor* Candidate) const
 	}
 
 	return true;
+}
+
+bool USLLockOnComponent::HasLineOfSight(const AActor* Target) const
+{
+	if (!Target) { return false; }
+
+	APawn* Owner = Cast<APawn>(GetOwner());
+	if (!Owner) { return false; }
+
+	FVector StartLoc;
+	FRotator ViewRot;
+	if (Owner->GetController())
+	{
+		Owner->GetController()->GetPlayerViewPoint(StartLoc, ViewRot);
+	}
+	else
+	{
+		StartLoc = Owner->GetActorLocation() + FVector(0, 0, Owner->BaseEyeHeight);
+	}
+
+	FVector EndLoc = Target->GetActorLocation();
+	if (const APawn* TargetPawn = Cast<APawn>(Target))
+	{
+		// Trace to eye height for pawns to avoid hitting the floor or feet.
+		EndLoc = TargetPawn->GetActorLocation() + FVector(0, 0, TargetPawn->BaseEyeHeight);
+	}
+
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(GetOwner());
+	Params.AddIgnoredActor(Target);
+
+	// If we hit anything on the Visibility channel, LOS is blocked.
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(
+		Hit,
+		StartLoc,
+		EndLoc,
+		ECC_Visibility,
+		Params
+	);
+
+	return !bHit;
 }
 
 AActor* USLLockOnComponent::FindBestTargetInCone(AActor* Ignored) const
@@ -206,16 +251,13 @@ void USLLockOnComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 	APawn* Owner = Cast<APawn>(GetOwner());
 	if (!Owner) { ClearLock(); return; }
 
-	// Auto-release on death / out-of-range / destroyed.
-	if (!IsValidCandidate(CurrentTarget))
-	{
-		ClearLock();
-		return;
-	}
+	// Auto-release on death / out-of-range / destroyed / LOS loss.
+	// If the target is gone, try to find the next best candidate automatically.
 	const float DistSq = FVector::DistSquared(Owner->GetActorLocation(), CurrentTarget->GetActorLocation());
-	if (DistSq > FMath::Square(BreakRange))
+	if (!IsValidCandidate(CurrentTarget) || DistSq > FMath::Square(BreakRange))
 	{
-		ClearLock();
+		AActor* Next = FindBestTargetInCone(CurrentTarget);
+		SetTarget(Next);
 		return;
 	}
 

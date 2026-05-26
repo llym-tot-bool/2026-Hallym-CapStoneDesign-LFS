@@ -66,6 +66,9 @@ protected:
 	/** Returns true if Candidate is alive, on the visible side, and (for switch) on the requested side. */
 	bool IsValidCandidate(AActor* Candidate) const;
 
+	/** Returns true if there's a clear line of sight from the camera/owner to the target. */
+	bool HasLineOfSight(const AActor* Target) const;
+
 	/** Update controller rotation each tick so the camera tracks CurrentTarget. */
 	void UpdateLockedRotation(float DeltaTime);
 

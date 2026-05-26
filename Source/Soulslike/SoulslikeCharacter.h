@@ -43,6 +43,9 @@ class ASoulslikeCharacter : public ACharacter, public IAbilitySystemInterface
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	USLLockOnComponent* LockOnComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	class UWidgetComponent* LockOnWidget;
+
 protected: 
 	
 	UPROPERTY(EditAnywhere, Category="Input")

@@ -25,6 +25,7 @@
 #include "Soulslike.h"
 #include "Abilities/SLGE_HealthRegen.h"
 #include "Abilities/SLGE_StaminaRegen.h"
+#include "Components/WidgetComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -80,6 +81,13 @@ ASoulslikeCharacter::ASoulslikeCharacter()
 
 	ComboManager_HS_Base = CreateDefaultSubobject<USL_ComboManager>(TEXT("ComboManager_HS_Base"));
 	ComboManager_HS_Special = CreateDefaultSubobject<USL_OneShotManager>(TEXT("ComboManager_HS_Special"));
+
+	LockOnWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("LockOnWidget"));
+	LockOnWidget->SetupAttachment(RootComponent);
+	LockOnWidget->SetWidgetSpace(EWidgetSpace::Screen);
+	LockOnWidget->SetDrawAtDesiredSize(true);
+	LockOnWidget->SetVisibility(false);
+	LockOnWidget->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 bool ASoulslikeCharacter::IsFalling()
@@ -421,6 +429,38 @@ void ASoulslikeCharacter::HandleLockTargetChanged(AActor* NewTarget)
 	if (GetCharacterMovement())
 	{
 		GetCharacterMovement()->bOrientRotationToMovement = (NewTarget == nullptr);
+	}
+
+	if (LockOnWidget)
+	{
+		if (NewTarget)
+		{
+			LockOnWidget->SetVisibility(true);
+			
+			// Attach to target's mesh if it's a character, or root if not.
+			USceneComponent* AttachComp = NewTarget->GetRootComponent();
+			if (ACharacter* TargetChar = Cast<ACharacter>(NewTarget))
+			{
+				AttachComp = TargetChar->GetMesh();
+			}
+
+			LockOnWidget->AttachToComponent(AttachComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+			
+			// Offset to chest height (roughly) if attached to mesh, or above head if attached to root.
+			if (ACharacter* TargetChar = Cast<ACharacter>(NewTarget))
+			{
+				LockOnWidget->SetRelativeLocation(FVector(0.f, 0.f, 130.f));
+			}
+			else
+			{
+				LockOnWidget->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
+			}
+		}
+		else
+		{
+			LockOnWidget->SetVisibility(false);
+			LockOnWidget->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+		}
 	}
 }
 
