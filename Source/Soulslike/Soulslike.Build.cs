@@ -24,9 +24,13 @@ public class Soulslike : ModuleRules
 			"UMG",
 			"Slate",
 			"SlateCore",
-            "UnrealEd",
             "Niagara"
         });
+
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.Add("UnrealEd");
+		}
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
